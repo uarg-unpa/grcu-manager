@@ -59,18 +59,18 @@
       </tr>
     </thead>
     <tbody>
-      {% for accion in ultimas_acciones %}
-      <tr>
-        <td>{{ accion.fecha }}</td>
-        <td>{{ accion.usuario }}</td>
-        <td>{{ accion.descripcion }}</td>
-      </tr>
-      {% empty %}
-      <tr>
-        <td colspan="3" class="text-center text-muted">No hay acciones registradas</td>
-      </tr>
-      {% endfor %}
-    </tbody>
+  {% for accion in ultimas_acciones %}
+  <tr>
+    <td>{{ accion.action_time|date:"Y-m-d H:i" }}</td>
+    <td>{{ accion.user }}</td>
+    <td>{{ accion.get_change_message }}</td>
+  </tr>
+  {% empty %}
+  <tr>
+    <td colspan="3" class="text-center text-muted">No hay acciones registradas</td>
+  </tr>
+  {% endfor %}
+</tbody>
   </table>
 
 </div>

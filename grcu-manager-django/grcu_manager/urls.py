@@ -27,6 +27,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path("dashboard/", include("dashboards.urls", namespace='dashboard')),  # ← Incluye las URLs del dashboard
     path('usuarios/', include('usuarios.urls', namespace='usuarios')),
+    path('proyectos/', include('proyectos.urls', namespace='proyectos')),
 ]
 
 # Servir archivos estáticos y media en desarrollo

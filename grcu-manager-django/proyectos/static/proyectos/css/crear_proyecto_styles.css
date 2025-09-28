@@ -1,0 +1,67 @@
+/* --- Contenedor principal --- */
+.proyecto-form-container {
+    max-width: 700px;
+    margin: 40px auto;
+    padding: 25px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* --- Título --- */
+.proyecto-form-titulo {
+    text-align: center;
+    color: #444c8a;
+    font-weight: bold;
+    margin-bottom: 25px;
+}
+
+/* --- Grupos de campos --- */
+.proyecto-form-group {
+    margin-bottom: 15px;
+}
+
+.proyecto-form-group label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 5px;
+    color: #444c8a;
+}
+
+.proyecto-form-group input,
+.proyecto-form-group textarea,
+.proyecto-form-group select {
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+}
+
+.proyecto-form-group input:focus,
+.proyecto-form-group textarea:focus,
+.proyecto-form-group select:focus {
+    border-color: #444c8a;
+    outline: none;
+}
+
+/* --- Botón --- */
+.proyecto-form-acciones {
+    text-align: right;
+}
+
+.proyecto-form-btn-crear {
+    background-color: #444c8a;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.proyecto-form-btn-crear:hover {
+    background-color: #363c70;
+}

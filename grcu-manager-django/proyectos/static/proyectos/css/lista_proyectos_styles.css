@@ -1,0 +1,97 @@
+/* --- Contenedor principal --- */
+.proyecto-lista-container {
+    max-width: 1100px;
+    margin: 40px auto;
+    padding: 20px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* --- Título --- */
+.proyecto-lista-titulo {
+    margin-bottom: 20px;
+    color: #444c8a;
+    font-weight: bold;
+    text-align: center;
+}
+
+/* --- Botón crear --- */
+.proyecto-lista-acciones {
+    margin-bottom: 15px;
+    text-align: right;
+}
+
+.proyecto-lista-btn-crear {
+    background-color: #444c8a;
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.proyecto-lista-btn-crear:hover {
+    background-color: #363c70;
+}
+
+/* --- Tabla --- */
+.proyecto-lista-tabla {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+.proyecto-lista-tabla th {
+    background: #444c8a;
+    color: white;
+    padding: 12px;
+    text-align: center;
+}
+
+.proyecto-lista-tabla td {
+    padding: 12px;
+    border-bottom: 1px solid #ddd;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.proyecto-lista-tabla tr:hover {
+    background: #f4f6ff;
+}
+
+/* --- Botones de acción --- */
+.proyecto-lista-btn-warning,
+.proyecto-lista-btn-danger {
+    display: inline-block;
+    padding: 6px 10px;
+    margin: 0 2px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    color: #fff;
+    transition: background 0.2s;
+}
+
+.proyecto-lista-btn-warning {
+    background-color: #ffb347;
+}
+
+.proyecto-lista-btn-warning:hover {
+    background-color: #e09e34;
+}
+
+.proyecto-lista-btn-danger {
+    background-color: #e74c3c;
+}
+
+.proyecto-lista-btn-danger:hover {
+    background-color: #c0392b;
+}
+
+/* --- Fila vacía --- */
+.proyecto-lista-vacio {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+}

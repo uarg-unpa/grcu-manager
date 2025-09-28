@@ -14,35 +14,11 @@ from django.core.exceptions import ValidationError
 
 def setup_admin(request):
     # Si ya hay un admin, redirige al login
-    if Usuario.objects.filter(roles__nombre__iexact="admin").exists():
+    if Usuario.objects.filter(roles__nombre__iexact="Admin").exists():
+        messages.info(request, "Ya existe un administrador. Por favor, iniciá sesión.")
         return redirect("accounts:login")
 
-    if request.method == "POST":
-        email = request.POST.get("email")
-        email_confirm = request.POST.get("email_confirm")
-
-        if email != email_confirm:
-            messages.error(request, "Los correos no coinciden.")
-            return render(request, "accounts/setup_admin.html")
-
-        try:
-            validate_email(email)
-        except ValidationError:
-            messages.error(request, "Debés ingresar un email válido.")
-            return render(request, "accounts/setup_admin.html")
-
-        user, created = Usuario.objects.get_or_create(
-            email=email,
-            defaults={"is_active": True, "nombre": "Administrador"}
-        )
-
-        rol_admin, _ = Rol.objects.get_or_create(nombre="admin")
-        user.roles.add(rol_admin)
-        user.save()
-
-        # Renderizar una vista de éxito con un botón "Aceptar"
-        return render(request, "accounts/setup_admin_success.html", {"email": email})
-
+    # Renderizar la plantilla de configuración del administrador
     return render(request, "accounts/setup_admin.html")
 
 
@@ -71,64 +47,10 @@ def google_login_redirect(request):
     url = "https://accounts.google.com/o/oauth2/v2/auth"
     return redirect(f"{url}?{urlencode(params)}")
 
-# def google_login_callback(request):
-#     code = request.GET.get("code")
-#     if not code:
-#         return redirect("accounts:login")
-
-#     # Solicitud del token
-#     token_url = "https://oauth2.googleapis.com/token"
-#     redirect_uri = request.build_absolute_uri("/accounts/google/callback/")
-#     data = {
-#         "code": code,
-#         "client_id": settings.GOOGLE_CLIENT_ID,
-#         "client_secret": settings.GOOGLE_CLIENT_SECRET,
-#         "redirect_uri": redirect_uri,
-#         "grant_type": "authorization_code"
-#     }
-#     token_resp = requests.post(token_url, data=data).json()
-#     id_token_str = token_resp.get("id_token")
-#     if not id_token_str:
-#         return redirect("accounts:login")
-
-#     # Verificación del id_token
-#     idinfo = id_token.verify_oauth2_token(
-#         id_token_str, grequests.Request(), settings.GOOGLE_CLIENT_ID
-#     )
-
-#     email = idinfo.get("email")
-#     full_name = idinfo.get("name", "")
-#     avatar_url = idinfo.get("picture", "")
-
-#     # Separar nombre y apellido si querés
-#     nombre_parts = full_name.strip().split(" ", 1)
-#     nombre = nombre_parts[0]
-#     apellido = nombre_parts[1] if len(nombre_parts) > 1 else ""
-
-#     # Crear o actualizar usuario
-#     user, created = Usuario.objects.get_or_create(
-#         email=email,
-#         defaults={
-#             "nombre": full_name,   # Guardamos el nombre completo
-#             "avatar": avatar_url,
-#             "is_active": True,
-#         }
-#     )
-
-#     if not created:
-#         # Actualizar datos si ya existe
-#         user.nombre = full_name
-#         if avatar_url:
-#             user.avatar = avatar_url
-#         user.save(update_fields=["nombre", "avatar"])
-
-#     # Loguear usuario
-#     login(request, user)
-#     return redirect("dashboards:admin_dashboard")
-
 def google_login_callback(request):
     code = request.GET.get("code")
     if not code:
+        messages.error(request, "Error en la autenticación con Google.")
         return redirect("accounts:login")
 
     # Solicitud del token
@@ -144,25 +66,49 @@ def google_login_callback(request):
     token_resp = requests.post(token_url, data=data).json()
     id_token_str = token_resp.get("id_token")
     if not id_token_str:
+        messages.error(request, "No se pudo obtener el token de autenticación.")
         return redirect("accounts:login")
 
     # Verificación del id_token
-    idinfo = id_token.verify_oauth2_token(
-        id_token_str, grequests.Request(), settings.GOOGLE_CLIENT_ID
-    )
+    try:
+        idinfo = id_token.verify_oauth2_token(
+            id_token_str, grequests.Request(), settings.GOOGLE_CLIENT_ID
+        )
+    except ValueError:
+        messages.error(request, "Token inválido.")
+        return redirect("accounts:login")
 
     email = idinfo.get("email")
     full_name = idinfo.get("name", "")
     avatar_url = idinfo.get("picture", "")
 
-    # Buscar usuario por email (no lo creamos)
-    user = Usuario.objects.filter(email=email).first()
+    # Verificar si es el primer usuario (setup admin)
+    if not Usuario.objects.filter(roles__nombre__iexact="Admin").exists():
+        # Crear el usuario como administrador
+        user, created = Usuario.objects.get_or_create(
+            email=email,
+            defaults={
+                "nombre": full_name,
+                "avatar": avatar_url,
+                "is_active": True,
+            }
+        )
+        if created:
+            # Asignar rol de administrador
+            rol_admin, _ = Rol.objects.get_or_create(nombre="Admin")
+            user.roles.add(rol_admin)
+            user.save()
+            messages.success(request, "Administrador configurado exitosamente.")
+        login(request, user)
+        return render(request, "accounts/setup_admin_success.html", {"email": email})
 
+    # Si ya hay un admin, buscar usuario existente
+    user = Usuario.objects.filter(email=email).first()
     if not user:
-        # No existe -> no se deja loguear
+        messages.error(request, "No estás registrado en el sistema.")
         return redirect("accounts:login")
 
-    # Si existe -> actualizamos datos
+    # Actualizar datos del usuario
     user.nombre = full_name
     if avatar_url:
         user.avatar = avatar_url

@@ -1,0 +1,23 @@
+{% extends "core/base.html" %}
+{% block content %}
+<h2>Editar Proyecto</h2>
+<form method="post">
+  {% csrf_token %}
+  <label>Nombre:</label>
+  <input type="text" name="nombre" value="{{ proyecto.nombre }}" required><br>
+
+  <label>Descripción:</label>
+  <textarea name="descripcion">{{ proyecto.descripcion }}</textarea><br>
+
+  <label>Líder:</label>
+  <select name="lider" required>
+    {% for alumno in alumnos %}
+      <option value="{{ alumno.id }}" {% if proyecto.lider.id == alumno.id %}selected{% endif %}>
+        {{ alumno.nombre }} ({{ alumno.email }})
+      </option>
+    {% endfor %}
+  </select><br>
+
+  <button type="submit" class="btn btn-success">Guardar</button>
+</form>
+{% endblock %}

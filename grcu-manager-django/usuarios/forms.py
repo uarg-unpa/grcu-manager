@@ -1,6 +1,28 @@
 from django import forms
 from .models import Usuario
 from roles.models import Rol
+from django.core.exceptions import ValidationError
+
+class UsuarioCrearForm(forms.ModelForm):
+    roles = forms.ModelMultipleChoiceField(
+        queryset=Rol.objects.all(),
+        widget=forms.CheckboxSelectMultiple,
+        required=False
+    )
+    password = forms.CharField(widget=forms.HiddenInput(), required=False)  # opcional
+
+    class Meta:
+        model = Usuario
+        fields = ["email", "roles", "is_active"]
+
+    def clean_email(self):
+        email = self.cleaned_data.get("email")
+        if not email:
+            raise ValidationError("El email es obligatorio.")
+        if not email.lower().endswith("@gmail.com"):
+            raise ValidationError("Solo se permiten correos de Gmail.")
+        return email
+
 
 class UsuarioEditarForm(forms.ModelForm):
     roles = forms.ModelMultipleChoiceField(
@@ -11,4 +33,5 @@ class UsuarioEditarForm(forms.ModelForm):
 
     class Meta:
         model = Usuario
-        fields = ["roles", "is_active"]
+        fields = ["email", "roles", "is_active"]
+

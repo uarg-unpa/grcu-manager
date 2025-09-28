@@ -1,16 +1,16 @@
 {% extends "core/base.html" %}
 {% load static %}
 
-{% block title %}Administrador creado{% endblock %}
+{% block title %}Administrador Configurado{% endblock %}
 
 {% block content %}
-<div class="container mt-5 text-center">
-  <div class="card shadow-lg border-0 rounded-4 p-5 mx-auto" style="max-width: 500px;">
-    <h3 class="mb-3">¡Administrador configurado!</h3>
-    <p>El correo <strong>{{ email }}</strong> fue registrado como administrador del sistema.</p>
-    <p class="text-muted">Ahora podés iniciar sesión con Google.</p>
-    
-    <a href="{% url 'accounts:login' %}" class="btn btn-success mt-3">Aceptar</a>
+<div class="container mt-5">
+  <div class="card shadow-lg border-0 rounded-4 p-4 mx-auto" style="max-width: 500px;">
+    <h3 class="mb-4 text-center">¡Administrador Configurado!</h3>
+    <p class="text-muted text-center">El administrador con el correo <strong>{{ email }}</strong> ha sido configurado exitosamente.</p>
+    <div class="d-grid">
+      <a href="{% url 'dashboards:admin_dashboard' %}" class="btn btn-primary">Ir al Panel de Administración</a>
+    </div>
   </div>
 </div>
 {% endblock %}

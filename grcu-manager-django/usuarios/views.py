@@ -1,10 +1,18 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from accounts.models import Usuario
-from .forms import UsuarioEditarForm 
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib import messages
+from accounts.models import Usuario 
+from .forms import UsuarioEditarForm, UsuarioCrearForm
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+
+
 from usuarios.models import Usuario   # tu modelo de usuario
 from roles.models import Rol  
+
+# Helper para verificar si el usuario es administrador
+def is_admin(user):
+    return user.roles.filter(nombre__iexact="Admin").exists()
 
 @login_required
 def lista_usuarios(request):
@@ -17,48 +25,46 @@ def lista_usuarios(request):
     return render(request, "usuarios/usuario_list.html", {"usuarios": usuarios})
 
 @login_required
+@user_passes_test(is_admin)
 def crear_usuario(request):
     if request.method == "POST":
-        form = UsuarioEditarForm(request.POST)
+        form = UsuarioCrearForm(request.POST)
         if form.is_valid():
             user = form.save(commit=False)
-            # Opcional: generar password temporal o enviarlo por email
-            user.set_password(form.cleaned_data.get("password"))
+            user.set_password("temporal123")
             user.save()
-            form.save_m2m()  # si hay campos many-to-many (roles)
+            form.save_m2m()
+            messages.success(request, "Usuario creado correctamente.")
             return redirect("usuarios:lista")
+        else:
+            messages.error(request, "Corrige los errores del formulario.")
     else:
-        form = UsuarioEditarForm()
+        form = UsuarioCrearForm()
 
-    return render(request, "usuarios/usuario_form.html", {"form": form})
+    return render(request, "usuarios/usuario_crear.html", {"form": form})
 
 @login_required
+@user_passes_test(is_admin)
 def editar_usuario(request, pk):
-    usuario = get_object_or_404(Usuario, id=pk)
+    usuario = get_object_or_404(Usuario, pk=pk)
 
     if request.method == "POST":
-        roles_ids = request.POST.get("roles", "").split(",")
-        usuario.roles.set(Rol.objects.filter(id__in=roles_ids))
-        usuario.is_active = 'is_active' in request.POST
-        usuario.save()
-        return redirect("usuarios:lista")
+        form = UsuarioEditarForm(request.POST, instance=usuario)
+        if form.is_valid():
+            user = form.save(commit=False)
+            # No tocamos email si no se quiere editar
+            user.save()
+            form.save_m2m()  # Guardamos roles
+            messages.success(request, "Usuario actualizado correctamente.")
+            return redirect("usuarios:lista")
+    else:
+        form = UsuarioEditarForm(instance=usuario)
 
-    form = UsuarioEditarForm(instance=usuario)  # solo para los campos que quieras mostrar (proyectos, activo, etc.)
-    return render(request, "usuarios/usuario_form.html", {"form": form, "usuario": usuario, "editar": True})
-
-# def editar_usuario(request, pk):
-#     usuario = get_object_or_404(Usuario, pk=pk)
-#     if request.method == "POST":
-#         form = UsuarioEditarForm(request.POST, instance=usuario)
-#         if form.is_valid():
-#             form.save()
-#             return redirect("usuarios:lista")
-#     else:
-#         form = UsuarioEditarForm(instance=usuario)
-#     return render(request, "usuarios/usuario_form.html", {"form": form, "editar": True, "usuario": usuario})
+    return render(request, "usuarios/usuario_editar.html", {"form": form, "usuario": usuario})
 
 
 @login_required
+@user_passes_test(is_admin)
 def eliminar_usuario(request, pk):
     user = get_object_or_404(Usuario, pk=pk)
 
@@ -67,8 +73,3 @@ def eliminar_usuario(request, pk):
         return redirect("usuarios:lista")  # volver a la lista de usuarios
 
     return render(request, "usuarios/confirmacion_eliminar_usuario.html", {"user": user})
-
-
-
-
-

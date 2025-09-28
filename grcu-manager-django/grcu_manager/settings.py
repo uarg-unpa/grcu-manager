@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'usuarios',
     'roles',
     'permisos',
+    'proyectos',
 ]
 
 MIDDLEWARE = [

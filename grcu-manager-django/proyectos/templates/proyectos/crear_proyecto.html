@@ -1,0 +1,40 @@
+{% extends "core/base.html" %}
+
+{% load static %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'proyectos/css/crear_proyecto_styles.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="proyecto-form-container">
+    <h2 class="proyecto-form-titulo">Crear Proyecto</h2>
+
+    <form method="post" class="proyecto-form">
+        {% csrf_token %}
+
+        <div class="proyecto-form-group">
+            <label for="nombre">Nombre:</label>
+            <input type="text" name="nombre" id="nombre" required>
+        </div>
+
+        <div class="proyecto-form-group">
+            <label for="descripcion">Descripción:</label>
+            <textarea name="descripcion" id="descripcion"></textarea>
+        </div>
+
+        <div class="proyecto-form-group">
+            <label for="lider">Líder:</label>
+            <select name="lider" id="lider" required>
+                {% for alumno in alumnos %}
+                    <option value="{{ alumno.id }}">{{ alumno.nombre }} ({{ alumno.email }})</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="proyecto-form-acciones">
+            <button type="submit" class="proyecto-form-btn-crear">Crear</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

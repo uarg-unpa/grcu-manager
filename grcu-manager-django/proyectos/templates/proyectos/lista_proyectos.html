@@ -1,0 +1,45 @@
+{% extends "core/base.html" %}
+
+{% load static %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'proyectos/css/lista_proyectos_styles.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="proyecto-lista-container">
+    <h2 class="proyecto-lista-titulo">Lista de Proyectos</h2>
+
+    <div class="proyecto-lista-acciones">
+        <a href="{% url 'proyectos:crear_proyecto' %}" class="proyecto-lista-btn-crear">Nuevo Proyecto</a>
+    </div>
+
+    {% if proyectos %}
+    <table class="proyecto-lista-tabla">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Líder</th>
+                <th>Creado por</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for proyecto in proyectos %}
+            <tr>
+                <td>{{ proyecto.nombre }}</td>
+                <td>{{ proyecto.lider.nombre }}</td>
+                <td>{{ proyecto.creado_por.nombre }}</td>
+                <td>
+                    <a href="{% url 'proyectos:editar_proyecto' proyecto.id %}" class="proyecto-lista-btn-warning">Editar</a>
+                    <a href="{% url 'proyectos:eliminar_proyecto' proyecto.id %}" class="proyecto-lista-btn-danger">Eliminar</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="proyecto-lista-vacio">No hay proyectos creados.</p>
+    {% endif %}
+</div>
+{% endblock %}
