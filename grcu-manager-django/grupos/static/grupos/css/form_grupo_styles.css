@@ -1,61 +1,191 @@
-/* Estilos para el formulario de grupo */
+/* Contenedor general */
 .grupo-form-container {
-    max-width: 500px;
-    margin: 32px auto;
+    max-width: 600px;
+    /* Aumentado para más espacio */
+    margin: 40px auto;
     background: #fff;
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-    padding: 32px 24px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    /* Sombra más suave */
+    padding: 32px;
 }
+
+/* Título */
 .grupo-form-titulo {
-    font-size: 1.7rem;
-    margin-bottom: 18px;
+    font-size: 1.8rem;
+    margin-bottom: 24px;
     color: #2c3e50;
+    text-align: center;
 }
+
+/* Errores del formulario */
+.form-errors {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 12px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+.form-errors ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.form-errors li {
+    margin-bottom: 8px;
+}
+
+/* Campos del formulario */
+.form-field {
+    margin-bottom: 20px;
+}
+
 .grupo-form label {
+    display: block;
     font-weight: 500;
     color: #34495e;
+    margin-bottom: 6px;
 }
+
+/* Inputs y selects */
 .grupo-form input[type="text"],
 .grupo-form input[type="file"],
 .grupo-form select,
 .grupo-form textarea {
     width: 100%;
-    padding: 8px 10px;
-    margin-bottom: 14px;
-    border: 1px solid #eaeaea;
+    padding: 10px 12px;
+    border: 1px solid #dfe1e5;
     border-radius: 4px;
-    font-size: 1em;
-    background: #f9f9f9;
+    font-size: 1rem;
+    background: #fafafa;
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
-.grupo-form input[type="checkbox"] {
-    margin-right: 6px;
+
+.grupo-form input[type="text"]:focus,
+.grupo-form input[type="file"]:focus,
+.grupo-form select:focus,
+.grupo-form textarea:focus {
+    border-color: #2d8cf0;
+    box-shadow: 0 0 0 2px rgba(45, 140, 240, 0.2);
+    outline: none;
 }
+
+/* Checkbox */
+.checkbox-field {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.checkbox-field input[type="checkbox"] {
+    margin-right: 10px;
+    width: 18px;
+    height: 18px;
+}
+
+/* Botones */
 .grupo-form-acciones {
-    margin-top: 18px;
-    text-align: right;
+    margin-top: 24px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
 }
+
+.grupo-form-btn-guardar,
+.grupo-form-btn-cancelar {
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-weight: 500;
+    text-align: center;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
 .grupo-form-btn-guardar {
     background: #2d8cf0;
     color: #fff;
-    padding: 8px 18px;
-    border-radius: 5px;
     border: none;
-    font-weight: 500;
-    margin-right: 10px;
-    transition: background 0.2s;
 }
+
 .grupo-form-btn-guardar:hover {
-    background: #1867c0;
+    background: #1a73e8;
+    transform: translateY(-1px);
 }
+
 .grupo-form-btn-cancelar {
-    background: #888;
+    background: #6c757d;
     color: #fff;
-    padding: 8px 18px;
-    border-radius: 5px;
     text-decoration: none;
-    font-weight: 500;
 }
+
 .grupo-form-btn-cancelar:hover {
-    background: #555;
+    background: #5a6268;
+    transform: translateY(-1px);
+}
+
+/* Ajustes para Select2 */
+.select2-container {
+    width: 100% !important;
+    font-size: 1rem;
+}
+
+.select2-container--default .select2-selection--multiple {
+    border: 1px solid #dfe1e5 !important;
+    border-radius: 4px !important;
+    background: #fafafa !important;
+    min-height: 40px !important;
+    padding: 2px 4px;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background: #e8f0fe;
+    border: 1px solid #c4d4ff;
+    border-radius: 4px;
+    padding: 4px 8px 4px 24px;
+    font-size: 0.95rem;
+    color: #2c3e50;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    color: #ff4d4f;
+    left: 8px;
+    top: 4px;
+}
+
+.select2-container--default.select2-container--focus .select2-selection--multiple {
+    border-color: #2d8cf0 !important;
+    box-shadow: 0 0 0 2px rgba(45, 140, 240, 0.2) !important;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__rendered {
+    padding: 2px 4px;
+}
+
+.select2-container--default .select2-search--inline .select2-search__field {
+    font-size: 1rem;
+    padding: 4px;
+}
+
+/* Responsividad */
+@media (max-width: 600px) {
+    .grupo-form-container {
+        margin: 20px;
+        padding: 20px;
+    }
+
+    .grupo-form-titulo {
+        font-size: 1.5rem;
+    }
+
+    .grupo-form-acciones {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .grupo-form-btn-guardar,
+    .grupo-form-btn-cancelar {
+        width: 100%;
+    }
 }

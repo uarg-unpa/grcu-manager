@@ -41,7 +41,15 @@ def crear_usuario(request):
     else:
         form = UsuarioCrearForm()
 
-    return render(request, "usuarios/usuario_crear.html", {"form": form})
+    roles = [
+        ("Admin", "admin.png"),
+        ("Líder", "lider.png"),
+        ("Desarrollador", "developer.png"),
+        ("Stakeholder", "stakeholder.png"),
+        ("Visitante", "visitante.png"),
+    ]
+
+    return render(request, "usuarios/usuario_crear.html", {"form": form, "roles": roles})
 
 @login_required
 @user_passes_test(is_admin)
@@ -60,7 +68,14 @@ def editar_usuario(request, pk):
     else:
         form = UsuarioEditarForm(instance=usuario)
 
-    return render(request, "usuarios/usuario_editar.html", {"form": form, "usuario": usuario})
+    roles = [
+        ("Admin", "admin.png"),
+        ("Líder", "lider.png"),
+        ("Desarrollador", "developer.png"),
+        ("Stakeholder", "stakeholder.png"),
+        ("Visitante", "visitante.png"),
+    ]
+    return render(request, "usuarios/usuario_editar.html", {"form": form, "usuario": usuario, "roles": roles})
 
 
 @login_required

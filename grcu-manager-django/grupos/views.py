@@ -12,6 +12,10 @@ def is_admin(user):
 @user_passes_test(is_admin)
 def lista_grupos(request):
 	grupos = Grupo.objects.all()
+	# Depuración: imprimir la URL del logo de cada grupo
+	for grupo in grupos:
+		if grupo.logo:
+			print(f"[DEPURACIÓN] Grupo: {grupo.nombre} - Logo URL: {grupo.logo.url}")
 	return render(request, "grupos/lista_grupos.html", {"grupos": grupos})
 
 @login_required

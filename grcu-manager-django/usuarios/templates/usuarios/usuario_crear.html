@@ -1,3 +1,4 @@
+
 {% extends 'core/base.html' %}
 {% load static %}
 
@@ -24,7 +25,7 @@
         {% csrf_token %}
 
         <div class="mb-3">
-            <label>Email</label>
+            <label for="id_email">Email</label>
             {{ form.email }}
             {% if form.email.errors %}
                 <div class="text-danger">{{ form.email.errors.as_text }}</div>
@@ -32,16 +33,52 @@
         </div>
 
         <div class="mb-3">
-            <label>Roles:</label>
-            {{ form.roles }}
+            <label for="id_nombre">Nombre</label>
+            {{ form.nombre }}
+            {% if form.nombre.errors %}
+                <div class="text-danger">{{ form.nombre.errors.as_text }}</div>
+            {% endif %}
         </div>
 
-        <div class="form-check mb-3">
-            {{ form.is_active }} Activo
+        <div class="mb-3">
+            <label>Roles:</label>
+            <div class="roles-container">
+                {% for item in roles %}
+                    {% with rol=item.0 icon=item.1 %}
+                        <label class="roles-badge">
+                            <input type="checkbox" name="roles" value="{{ rol }}" {% if form.roles.value and rol in form.roles.value %}checked{% endif %} hidden>
+                            <img src="{% static 'roles/icons/' %}{{ icon }}" class="rol-icon" alt="{{ rol }}">
+                            {{ rol }}
+                        </label>
+                    {% endwith %}
+                {% endfor %}
+            </div>
         </div>
+
+        {% if form.is_active %}
+        <div class="form-check mb-3">
+            {{ form.is_active }} <label for="{{ form.is_active.id_for_label }}">Activo</label>
+        </div>
+        {% endif %}
 
         <button type="submit" class="btn btn-primary">Crear</button>
         <a href="{% url 'usuarios:lista' %}" class="btn btn-secondary">Cancelar</a>
     </form>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'core/js/bootstrap.bundle.min.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.roles-badge').forEach(badge => {
+        badge.addEventListener('click', function() {
+            let checkbox = badge.querySelector('input');
+            checkbox.checked = !checkbox.checked;
+            badge.classList.toggle('active', checkbox.checked);
+            badge.classList.toggle('inactive', !checkbox.checked);
+        });
+    });
+});
+</script>
 {% endblock %}

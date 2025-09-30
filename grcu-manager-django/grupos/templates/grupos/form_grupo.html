@@ -1,4 +1,82 @@
 {% extends "core/base.html" %}
+
+{% load static %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'core/css/select2.min.css' %}">
+    <link rel="stylesheet" href="{% static 'grupos/css/form_grupo_styles.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="grupo-form-container">
+    <h2 class="grupo-form-titulo">{{ accion }} Grupo</h2>
+    <form method="post" enctype="multipart/form-data" class="grupo-form">
+        {% csrf_token %}
+
+        <!-- Mostrar errores del formulario -->
+        {% if form.errors %}
+            <div class="form-errors">
+                <ul>
+                    {% for field in form %}
+                        {% for error in field.errors %}
+                            <li>{{ field.label }}: {{ error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                    {% for error in form.non_field_errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+        <!-- Campos del formulario -->
+        <div class="form-field">
+            {{ form.nombre.label_tag }}
+            {{ form.nombre }}
+        </div>
+        <div class="form-field">
+            {{ form.logo.label_tag }}
+            {{ form.logo }}
+        </div>
+        <div class="form-field checkbox-field">
+            {{ form.activo }}
+            {{ form.activo.label_tag }}
+        </div>
+        <div class="form-field">
+            {{ form.integrantes.label_tag }}
+            {{ form.integrantes }}
+        </div>
+
+        <div class="grupo-form-acciones">
+            <button type="submit" class="grupo-form-btn-guardar">Guardar</button>
+            <a href="{% url 'grupos:lista_grupos' %}" class="grupo-form-btn-cancelar">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'core/js/jquery.min.js' %}"></script>
+    <script src="{% static 'core/js/select2.min.js' %}"></script>
+    <script>
+        $(document).ready(function() {
+            $('#id_integrantes').select2({
+                width: '100%',
+                placeholder: 'Selecciona los integrantes',
+                allowClear: true,
+                language: 'es',
+                closeOnSelect: false, // Mantener el dropdown abierto al seleccionar
+                dropdownAutoWidth: true // Ajustar ancho del dropdown
+            });
+        });
+    </script>
+{% endblock %}
+
+
+
+
+{% comment %} {% extends "core/base.html" %}
+
 {% load static %}
 
 {% block extra_css %}
@@ -11,20 +89,31 @@
     <h2 class="grupo-form-titulo">{{ accion }} Grupo</h2>
     <form method="post" enctype="multipart/form-data" class="grupo-form">
         {% csrf_token %}
-        {{ form.as_p }}
+        {{ form.nombre.label_tag }} {{ form.nombre }}<br>
+        {{ form.logo.label_tag }} {{ form.logo }}<br>
+        {{ form.activo.label_tag }} {{ form.activo }}<br>
+        <label for="id_integrantes">Integrantes</label>
+        <select id="id_integrantes" name="integrantes" multiple="multiple">
+            {% for usuario in form.fields.integrantes.queryset %}
+                <option value="{{ usuario.pk }}" {% if usuario.pk in form.initial.integrantes %}selected{% endif %}>{{ usuario }}</option>
+            {% endfor %}
+        </select>
         <div class="grupo-form-acciones">
             <button type="submit" class="grupo-form-btn-guardar">Guardar</button>
             <a href="{% url 'grupos:lista_grupos' %}" class="grupo-form-btn-cancelar">Cancelar</a>
         </div>
     </form>
+</div>
+{% endblock %}
+
 {% block extra_js %}
     <script src="{% static 'core/js/jquery.min.js' %}"></script>
     <script src="{% static 'core/js/select2.min.js' %}"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            var integrantes = document.getElementById('id_integrantes');
-            if (integrantes && window.jQuery && $(integrantes).select2) {
-                $(integrantes).select2({
+        $(document).ready(function() {
+            var integrantes = $('#id_integrantes');
+            if (integrantes.length) {
+                integrantes.select2({
                     width: '100%',
                     placeholder: 'Selecciona los integrantes',
                     allowClear: true,
@@ -33,6 +122,6 @@
             }
         });
     </script>
-{% endblock %}
-</div>
-{% endblock %}
+
+{% endblock %} {% endcomment %}
+

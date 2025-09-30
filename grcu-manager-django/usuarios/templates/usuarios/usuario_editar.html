@@ -20,9 +20,47 @@
         {% endfor %}
     {% endif %}
 
+
 <form method="post">
     {% csrf_token %}
-    {{ form.as_p }}
+
+    <div class="mb-3">
+        <label for="id_email">Email</label>
+        {{ form.email }}
+        {% if form.email.errors %}
+            <div class="text-danger">{{ form.email.errors.as_text }}</div>
+        {% endif %}
+    </div>
+
+    <div class="mb-3">
+        <label for="id_nombre">Nombre</label>
+        {{ form.nombre }}
+        {% if form.nombre.errors %}
+            <div class="text-danger">{{ form.nombre.errors.as_text }}</div>
+        {% endif %}
+    </div>
+
+    <div class="mb-3">
+        <label>Roles:</label>
+        <div class="roles-container">
+            {% for item in roles %}
+                {% with rol=item.0 icon=item.1 %}
+                    <label class="roles-badge">
+                        <input type="checkbox" name="roles" value="{{ rol }}" {% if form.roles.value and rol in form.roles.value %}checked{% endif %} hidden>
+                        <img src="{% static 'roles/icons/' %}{{ icon }}" class="rol-icon" alt="{{ rol }}">
+                        {{ rol }}
+                    </label>
+                {% endwith %}
+            {% endfor %}
+        </div>
+    </div>
+
+    {% if form.is_active %}
+    <div class="form-check mb-3">
+        {{ form.is_active }} <label for="{{ form.is_active.id_for_label }}">Activo</label>
+    </div>
+    {% endif %}
+
     <button type="submit" class="btn btn-primary">Actualizar</button>
     <a href="{% url 'usuarios:lista' %}" class="btn btn-secondary">Cancelar</a>
 </form>
