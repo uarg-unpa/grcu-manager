@@ -1,0 +1,38 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'grupos/css/form_grupo_styles.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/select2.min.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="grupo-form-container">
+    <h2 class="grupo-form-titulo">{{ accion }} Grupo</h2>
+    <form method="post" enctype="multipart/form-data" class="grupo-form">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <div class="grupo-form-acciones">
+            <button type="submit" class="grupo-form-btn-guardar">Guardar</button>
+            <a href="{% url 'grupos:lista_grupos' %}" class="grupo-form-btn-cancelar">Cancelar</a>
+        </div>
+    </form>
+{% block extra_js %}
+    <script src="{% static 'core/js/jquery.min.js' %}"></script>
+    <script src="{% static 'core/js/select2.min.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var integrantes = document.getElementById('id_integrantes');
+            if (integrantes && window.jQuery && $(integrantes).select2) {
+                $(integrantes).select2({
+                    width: '100%',
+                    placeholder: 'Selecciona los integrantes',
+                    allowClear: true,
+                    language: 'es'
+                });
+            }
+        });
+    </script>
+{% endblock %}
+</div>
+{% endblock %}

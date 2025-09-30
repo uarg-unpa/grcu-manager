@@ -11,7 +11,7 @@ def is_admin(user):
 @login_required
 @user_passes_test(is_admin)
 def lista_proyectos(request):
-    proyectos = Proyecto.objects.all()
+    proyectos = Proyecto.objects.select_related('lider').all()
     return render(request, "proyectos/lista_proyectos.html", {"proyectos": proyectos})
 
 
@@ -21,15 +21,22 @@ def crear_proyecto(request):
     if request.method == "POST":
         nombre = request.POST.get("nombre")
         descripcion = request.POST.get("descripcion")
-        lider_id = request.POST.get("lider")
+        lider_id = request.POST.get("Lider")
 
+        lider = None
         if lider_id:
             lider = Usuario.objects.get(id=lider_id)
-            Proyecto.objects.create(nombre=nombre, descripcion=descripcion, lider=lider)
+
+        Proyecto.objects.create(
+            nombre=nombre,
+            descripcion=descripcion,
+            lider=lider,
+            creado_por=request.user
+        )
+
         return redirect("proyectos:lista_proyectos")
 
-    # acá filtramos solo usuarios que tengan el rol "Lider"
-    alumnos = Usuario.objects.filter(roles__nombre="Lider").distinct()
+    alumnos = Usuario.objects.filter(roles__nombre__iexact="Lider").distinct()
     return render(request, "proyectos/crear_proyecto.html", {"alumnos": alumnos})
 
 

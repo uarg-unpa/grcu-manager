@@ -38,6 +38,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # Extensiones
+    'django_extensions',
     # Mis apps
     'accounts',
     'core',
@@ -46,6 +48,7 @@ INSTALLED_APPS = [
     'roles',
     'permisos',
     'proyectos',
+    'grupos',
 ]
 
 MIDDLEWARE = [

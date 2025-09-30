@@ -9,17 +9,17 @@ from django.contrib.admin.models import LogEntry
 @login_required
 def admin_dashboard(request):
     total_usuarios = Usuario.objects.count()
-    total_proyectos = Proyecto.objects.count()  # si aún no hay, devuelve 0
+    total_proyectos = Proyecto.objects.count()
     total_roles = Rol.objects.count()
-    total_permisos = Permiso.objects.count()
+    from grupos.models import Grupo
+    total_grupos = Grupo.objects.count()
 
-    # Usamos el log del admin para mostrar últimas acciones
     ultimas_acciones = LogEntry.objects.select_related("user").order_by("-action_time")[:10]
 
     return render(request, "dashboards/admin_dashboard.html", {
         "total_usuarios": total_usuarios,
         "total_proyectos": total_proyectos,
         "total_roles": total_roles,
-        "total_permisos": total_permisos,
+        "total_grupos": total_grupos,
         "ultimas_acciones": ultimas_acciones,
     })

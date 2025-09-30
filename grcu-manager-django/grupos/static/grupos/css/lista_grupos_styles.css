@@ -1,0 +1,80 @@
+/* Estilos para el listado de grupos */
+.grupo-lista-container {
+    max-width: 900px;
+    margin: 30px auto;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    padding: 32px 24px;
+}
+.grupo-lista-titulo {
+    font-size: 2rem;
+    margin-bottom: 18px;
+    color: #2c3e50;
+}
+.grupo-lista-acciones {
+    margin-bottom: 18px;
+    text-align: right;
+}
+.grupo-lista-btn-crear {
+    background: #2d8cf0;
+    color: #fff;
+    padding: 8px 18px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+.grupo-lista-btn-crear:hover {
+    background: #1867c0;
+}
+.grupo-lista-tabla {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 0;
+}
+.grupo-lista-tabla th, .grupo-lista-tabla td {
+    padding: 10px 8px;
+    border-bottom: 1px solid #eaeaea;
+    text-align: left;
+}
+.grupo-lista-tabla th {
+    background: #f5f7fa;
+    color: #34495e;
+    font-weight: 600;
+}
+.grupo-lista-btn-warning, .grupo-lista-btn-danger {
+    padding: 5px 12px;
+    border-radius: 4px;
+    text-decoration: none;
+    margin-right: 6px;
+    font-size: 0.97em;
+}
+.grupo-lista-btn-warning {
+    background: #f7b731;
+    color: #fff;
+}
+.grupo-lista-btn-warning:hover {
+    background: #e1a100;
+}
+.grupo-lista-btn-danger {
+    background: #eb2f06;
+    color: #fff;
+}
+.grupo-lista-btn-danger:hover {
+    background: #b71c1c;
+}
+.grupo-lista-vacio {
+    color: #888;
+    text-align: center;
+    margin-top: 30px;
+}
+.text-muted {
+    color: #aaa;
+}
+.text-success {
+    color: #27ae60;
+}
+.text-danger {
+    color: #c0392b;
+}

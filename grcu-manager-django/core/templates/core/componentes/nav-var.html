@@ -24,20 +24,26 @@
                 </a>
             </li>
 
-            {% if user.rol == 'admin' %}
-            <li>
+            {% if user.es_admin %}
+            {% comment %} <li>
                 <a href="{% url 'roles_lista' %}">
                     <i class="bi bi-graph-up"></i> Roles
                 </a>
-            </li>
+            </li> {% endcomment %}
 
-            <li>
+            {% comment %} <li>
                 <a href="{% url 'permisos_lista' %}">
                     <i class="bi bi-lock"></i> Permisos
                 </a>
             </li>
-            {% endif %}
+     {% endcomment %}
+            <li>
+                <a href="{% url 'grupos:lista_grupos' %}" class="custom-header-btn">
+                    <i class="bi bi-people"></i> Grupos
+                </a>
+            </li>
 
         {% endif %}
     </ul>
+    {% endif %}
 </nav>

@@ -13,6 +13,7 @@ class Proyecto(models.Model):
     metodologia = models.CharField(max_length=20, choices=METODOLOGIAS)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     activo = models.BooleanField(default=True)
+    logo = models.ImageField(upload_to="proyectos/logos/", blank=True, null=True)
 
     # Clave foránea: el líder se elige entre los usuarios participantes
     lider = models.ForeignKey(
@@ -32,6 +33,14 @@ class Proyecto(models.Model):
 
     def __str__(self):
         return self.nombre
+    
+    creado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="proyectos_creados"
+    )
 
 
 class ParticipacionProyecto(models.Model):

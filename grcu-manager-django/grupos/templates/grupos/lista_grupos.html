@@ -1,0 +1,62 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'grupos/css/lista_grupos_styles.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="grupo-lista-container">
+    <h2 class="grupo-lista-titulo">Lista de Grupos</h2>
+    <div class="grupo-lista-acciones">
+        <a href="{% url 'grupos:crear_grupo' %}" class="grupo-lista-btn-crear">Nuevo Grupo</a>
+    </div>
+    {% if grupos %}
+    <table class="grupo-lista-tabla">
+        <thead>
+            <tr>
+                <th>Logo</th>
+                <th>Nombre</th>
+                <th>Integrantes</th>
+                <th>Activo</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for grupo in grupos %}
+            <tr>
+                <td>
+                    {% if grupo.logo %}
+                        <img src="{{ grupo.logo.url }}" width="50" height="50" style="object-fit:cover; border-radius:6px;">
+                    {% else %}
+                        <span class="text-muted">Sin logo</span>
+                    {% endif %}
+                </td>
+                <td>{{ grupo.nombre }}</td>
+                <td>
+                    {% for integrante in grupo.integrantes.all %}
+                        {{ integrante.nombre|default:integrante.email }}{% if not forloop.last %}, {% endif %}
+                    {% empty %}
+                        <span class="text-muted">Sin integrantes</span>
+                    {% endfor %}
+                </td>
+                <td>
+                    {% if grupo.activo %}
+                        <span class="text-success">Sí</span>
+                    {% else %}
+                        <span class="text-danger">No</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'grupos:editar_grupo' grupo.id %}" class="grupo-lista-btn-warning">Editar</a>
+                    <a href="{% url 'grupos:eliminar_grupo' grupo.id %}" class="grupo-lista-btn-danger">Eliminar</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="grupo-lista-vacio">No hay grupos creados.</p>
+    {% endif %}
+</div>
+{% endblock %}

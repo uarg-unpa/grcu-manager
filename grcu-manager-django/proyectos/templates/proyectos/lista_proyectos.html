@@ -1,5 +1,4 @@
 {% extends "core/base.html" %}
-
 {% load static %}
 
 {% block extra_css %}
@@ -18,18 +17,40 @@
     <table class="proyecto-lista-tabla">
         <thead>
             <tr>
+                <th>Logo</th>
                 <th>Nombre</th>
                 <th>Líder</th>
                 <th>Creado por</th>
+                <th>Fecha de creación</th>
                 <th>Acciones</th>
             </tr>
         </thead>
         <tbody>
             {% for proyecto in proyectos %}
             <tr>
+                <td>
+                    {% if proyecto.logo %}
+                        <img src="{{ proyecto.logo.url }}" width="50" height="50" style="object-fit:cover; border-radius:6px;">
+                    {% else %}
+                        <span class="text-muted">Sin logo</span>
+                    {% endif %}
+                </td>
                 <td>{{ proyecto.nombre }}</td>
-                <td>{{ proyecto.lider.nombre }}</td>
-                <td>{{ proyecto.creado_por.nombre }}</td>
+                <td>
+                    {% if proyecto.lider %}
+                        {{ proyecto.lider.nombre }}
+                    {% else %}
+                        <span class="text-muted">No asignado</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if proyecto.creado_por %}
+                        {{ proyecto.creado_por.nombre }}
+                    {% else %}
+                        <span class="text-muted">Desconocido</span>
+                    {% endif %}
+                </td>
+                <td>{{ proyecto.fecha_creacion|date:"d/m/Y H:i" }}</td>
                 <td>
                     <a href="{% url 'proyectos:editar_proyecto' proyecto.id %}" class="proyecto-lista-btn-warning">Editar</a>
                     <a href="{% url 'proyectos:eliminar_proyecto' proyecto.id %}" class="proyecto-lista-btn-danger">Eliminar</a>
