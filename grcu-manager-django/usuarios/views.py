@@ -41,11 +41,10 @@ def crear_usuario(request):
     else:
         form = UsuarioCrearForm()
 
+    # Solo mostrar roles permitidos para el admin
     roles = [
         ("Admin", "admin.png"),
         ("Líder", "lider.png"),
-        ("Desarrollador", "developer.png"),
-        ("Stakeholder", "stakeholder.png"),
         ("Visitante", "visitante.png"),
     ]
 
@@ -68,11 +67,10 @@ def editar_usuario(request, pk):
     else:
         form = UsuarioEditarForm(instance=usuario)
 
+    # Solo mostrar roles permitidos para el admin
     roles = [
         ("Admin", "admin.png"),
         ("Líder", "lider.png"),
-        ("Desarrollador", "developer.png"),
-        ("Stakeholder", "stakeholder.png"),
         ("Visitante", "visitante.png"),
     ]
     return render(request, "usuarios/usuario_editar.html", {"form": form, "usuario": usuario, "roles": roles})

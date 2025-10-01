@@ -10,7 +10,7 @@
 <div class="proyecto-form-container">
     <h2 class="proyecto-form-titulo">Crear Proyecto</h2>
 
-    <form method="post" class="proyecto-form">
+    <form method="post" enctype="multipart/form-data" class="proyecto-form">
         {% csrf_token %}
 
         <div class="proyecto-form-group">
@@ -24,16 +24,22 @@
         </div>
 
         <div class="proyecto-form-group">
+            <label for="logo">Logo del proyecto:</label>
+            <input type="file" name="logo" id="logo" accept="image/*">
+        </div>
+
+        <div class="proyecto-form-group">
             <label for="lider">Líder:</label>
             <select name="lider" id="lider" required>
-                {% for alumno in alumnos %}
-                    <option value="{{ alumno.id }}">{{ alumno.nombre }} ({{ alumno.email }})</option>
+                {% for usuario in usuarios %}
+                    <option value="{{ usuario.id }}">{{ usuario.nombre }} ({{ usuario.email }})</option>
                 {% endfor %}
             </select>
         </div>
 
         <div class="proyecto-form-acciones">
             <button type="submit" class="proyecto-form-btn-crear">Crear</button>
+            <a href="{% url 'proyectos:lista_proyectos' %}" class="proyecto-form-btn-cancelar btn-secondary" style="margin-left:10px;">Cancelar</a>
         </div>
     </form>
 </div>

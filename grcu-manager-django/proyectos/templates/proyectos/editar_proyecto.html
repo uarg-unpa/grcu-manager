@@ -1,23 +1,46 @@
 {% extends "core/base.html" %}
+
+{% load static %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'proyectos/css/editar_proyecto_styles.css' %}">
+{% endblock %}
+
 {% block content %}
-<h2>Editar Proyecto</h2>
-<form method="post">
-  {% csrf_token %}
-  <label>Nombre:</label>
-  <input type="text" name="nombre" value="{{ proyecto.nombre }}" required><br>
-
-  <label>Descripción:</label>
-  <textarea name="descripcion">{{ proyecto.descripcion }}</textarea><br>
-
-  <label>Líder:</label>
-  <select name="lider" required>
-    {% for alumno in alumnos %}
-      <option value="{{ alumno.id }}" {% if proyecto.lider.id == alumno.id %}selected{% endif %}>
-        {{ alumno.nombre }} ({{ alumno.email }})
-      </option>
-    {% endfor %}
-  </select><br>
-
-  <button type="submit" class="btn btn-success">Guardar</button>
-</form>
+<div class="proyecto-form-container">
+  <h2 class="proyecto-form-titulo">Editar Proyecto</h2>
+  <form method="post" enctype="multipart/form-data" class="proyecto-form">
+    {% csrf_token %}
+    <div class="proyecto-form-group">
+      <label for="nombre">Nombre:</label>
+      <input type="text" name="nombre" id="nombre" value="{{ proyecto.nombre }}" required>
+    </div>
+    <div class="proyecto-form-group">
+      <label for="descripcion">Descripción:</label>
+      <textarea name="descripcion" id="descripcion">{{ proyecto.descripcion }}</textarea>
+    </div>
+    <div class="proyecto-form-group">
+      <label for="logo">Logo del proyecto:</label>
+      {% if proyecto.logo %}
+        <div style="margin-bottom:8px;">
+          <img src="{{ proyecto.logo.url }}" alt="Logo actual" style="max-width:120px; max-height:120px; border-radius:8px; border:1px solid #ccc;">
+        </div>
+      {% endif %}
+      <input type="file" name="logo" id="logo" accept="image/*">
+      <small>Si seleccionas una nueva imagen, reemplazará la actual.</small>
+    </div>
+    <div class="proyecto-form-group">
+      <label for="lider">Líder:</label>
+      <select name="lider" id="lider" required>
+        {% for alumno in alumnos %}
+          <option value="{{ alumno.id }}" {% if proyecto.lider.id == alumno.id %}selected{% endif %}>{{ alumno.nombre }} ({{ alumno.email }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="proyecto-form-acciones">
+      <button type="submit" class="proyecto-form-btn-crear">Guardar</button>
+      <a href="{% url 'proyectos:lista_proyectos' %}" class="proyecto-form-btn-cancelar btn-secondary" style="margin-left:10px;">Cancelar</a>
+    </div>
+  </form>
+</div>
 {% endblock %}

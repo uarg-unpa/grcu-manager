@@ -21,7 +21,8 @@ def crear_proyecto(request):
     if request.method == "POST":
         nombre = request.POST.get("nombre")
         descripcion = request.POST.get("descripcion")
-        lider_id = request.POST.get("Lider")
+        lider_id = request.POST.get("lider")
+        logo = request.FILES.get("logo")
 
         lider = None
         if lider_id:
@@ -31,13 +32,14 @@ def crear_proyecto(request):
             nombre=nombre,
             descripcion=descripcion,
             lider=lider,
-            creado_por=request.user
+            creado_por=request.user,
+            logo=logo
         )
 
         return redirect("proyectos:lista_proyectos")
 
-    alumnos = Usuario.objects.filter(roles__nombre__iexact="Lider").distinct()
-    return render(request, "proyectos/crear_proyecto.html", {"alumnos": alumnos})
+    usuarios = Usuario.objects.all().distinct()
+    return render(request, "proyectos/crear_proyecto.html", {"usuarios": usuarios})
 
 
 @login_required
@@ -49,14 +51,17 @@ def editar_proyecto(request, proyecto_id):
         proyecto.nombre = request.POST.get("nombre")
         proyecto.descripcion = request.POST.get("descripcion")
         lider_id = request.POST.get("lider")
+        logo = request.FILES.get("logo")
 
         proyecto.lider = get_object_or_404(Usuario, id=lider_id)
+        if logo:
+            proyecto.logo = logo  # Sobreescribe la imagen anterior
         proyecto.save()
 
         messages.success(request, "Proyecto actualizado.")
         return redirect("proyectos:lista_proyectos")
 
-    alumnos = Usuario.objects.filter(roles__nombre__iexact="alumno")
+    alumnos = Usuario.objects.all().distinct()
     return render(request, "proyectos/editar_proyecto.html", {"proyecto": proyecto, "alumnos": alumnos})
 
 

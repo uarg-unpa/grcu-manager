@@ -46,15 +46,12 @@
     outline: none;
 }
 
-/* --- Botón --- */
-
 .proyecto-form-acciones {
     display: flex;
     gap: 12px;
     justify-content: flex-end;
     margin-top: 18px;
 }
-
 
 .proyecto-form-btn-crear {
     background-color: #444C8A;
