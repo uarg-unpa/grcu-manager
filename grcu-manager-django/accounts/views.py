@@ -24,7 +24,8 @@ def setup_admin(request):
 
 def login_view(request):
     # Verificar si hay usuarios en la base de datos
-    if not Usuario.objects.exists():
+    # y si hay al menos un usuario con rol Admin
+    if not Usuario.objects.exists() or not Usuario.objects.filter(roles__nombre__iexact="Admin").exists():
         return redirect("accounts:setup_admin")
     
     return render(request, "accounts/login.html")
@@ -116,4 +117,12 @@ def google_login_callback(request):
 
     # Loguear usuario
     login(request, user)
-    return redirect("dashboards:admin_dashboard")
+
+    if user.roles.filter(nombre__iexact="Admin").exists():
+        return redirect("dashboards:admin_dashboard")
+    elif user.roles.filter(nombre__iexact="Lider").exists():
+        return redirect("dashboards:lider_dashboard")
+    else:
+        return redirect("dashboards:usuario_dashboard") 
+    
+    # return redirect("dashboards:admin_dashboard")

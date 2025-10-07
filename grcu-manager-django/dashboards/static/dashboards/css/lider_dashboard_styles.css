@@ -1,0 +1,328 @@
+/* Reset potential Bootstrap conflicts */
+* {
+    box-sizing: border-box;
+}
+
+/* General container styles */
+.dashboard-container {
+    max-width: 1400px;
+    margin: 2rem auto;
+    padding: 0 1.5rem;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    display: grid !important;
+    grid-template-columns: 3fr 1fr !important;
+    gap: 2rem;
+    min-height: calc(100vh - 4rem);
+}
+
+/* Dashboard title */
+.dashboard-title {
+    color: #1F2937;
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin-bottom: 2rem;
+    text-align: center;
+    grid-column: 1 / -1;
+    background: linear-gradient(to right, #3B82F6, #60A5FA);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Projects section */
+.proyectos-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    grid-column: 1 / 2 !important;
+}
+
+/* Project card styles */
+.proyecto-card {
+    background: #FFFFFF;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+    padding: 1.5rem;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    border-left: 4px solid #3B82F6;
+}
+
+.proyecto-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.25);
+}
+
+/* Project header */
+.proyecto-header {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #E5E7EB;
+}
+
+.proyecto-logo {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 2px solid #60A5FA;
+}
+
+.proyecto-header h3 {
+    color: #1F2937;
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.proyecto-header p {
+    color: #6B7280;
+    margin: 0.3rem 0 0;
+}
+
+/* Methodology form */
+.metodologia-form {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.metodologia-form select {
+    padding: 0.5rem;
+    border: 1px solid #60A5FA;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    background: #EFF6FF;
+    transition: border-color 0.2s;
+}
+
+.metodologia-form select:focus {
+    border-color: #3B82F6;
+    outline: none;
+}
+
+.metodologia-form button {
+    padding: 0.5rem 1rem;
+    background: #3B82F6;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.2s, transform 0.1s;
+}
+
+.metodologia-form button:hover {
+    background: #2563EB;
+    transform: translateY(-2px);
+}
+
+.leyenda-metodologia {
+    color: #6B7280;
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+    font-style: italic;
+}
+
+/* Project body (cards for integrantes and matriz) */
+.proyecto-body {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    padding: 1.5rem 0;
+}
+
+.card {
+    background: #F9FAFB;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.1);
+    border-left: 3px solid #F59E0B;
+}
+
+.integrantes h4, .matriz-container h3 {
+    color: #1F2937;
+    font-size: 1.1rem;
+    margin-bottom: 0.75rem;
+    background: linear-gradient(to right, #F59E0B, #FBBF24);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.integrantes ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.integrantes li {
+    padding: 0.5rem 0;
+    color: #4B5563;
+    font-size: 0.9rem;
+    border-bottom: 1px solid #E5E7EB;
+    transition: background 0.2s;
+}
+
+.integrantes li:hover {
+    background: #EFF6FF;
+}
+
+.integrantes li:last-child {
+    border-bottom: none;
+}
+
+/* Traceability matrix */
+.matriz-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.matriz-trazabilidad {
+    width: 100%;
+    border-collapse: collapse;
+    background: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.matriz-trazabilidad th, .matriz-trazabilidad td {
+    padding: 0.75rem;
+    font-size: 0.9rem;
+    border-right: 1px solid #E5E7EB;
+    border-bottom: 1px solid #E5E7EB;
+}
+
+.matriz-trazabilidad th:last-child, .matriz-trazabilidad td:last-child {
+    border-right: none;
+}
+
+.matriz-trazabilidad th {
+    background: #EFF6FF;
+    color: #1F2937;
+    font-weight: 600;
+    text-align: center;
+}
+
+.matriz-trazabilidad td {
+    color: #4B5563;
+    text-align: center;
+}
+
+.matriz-trazabilidad td:first-child {
+    text-align: left;
+    font-weight: 500;
+}
+
+.check {
+    background: #F0FDF4;
+    position: relative;
+}
+
+.check::after {
+    content: '✔';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    color: #22C55E;
+    font-size: 1rem;
+}
+
+/* Last activities sidebar */
+.ultimas-actividades-sidebar {
+    position: sticky;
+    top: 2rem;
+    height: fit-content;
+    grid-column: 2 / 3 !important;
+    z-index: 10;
+}
+
+.ultimas-actividades.card {
+    background: #FFFFFF;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+    padding: 1.5rem;
+    border-left: 4px solid #22C55E;
+}
+
+.ultimas-actividades h4 {
+    color: #1F2937;
+    font-size: 1.1rem;
+    margin-bottom: 0.75rem;
+    background: linear-gradient(to right, #22C55E, #4ADE80);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.ultimas-actividades ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.ultimas-actividades li {
+    padding: 0.5rem 0;
+    color: #4B5563;
+    font-size: 0.9rem;
+    border-bottom: 1px solid #E5E7EB;
+    transition: background 0.2s;
+}
+
+.ultimas-actividades li:hover {
+    background: #F0FDF4;
+}
+
+.ultimas-actividades li:last-child {
+    border-bottom: none;
+}
+
+/* Empty state */
+.empty-state {
+    text-align: center;
+    color: #6B7280;
+    font-size: 1rem;
+    margin-top: 2rem;
+    grid-column: 1 / -1;
+    background: #FEF2F2;
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid #FECACA;
+}
+
+/* Responsive design */
+@media (max-width: 1024px) {
+    .dashboard-container {
+        grid-template-columns: 1fr !important;
+    }
+
+    .proyectos-section {
+        grid-column: 1 / -1 !important;
+    }
+
+    .ultimas-actividades-sidebar {
+        position: static;
+        grid-column: 1 / -1 !important;
+        margin-top: 2rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .proyecto-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .matriz-trazabilidad {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+
+    .matriz-trazabilidad th, .matriz-trazabilidad td {
+        min-width: 100px;
+    }
+}

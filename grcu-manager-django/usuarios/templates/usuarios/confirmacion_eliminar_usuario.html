@@ -1,12 +1,16 @@
 {% extends "core/base.html" %}
 
+{% load static %}
+
 {% block title %}Eliminar Usuario{% endblock %}
 
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'usuarios/css/confirmacion_eliminar_usuario.css' %}">
+{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-    <h2>Eliminar Usuario</h2>
+<div class="confirmacion-eliminar-container">
     <p>¿Estás seguro de que deseas eliminar al usuario <strong>{{ user.nombre }}</strong> ({{ user.email }})?</p>
-    
     <form method="post">
         {% csrf_token %}
         <button type="submit" class="btn btn-danger">Sí, eliminar</button>

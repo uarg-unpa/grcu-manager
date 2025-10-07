@@ -7,7 +7,6 @@
 
 {% block content %}
 <div class="proyecto-lista-container">
-    <h2 class="proyecto-lista-titulo">Lista de Proyectos</h2>
 
     <div class="proyecto-lista-acciones">
         <a href="{% url 'proyectos:crear_proyecto' %}" class="proyecto-lista-btn-crear">Nuevo Proyecto</a>
@@ -30,7 +29,7 @@
             <tr>
                 <td>
                     {% if proyecto.logo %}
-                        <img src="{{ proyecto.logo.url }}" width="50" height="50" style="object-fit:cover; border-radius:6px;">
+                        <img src="{{ proyecto.logo.url }}" width="90" height="90" style="object-fit:cover; border-radius:12px; box-shadow:0 2px 8px rgba(68,76,138,0.10); border:2px solid #eee;">
                     {% else %}
                         <span class="text-muted">Sin logo</span>
                     {% endif %}

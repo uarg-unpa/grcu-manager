@@ -1,0 +1,73 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dashboards/css/lider_casos_styles.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="casos-container">
+    <h3>Lista de Casos de Uso (Simulados)</h3>
+    <ul class="casos-list card">
+        <li class="caso critica">
+            <div class="caso-header">
+                <span class="cu-id">CU-01</span>
+                <span class="cu-title">Iniciar sesión</span>
+                <span class="cu-criticidad">Crítica</span>
+                <button class="toggle-detalle" onclick="this.nextElementSibling.classList.toggle('show')">Detalles</button>
+            </div>
+            <div class="caso-detalle">
+                <p>El usuario debe poder iniciar sesión con correo y contraseña seguros.</p>
+            </div>
+        </li>
+
+        <li class="caso alta">
+            <div class="caso-header">
+                <span class="cu-id">CU-02</span>
+                <span class="cu-title">Registrar usuario</span>
+                <span class="cu-criticidad">Alta</span>
+                <button class="toggle-detalle" onclick="this.nextElementSibling.classList.toggle('show')">Detalles</button>
+            </div>
+            <div class="caso-detalle">
+                <p>Formulario de registro con validación y asignación de roles.</p>
+            </div>
+        </li>
+
+        <li class="caso media">
+            <div class="caso-header">
+                <span class="cu-id">CU-03</span>
+                <span class="cu-title">Crear proyecto</span>
+                <span class="cu-criticidad">Media</span>
+                <button class="toggle-detalle" onclick="this.nextElementSibling.classList.toggle('show')">Detalles</button>
+            </div>
+            <div class="caso-detalle">
+                <p>El líder puede crear proyectos con título, descripción y fecha límite.</p>
+            </div>
+        </li>
+
+        <li class="caso baja">
+            <div class="caso-header">
+                <span class="cu-id">CU-04</span>
+                <span class="cu-title">Exportar reportes</span>
+                <span class="cu-criticidad">Baja</span>
+                <button class="toggle-detalle" onclick="this.nextElementSibling.classList.toggle('show')">Detalles</button>
+            </div>
+            <div class="caso-detalle">
+                <p>Exportar reportes en PDF o Excel para seguimiento.</p>
+            </div>
+        </li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // opcional: cerrar otras secciones de detalle al abrir una
+    document.querySelectorAll('.toggle-detalle').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const allDetalles = document.querySelectorAll('.caso-detalle.show');
+            allDetalles.forEach(c => { if(c !== btn.nextElementSibling) c.classList.remove('show'); });
+        });
+    });
+</script>
+{% endblock %}

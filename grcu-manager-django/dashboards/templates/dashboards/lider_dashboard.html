@@ -1,0 +1,111 @@
+{% extends "core/base.html" %}
+
+{% load static %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'dashboards/css/lider_dashboard_styles.css' %}?v=1.2">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    {% comment %} <h2 class="dashboard-title">Dashboard del Líder - {{ request.user.nombre }}</h2> {% endcomment %}
+
+    <!-- Main content area for projects -->
+    <div class="proyectos-section">
+        {% for proyecto in proyectos %}
+        <div class="proyecto-card">
+            <div class="proyecto-header">
+                {% if proyecto.logo %}
+                    <img src="{{ proyecto.logo.url }}" class="proyecto-logo" alt="Logo de {{ proyecto.nombre }}">
+                {% endif %}
+                <div>
+                    <h3>{{ proyecto.nombre }}</h3>
+                    {% if proyecto.metodologia %}
+                        <p>Metodología: {{ proyecto.get_metodologia_display }}</p>
+                    {% else %}
+                        <form method="post" class="metodologia-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="proyecto_id" value="{{ proyecto.id }}">
+                            <select name="metodologia" required>
+                                <option value="" selected disabled>Elegir metodología</option>
+                                <option value="AGIL">Ágil</option>
+                                <option value="TRADICIONAL">Tradicional</option>
+                            </select>
+                            <button type="submit">Guardar</button>
+                            <p class="leyenda-metodologia">Esto se realiza una sola vez y definirá la forma de cargar requerimientos y casos de uso en este proyecto.</p>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="proyecto-body">
+                <div class="integrantes card">
+                    <h4>Integrantes del proyecto ({{ proyecto.participantes.count }})</h4>
+                    <ul>
+                        {% for integrante in proyecto.participantes.all %}
+                            <li>{{ integrante.nombre }} ({{ integrante.email }})</li>
+                        {% empty %}
+                            <li>No hay integrantes asignados</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <div class="matriz-container card">
+                    <h3>Matriz de Trazabilidad</h3>
+                    <table class="matriz-trazabilidad">
+                        <thead>
+                            <tr>
+                                <th>Requerimiento \ Caso de Uso</th>
+                                <th>CU-01 Iniciar Sesión</th>
+                                <th>CU-02 Registrar Usuario</th>
+                                <th>CU-03 Crear Proyecto</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>REQ-001 - Login seguro</td>
+                                <td class="check">✔</td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>REQ-002 - Registro de usuarios</td>
+                                <td></td>
+                                <td class="check">✔</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>REQ-003 - Gestión de proyectos</td>
+                                <td></td>
+                                <td></td>
+                                <td class="check">✔</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <p class="empty-state">No liderás ningún proyecto.</p>
+        {% endfor %}
+    </div>
+
+    <!-- Sidebar for last activities -->
+    <div class="ultimas-actividades-sidebar">
+        <div class="ultimas-actividades card">
+            <h4>Últimas actividades</h4>
+            <ul>
+                {% for proyecto in proyectos %}
+                    {% for act in proyecto.ultimas_actividades %}
+                        <li>{{ act }} ({{ proyecto.nombre }})</li>
+                    {% empty %}
+                        <li>No hay actividades registradas para {{ proyecto.nombre }}</li>
+                    {% endfor %}
+                {% empty %}
+                    <li>No hay actividades registradas</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

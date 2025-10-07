@@ -1,0 +1,72 @@
+{% extends "core/base.html" %}
+
+{% load static %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'dashboards/css/lider_eleccion_metodologia_styles.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="lider-dashboard-container">
+    <h2 class="lider-dashboard-titulo">Dashboard del Líder</h2>
+
+    {% if not proyecto.metodologia %}
+    <div class="alert alert-info" role="alert" style="border-left: 4px solid #4CAF50; padding: 12px; margin-bottom: 20px;">
+        <strong>Atención:</strong> Debes elegir la metodología de trabajo del proyecto. 
+        <br>Esta elección solo se puede realizar <strong>una vez</strong> y afectará todos los formularios de carga de requerimientos y casos de uso. 
+        <br>Si seleccionas "Ágil", se aplicarán las técnicas ágiles de gestión; si seleccionas "Tradicional", se aplicará la metodología clásica.
+    </div>
+    {% endif %}
+
+    {% for proyecto in proyectos %}
+    <div class="proyecto-card shadow-sm">
+        <div class="proyecto-card-header">
+            <div class="proyecto-info">
+                {% if proyecto.logo %}
+                    <img src="{{ proyecto.logo.url }}" alt="Logo" class="proyecto-logo">
+                {% endif %}
+                <h3>{{ proyecto.nombre }}</h3>
+            </div>
+            {% if proyecto.metodologia %}
+                <span class="badge metodologia-badge {{ proyecto.metodologia|lower }}">
+                    {{ proyecto.get_metodologia_display }}
+                </span>
+            {% endif %}
+        </div>
+
+        {% if not proyecto.metodologia %}
+        <form method="post" class="metodologia-form">
+            {% csrf_token %}
+            <input type="hidden" name="proyecto_id" value="{{ proyecto.id }}">
+            <select name="metodologia" required class="form-select">
+                <option value="" selected disabled>Elegir metodología</option>
+                <option value="AGIL">Ágil</option>
+                <option value="TRADICIONAL">Tradicional</option>
+            </select>
+            <button type="submit" class="btn btn-primary btn-guardar-metodologia">Guardar</button>
+        </form>
+        {% endif %}
+
+        <div class="proyecto-card-body">
+            <h4>Integrantes del grupo:</h4>
+            <div class="integrantes-container">
+                {% for integrante in proyecto.participantes.all %}
+                    <div class="integrante-card">
+                        {% if integrante.avatar %}
+                            <img src="{{ integrante.avatar }}" alt="{{ integrante.nombre }}" class="integrante-avatar">
+                        {% else %}
+                            <div class="integrante-avatar-placeholder">{{ integrante.nombre|slice:":1" }}</div>
+                        {% endif %}
+                        <span>{{ integrante.nombre }}</span>
+                    </div>
+                {% empty %}
+                    <p class="text-muted">No hay integrantes asignados.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <p class="text-muted">No liderás ningún proyecto.</p>
+    {% endfor %}
+</div>
+{% endblock %}

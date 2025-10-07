@@ -2,12 +2,56 @@
     background-color: #343A40;   /* color institucional */
     padding: 0.5rem 1rem;
     margin: 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(68,76,138,0.10);
+    transition: all 0.3s;
+    height: 80px;
+}
+
+.custom-header.shrink {
+    height: 48px;
+    box-shadow: 0 2px 12px rgba(68,76,138,0.18);
+    padding-top: 0.2rem;
+    padding-bottom: 0.2rem;
 }
 
 .custom-header-container {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    position: relative;
+}
+
+.custom-header-left {
+    display: flex;
+    align-items: center;
+    flex: 1 1 0;
+}
+.custom-header-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 2 1 0;
+    min-width: 0;
+}
+.custom-header-title {
+    margin: 0;
+    font-size: 1.4rem;
+    color: #fff;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.custom-header-right {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 1 1 0;
 }
 
 .custom-header-logo img {

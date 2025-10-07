@@ -2,34 +2,38 @@
 
 <header class="custom-header">
     <div class="custom-header-container">
-
-        <!-- Logo -->
-        <a href="{% url 'dashboards:admin_dashboard' %}" class="custom-header-logo">
-            <img src="{% static 'accounts/img/logo_grcu_manager_1.png' %}" alt="Logo">
-        </a>
-
-        <!-- Usuario y menú -->
-        {% if user.is_authenticated %}
-            <div class="custom-header-user">
-                {% if user.avatar %}
-                    <img src="{{ user.avatar }}" alt="Avatar" class="user-avatar">
-                {% else %}
-                    <i class="bi bi-person-circle user-avatar-fallback"></i>
-                {% endif %}
-                <span class="user-name">
-                    {{ user.nombre|default:user.email }}
-                </span>
-                <a href="{% url 'accounts:logout' %}" class="logout-btn">
-                    <i class="bi bi-box-arrow-right"></i> Salir
-                </a>
-            </div>
-        {% else %}
-            {% comment %} <div class="custom-header-login">
-                <a href="{% url 'accounts:login' %}" class="login-btn">
-                    <i class="bi bi-box-arrow-in-right"></i> Iniciar sesión
-                </a>
-            </div> {% endcomment %}
-        {% endif %}
-
+        <div class="custom-header-left">
+            <a href="{% url 'dashboards:admin_dashboard' %}" class="custom-header-logo">
+                <img src="{% static 'accounts/img/logo_grcu_manager_1.png' %}" alt="Logo">
+            </a>
+        </div>
+        <div class="custom-header-center">
+            {% if page_title %}
+                <h2 class="custom-header-title">{{ page_title }}</h2>
+            {% endif %}
+        </div>
+        <div class="custom-header-right">
+            {% if user.is_authenticated %}
+                <div class="custom-header-user">
+                    {% if user.avatar %}
+                        <img src="{{ user.avatar }}" alt="Avatar" class="user-avatar">
+                    {% else %}
+                        <i class="bi bi-person-circle user-avatar-fallback"></i>
+                    {% endif %}
+                    <span class="user-name">
+                        {{ user.nombre|default:user.email }}
+                    </span>
+                    <a href="{% url 'accounts:logout' %}" class="logout-btn">
+                        <i class="bi bi-box-arrow-right"></i> Salir
+                    </a>
+                </div>
+            {% else %}
+                {% comment %} <div class="custom-header-login">
+                    <a href="{% url 'accounts:login' %}" class="login-btn">
+                        <i class="bi bi-box-arrow-in-right"></i> Iniciar sesión
+                    </a>
+                </div> {% endcomment %}
+            {% endif %}
+        </div>
     </div>
 </header>

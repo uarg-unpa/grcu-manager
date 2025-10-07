@@ -1,0 +1,68 @@
+/* Contenedor de la matriz */
+.matriz-simulada-container {
+    max-width: 1000px;
+    margin: 2rem auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    font-family: 'Inter', sans-serif;
+}
+
+/* Título */
+.matriz-simulada-container h3 {
+    text-align: center;
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    background: linear-gradient(to right, #F59E0B, #FBBF24);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Tabla */
+.matriz-simulada-container table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: center;
+}
+
+.matriz-simulada-container th,
+.matriz-simulada-container td {
+    border: 1px solid #ddd;
+    padding: 12px 8px;
+    font-size: 0.95rem;
+}
+
+.matriz-simulada-container th {
+    background-color: #EFF6FF;
+    font-weight: 600;
+    position: sticky;
+    top: 0; /* Encabezado fijo al scrollear */
+    z-index: 2;
+}
+
+/* Celdas check */
+.matriz-simulada-container .check {
+    color: #22C55E;
+    font-weight: bold;
+    background: #F0FDF4;
+}
+
+/* Zebra stripes para filas */
+.matriz-simulada-container tbody tr:nth-child(even) {
+    background: #FAFAFA;
+}
+
+.matriz-simulada-container tbody tr:hover {
+    background: #EFF6FF;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .matriz-simulada-container table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+}

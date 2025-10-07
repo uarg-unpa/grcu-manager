@@ -22,7 +22,10 @@ def lista_usuarios(request):
     page_number = request.GET.get("page")
     usuarios = paginator.get_page(page_number)
 
-    return render(request, "usuarios/usuario_list.html", {"usuarios": usuarios})
+    return render(request, "usuarios/usuario_list.html", {
+        "usuarios": usuarios,
+        "page_title": "Listado de Usuarios"
+    })
 
 @login_required
 @user_passes_test(is_admin)
@@ -42,13 +45,22 @@ def crear_usuario(request):
         form = UsuarioCrearForm()
 
     # Solo mostrar roles permitidos para el admin
-    roles = [
-        ("Admin", "admin.png"),
-        ("Líder", "lider.png"),
-        ("Visitante", "visitante.png"),
-    ]
+    roles_qs = Rol.objects.filter(nombre__in=["Admin", "Developer", "Lider", "Visitante"])
+    roles = []
+    for rol in roles_qs:
+        icon = (
+            "admin.png" if rol.nombre == "Admin" else
+            "developer.png" if rol.nombre == "Developer" else
+            "lider.png" if rol.nombre == "Lider" else
+            "visitante.png"
+        )
+        roles.append((rol.nombre, icon, rol.pk))
 
-    return render(request, "usuarios/usuario_crear.html", {"form": form, "roles": roles})
+    return render(request, "usuarios/usuario_crear.html", {
+        "form": form,
+        "roles": roles,
+        "page_title": "Crear Usuario"
+    })
 
 @login_required
 @user_passes_test(is_admin)
@@ -59,21 +71,32 @@ def editar_usuario(request, pk):
         form = UsuarioEditarForm(request.POST, instance=usuario)
         if form.is_valid():
             user = form.save(commit=False)
-            # No tocamos email si no se quiere editar
             user.save()
-            form.save_m2m()  # Guardamos roles
+            form.save_m2m()
             messages.success(request, "Usuario actualizado correctamente.")
-            return redirect("usuarios:lista")
+            # Renderizar el mismo template para mostrar el mensaje sin redirección
+        else:
+            messages.error(request, "Corrige los errores del formulario.")
     else:
         form = UsuarioEditarForm(instance=usuario)
 
     # Solo mostrar roles permitidos para el admin
-    roles = [
-        ("Admin", "admin.png"),
-        ("Líder", "lider.png"),
-        ("Visitante", "visitante.png"),
-    ]
-    return render(request, "usuarios/usuario_editar.html", {"form": form, "usuario": usuario, "roles": roles})
+    roles_qs = Rol.objects.filter(nombre__in=["Admin", "Developer", "Lider", "Visitante"])
+    roles = []
+    for rol in roles_qs:
+        icon = (
+            "admin.png" if rol.nombre == "Admin" else
+            "developer.png" if rol.nombre == "Developer" else
+            "lider.png" if rol.nombre == "Lider" else
+            "visitante.png"
+        )
+        roles.append((rol.nombre, icon, rol.pk))
+    return render(request, "usuarios/usuario_editar.html", {
+        "form": form,
+        "usuario": usuario,
+        "roles": roles,
+        "page_title": "Editar Usuario"
+    })
 
 
 @login_required
@@ -85,4 +108,7 @@ def eliminar_usuario(request, pk):
         user.delete()
         return redirect("usuarios:lista")  # volver a la lista de usuarios
 
-    return render(request, "usuarios/confirmacion_eliminar_usuario.html", {"user": user})
+    return render(request, "usuarios/confirmacion_eliminar_usuario.html", {
+        "user": user,
+        "page_title": "Eliminar Usuario"
+    })

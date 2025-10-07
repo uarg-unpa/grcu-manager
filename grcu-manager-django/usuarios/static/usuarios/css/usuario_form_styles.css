@@ -1,3 +1,32 @@
+.usuario-form-messages {
+    margin-bottom: 24px;
+    text-align: center;
+}
+.usuario-form-message {
+    display: inline-block;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 1.05rem;
+    font-weight: 500;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 8px rgba(68,76,138,0.10);
+    transition: background 0.2s;
+}
+.usuario-form-message.success {
+    background: #eafaf1;
+    color: #27ae60;
+    border: 1px solid #27ae60;
+}
+.usuario-form-message.error {
+    background: #fdecea;
+    color: #e74c3c;
+    border: 1px solid #e74c3c;
+}
+.usuario-form-message.warning {
+    background: #fffbe6;
+    color: #f39c12;
+    border: 1px solid #f39c12;
+}
 
 .roles-container {
     display: flex;

@@ -1,49 +1,79 @@
 {% load static %}
 
 <nav class="custom-navbar">
+    <button class="custom-navbar-toggle" aria-label="Menú" onclick="document.querySelector('.custom-navbar-menu').classList.toggle('show')">
+        <i class="bi bi-list"></i>
+    </button>
     <ul class="custom-navbar-menu">
 
         {% if user.is_authenticated and not 'login' in request.path %}
-            
-            <!-- Enlaces principales -->
-            <li>
-                <a href="{% url 'dashboards:admin_dashboard' %}">
-                    <i class="bi bi-house"></i> Inicio
-                </a>
-            </li>
-
-            <li>
-                <a href="{% url 'usuarios:lista' %}">
-                    <i class="bi bi-person"></i> Usuarios
-                </a>
-            </li>
-
-            <li>
-                <a href="{% url 'proyectos:lista_proyectos' %}">
-                    <i class="bi bi-folder"></i> Proyectos
-                </a>
-            </li>
-
+            <!-- Enlaces para Admin -->
             {% if user.es_admin %}
-            {% comment %} <li>
-                <a href="{% url 'roles_lista' %}">
-                    <i class="bi bi-graph-up"></i> Roles
-                </a>
-            </li> {% endcomment %}
+                <li>
+                    <a href="{% url 'dashboards:admin_dashboard' %}">
+                        <i class="bi bi-house"></i> Inicio
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'usuarios:lista' %}">
+                        <i class="bi bi-person"></i> Usuarios
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'proyectos:lista_proyectos' %}">
+                        <i class="bi bi-folder"></i> Proyectos
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'grupos:lista_grupos' %}" class="custom-header-btn">
+                        <i class="bi bi-people"></i> Grupos
+                    </a>
+                </li>
+            {% endif %}
 
-            {% comment %} <li>
-                <a href="{% url 'permisos_lista' %}">
-                    <i class="bi bi-lock"></i> Permisos
-                </a>
-            </li>
-     {% endcomment %}
-            <li>
-                <a href="{% url 'grupos:lista_grupos' %}" class="custom-header-btn">
-                    <i class="bi bi-people"></i> Grupos
-                </a>
-            </li>
-
+            <!-- Enlaces para Líder -->
+            {% if user.es_lider %}
+                <li>
+                    <a href="{% url 'dashboards:lider_dashboard' %}">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'dashboards:lider_matriz' %}">
+                        <i class="bi bi-grid-3x3-gap"></i> Matriz de trazabilidad
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'dashboards:lider_priorizar' %}">
+                        <i class="bi bi-list-task"></i> Priorización de requerimientos
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'dashboards:lider_requerimientos' %}">
+                        <i class="bi bi-card-checklist"></i> Requerimientos
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'dashboards:lider_casos' %}">
+                        <i class="bi bi-kanban"></i> Casos de Uso
+                    </a>
+                </li>
+                {% comment %} <li>
+                    <a href="#">
+                        <i class="bi bi-folder"></i> Proyectos
+                    </a>
+                </li> {% endcomment %}
+                {% comment %} <li>
+                    <a href="#">
+                        <i class="bi bi-people"></i> Mi Equipo
+                    </a>
+                </li> {% endcomment %}
+                <li>
+                    <a href="{% url 'dashboards:lider_reportes' %}">
+                        <i class="bi bi-bar-chart-line"></i> Reportes
+                    </a>
+                </li>
+            {% endif %}
         {% endif %}
     </ul>
-    {% endif %}
 </nav>

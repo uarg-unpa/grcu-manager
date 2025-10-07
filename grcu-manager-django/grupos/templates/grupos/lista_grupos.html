@@ -7,8 +7,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="grupo-lista-container">
-    <h2 class="grupo-lista-titulo">Lista de Grupos</h2>
+<div class="grupo-lista-container container-fluid">
     <div class="grupo-lista-acciones">
         <a href="{% url 'grupos:crear_grupo' %}" class="grupo-lista-btn-crear">Nuevo Grupo</a>
     </div>
@@ -30,7 +29,7 @@
                     {% if grupo.logo %}
                         <img src="{{ grupo.logo.url }}" width="50" height="50" style="object-fit:cover; border-radius:6px;">
                     {% else %}
-                        <span class="text-muted">Sin logo</span>
+                        <span class="grupo-lista-texto-muted">Sin logo</span>
                     {% endif %}
                 </td>
                 <td>{{ grupo.nombre }}</td>
@@ -38,14 +37,14 @@
                     {% for integrante in grupo.integrantes.all %}
                         {{ integrante.nombre|default:integrante.email }}{% if not forloop.last %}, {% endif %}
                     {% empty %}
-                        <span class="text-muted">Sin integrantes</span>
+                        <span class="grupo-lista-texto-muted">Sin integrantes</span>
                     {% endfor %}
                 </td>
                 <td>
                     {% if grupo.activo %}
-                        <span class="text-success">Sí</span>
+                        <span class="grupo-lista-texto-success">Sí</span>
                     {% else %}
-                        <span class="text-danger">No</span>
+                        <span class="grupo-lista-texto-danger">No</span>
                     {% endif %}
                 </td>
                 <td>

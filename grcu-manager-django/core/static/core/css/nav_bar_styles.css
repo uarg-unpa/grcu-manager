@@ -1,9 +1,39 @@
+.custom-navbar-toggle {
+    display: none;
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 2rem;
+    margin-right: 1rem;
+    cursor: pointer;
+}
+
+.custom-navbar-menu.show {
+    display: flex !important;
+}
+
+@media (max-width: 900px) {
+    .custom-navbar-toggle {
+        display: block;
+    }
+
+    .custom-navbar-menu {
+        display: none;
+    }
+
+    .custom-navbar-menu.show {
+        display: flex !important;
+    }
+}
+
 .custom-navbar {
     background-color: #343A40;
-    /* color institucional */
     border-bottom: 4px solid #17A2B8;
     padding: 0.3rem 1rem;
     margin: 0;
+    position: sticky;
+    top: 48px;
+    z-index: 101;
 }
 
 .custom-navbar-menu {
@@ -32,4 +62,44 @@
 
 .custom-navbar-menu li a:hover {
     color: #17A2B8;
+}
+
+@media (max-width: 900px) {
+    .custom-navbar-menu {
+        flex-direction: column;
+        gap: 0.5rem;
+        position: fixed;
+        top: 48px;
+        left: 0;
+        width: 100vw;
+        background: #343A40;
+        box-shadow: 0 2px 12px rgba(68, 76, 138, 0.18);
+        z-index: 9999;
+        display: none;
+        padding: 1rem 0.5rem;
+    }
+    .custom-navbar-menu.show {
+        display: flex !important;
+    }
+    .custom-navbar-toggle {
+        display: block;
+        position: fixed;
+        top: 8px;
+        right: 16px;
+        z-index: 10000;
+    }
+}
+
+/* SHRINK: solo reduce el header, el nav sigue horizontal y visible */
+.custom-header.shrink ~ .custom-navbar .custom-navbar-menu,
+.custom-header.shrink + .custom-navbar .custom-navbar-menu,
+.custom-navbar .custom-navbar-menu {
+    flex-direction: row !important;
+    position: static !important;
+    gap: 1rem !important;
+    display: flex !important;
+    background: #343A40 !important;
+    box-shadow: none !important;
+    width: auto !important;
+    padding: 0 !important;
 }

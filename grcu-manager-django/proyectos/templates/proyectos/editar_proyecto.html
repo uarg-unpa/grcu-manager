@@ -8,7 +8,6 @@
 
 {% block content %}
 <div class="proyecto-form-container">
-  <h2 class="proyecto-form-titulo">Editar Proyecto</h2>
   <form method="post" enctype="multipart/form-data" class="proyecto-form">
     {% csrf_token %}
     <div class="proyecto-form-group">
@@ -22,8 +21,8 @@
     <div class="proyecto-form-group">
       <label for="logo">Logo del proyecto:</label>
       {% if proyecto.logo %}
-        <div style="margin-bottom:8px;">
-          <img src="{{ proyecto.logo.url }}" alt="Logo actual" style="max-width:120px; max-height:120px; border-radius:8px; border:1px solid #ccc;">
+        <div style="margin-bottom:12px;">
+          <img src="{{ proyecto.logo.url }}" alt="Logo actual" style="max-width:180px; max-height:180px; border-radius:16px; box-shadow:0 2px 8px rgba(68,76,138,0.10); border:2px solid #eee;">
         </div>
       {% endif %}
       <input type="file" name="logo" id="logo" accept="image/*">
@@ -36,6 +35,15 @@
           <option value="{{ alumno.id }}" {% if proyecto.lider.id == alumno.id %}selected{% endif %}>{{ alumno.nombre }} ({{ alumno.email }})</option>
         {% endfor %}
       </select>
+    </div>
+    <div class="proyecto-form-group">
+      <label for="participantes">Participantes:</label>
+      <select name="participantes" id="participantes" multiple class="proyecto-select-multiple">
+        {% for alumno in alumnos %}
+          <option value="{{ alumno.id }}" {% if alumno.id in participantes_ids %}selected{% endif %}>{{ alumno.nombre }} ({{ alumno.email }})</option>
+        {% endfor %}
+      </select>
+      <small>Puedes seleccionar varios usuarios con Ctrl o Shift.</small>
     </div>
     <div class="proyecto-form-acciones">
       <button type="submit" class="proyecto-form-btn-crear">Guardar</button>

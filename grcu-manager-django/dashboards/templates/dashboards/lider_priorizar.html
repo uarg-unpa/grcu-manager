@@ -1,0 +1,68 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dashboards/css/lider_priorizar_styles.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="priorizacion-container">
+    <h3>Priorización de Requerimientos (MoSCoW)</h3>
+
+    <table class="priorizacion-table">
+        <thead>
+            <tr>
+                <th>Requerimiento</th>
+                <th>Descripción</th>
+                <th>Prioridad</th>
+                <th>Comentarios</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>REQ-001</td>
+                <td>Login seguro</td>
+                <td>
+                    <select>
+                        <option value="MUST" selected>Must</option>
+                        <option value="SHOULD">Should</option>
+                        <option value="COULD">Could</option>
+                        <option value="WONT">Won't</option>
+                    </select>
+                </td>
+                <td>Requerido para iniciar sesión de forma segura.</td>
+            </tr>
+            <tr>
+                <td>REQ-002</td>
+                <td>Registro de usuarios</td>
+                <td>
+                    <select>
+                        <option value="MUST">Must</option>
+                        <option value="SHOULD" selected>Should</option>
+                        <option value="COULD">Could</option>
+                        <option value="WONT">Won't</option>
+                    </select>
+                </td>
+                <td>Opcionalmente con verificación de email.</td>
+            </tr>
+            <tr>
+                <td>REQ-003</td>
+                <td>Gestión de proyectos</td>
+                <td>
+                    <select>
+                        <option value="MUST">Must</option>
+                        <option value="SHOULD">Should</option>
+                        <option value="COULD" selected>Could</option>
+                        <option value="WONT">Won't</option>
+                    </select>
+                </td>
+                <td>Se puede mejorar luego.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="guardar-btn">
+        <button>Guardar Priorización</button>
+    </div>
+</div>
+{% endblock %}

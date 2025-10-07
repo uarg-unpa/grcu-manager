@@ -4,7 +4,6 @@
 
 {% block content %}
 <div class="grupo-eliminar-container">
-    <h2 class="grupo-eliminar-titulo">Eliminar Grupo</h2>
     <p>¿Estás seguro de que deseas eliminar el grupo <strong>{{ grupo.nombre }}</strong>?</p>
     <form method="post">
         {% csrf_token %}

@@ -1,0 +1,111 @@
+.requerimientos-container {
+    max-width: 1000px;
+    margin: 2rem auto;
+    padding: 20px;
+    font-family: 'Inter', sans-serif;
+}
+
+.requerimientos-container h3 {
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    background: linear-gradient(to right, #3B82F6, #60A5FA);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.requerimientos-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.requerimiento {
+    border-left: 5px solid;
+    background: #fff;
+    padding: 15px 20px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.requerimiento:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.requerimiento-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.req-id {
+    font-weight: 600;
+    width: 80px;
+}
+
+.req-title {
+    flex: 1;
+}
+
+.req-prioridad {
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    color: #fff;
+    text-align: center;
+    min-width: 60px;
+}
+
+/* Colores según prioridad */
+.requerimiento.alta { border-color: #EF4444; }
+.requerimiento.alta .req-prioridad { background-color: #EF4444; }
+
+.requerimiento.media { border-color: #F59E0B; }
+.requerimiento.media .req-prioridad { background-color: #F59E0B; }
+
+.requerimiento.baja { border-color: #10B981; }
+.requerimiento.baja .req-prioridad { background-color: #10B981; }
+
+/* Comentarios desplegables */
+.requerimiento-comentario {
+    display: none;
+    margin-top: 10px;
+    padding: 10px;
+    background: #F3F4F6;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.requerimiento-comentario.show {
+    display: block;
+}
+
+/* Botón para desplegar comentario */
+.toggle-comentario {
+    background: #3B82F6;
+    color: #fff;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: background 0.2s;
+}
+
+.toggle-comentario:hover {
+    background: #2563EB;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .requerimiento-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+    }
+}

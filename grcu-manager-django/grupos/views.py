@@ -16,7 +16,10 @@ def lista_grupos(request):
 	for grupo in grupos:
 		if grupo.logo:
 			print(f"[DEPURACIÓN] Grupo: {grupo.nombre} - Logo URL: {grupo.logo.url}")
-	return render(request, "grupos/lista_grupos.html", {"grupos": grupos})
+	return render(request, "grupos/lista_grupos.html", {
+		"grupos": grupos,
+		"page_title": "Lista de Grupos"
+	})
 
 @login_required
 @user_passes_test(is_admin)
@@ -32,7 +35,11 @@ def crear_grupo(request):
 			return redirect("grupos:lista_grupos")
 	else:
 		form = GrupoForm()
-	return render(request, "grupos/form_grupo.html", {"form": form, "accion": "Crear"})
+	return render(request, "grupos/form_grupo.html", {
+		"form": form,
+		"accion": "Crear",
+		"page_title": "Crear Grupo"
+	})
 
 @login_required
 @user_passes_test(is_admin)
@@ -46,7 +53,11 @@ def editar_grupo(request, grupo_id):
 			return redirect("grupos:lista_grupos")
 	else:
 		form = GrupoForm(instance=grupo)
-	return render(request, "grupos/form_grupo.html", {"form": form, "accion": "Editar"})
+	return render(request, "grupos/form_grupo.html", {
+		"form": form,
+		"accion": "Editar",
+		"page_title": "Editar Grupo"
+	})
 
 @login_required
 @user_passes_test(is_admin)
@@ -56,4 +67,7 @@ def eliminar_grupo(request, grupo_id):
 		grupo.delete()
 		messages.success(request, "Grupo eliminado correctamente.")
 		return redirect("grupos:lista_grupos")
-	return render(request, "grupos/confirmar_eliminar_grupo.html", {"grupo": grupo})
+	return render(request, "grupos/confirmar_eliminar_grupo.html", {
+		"grupo": grupo,
+		"page_title": "Eliminar Grupo"
+	})

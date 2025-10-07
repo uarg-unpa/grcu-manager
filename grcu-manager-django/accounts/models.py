@@ -20,6 +20,9 @@ class Usuario(AbstractUser):
     # Chequear si el usuario es administrador
     def es_admin(self):
         return self.roles.filter(nombre__iexact="Admin").exists()
+    
+    def es_lider(self):
+        return self.roles.filter(nombre__iexact="Lider").exists()
 
 
     # Chequear si el usuario tiene cierto permiso

@@ -1,0 +1,114 @@
+.casos-container {
+    max-width: 1000px;
+    margin: 2rem auto;
+    padding: 20px;
+    font-family: 'Inter', sans-serif;
+}
+
+.casos-container h3 {
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    background: linear-gradient(to right, #3B82F6, #60A5FA);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.casos-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.caso {
+    border-left: 5px solid;
+    background: #fff;
+    padding: 15px 20px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.caso:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.caso-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.cu-id {
+    font-weight: 600;
+    width: 70px;
+}
+
+.cu-title {
+    flex: 1;
+}
+
+.cu-criticidad {
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    color: #fff;
+    text-align: center;
+    min-width: 60px;
+}
+
+/* Colores según criticidad */
+.caso.critica { border-color: #EF4444; }
+.caso.critica .cu-criticidad { background-color: #EF4444; }
+
+.caso.alta { border-color: #F59E0B; }
+.caso.alta .cu-criticidad { background-color: #F59E0B; }
+
+.caso.media { border-color: #3B82F6; }
+.caso.media .cu-criticidad { background-color: #3B82F6; }
+
+.caso.baja { border-color: #10B981; }
+.caso.baja .cu-criticidad { background-color: #10B981; }
+
+/* Detalles desplegables */
+.caso-detalle {
+    display: none;
+    margin-top: 10px;
+    padding: 10px;
+    background: #F3F4F6;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.caso-detalle.show {
+    display: block;
+}
+
+/* Botón para desplegar detalle */
+.toggle-detalle {
+    background: #3B82F6;
+    color: #fff;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: background 0.2s;
+}
+
+.toggle-detalle:hover {
+    background: #2563EB;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .caso-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+    }
+}

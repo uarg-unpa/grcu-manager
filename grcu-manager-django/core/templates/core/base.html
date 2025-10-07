@@ -22,7 +22,6 @@
 </head>
 <body>
     {% include 'core/componentes/header.html' %}{% include "core/componentes/nav-var.html" %}
-    
 
     <!-- Contenido principal -->
     {% block content %}
@@ -30,6 +29,18 @@
 
     {% include "core/componentes/footer.html" %}
 
+    <script>
+        document.addEventListener('scroll', function() {
+            const header = document.querySelector('.custom-header');
+            if (!header) return;
+            if (window.scrollY > 60) {
+                header.classList.add('shrink');
+            } else {
+                header.classList.remove('shrink');
+            }
+        });
+    </script>
+    
     {% block extra_js %}{% endblock %}
 </body>
 </html>

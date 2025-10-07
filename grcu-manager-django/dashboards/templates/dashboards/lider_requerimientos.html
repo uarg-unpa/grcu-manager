@@ -1,0 +1,73 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dashboards/css/lider_requerimientos_styles.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="requerimientos-container">
+    <h3>Lista de Requerimientos (Simulados)</h3>
+    <ul class="requerimientos-list card">
+        <li class="requerimiento alta">
+            <div class="requerimiento-header">
+                <span class="req-id">REQ-001</span>
+                <span class="req-title">Login seguro</span>
+                <span class="req-prioridad">Alta</span>
+                <button class="toggle-comentario" onclick="this.nextElementSibling.classList.toggle('show')">Comentarios</button>
+            </div>
+            <div class="requerimiento-comentario">
+                <p>Permitir que los usuarios inicien sesión de manera segura.</p>
+            </div>
+        </li>
+
+        <li class="requerimiento alta">
+            <div class="requerimiento-header">
+                <span class="req-id">REQ-002</span>
+                <span class="req-title">Registro de usuarios</span>
+                <span class="req-prioridad">Alta</span>
+                <button class="toggle-comentario" onclick="this.nextElementSibling.classList.toggle('show')">Comentarios</button>
+            </div>
+            <div class="requerimiento-comentario">
+                <p>Formulario de registro con validación de datos. Revisar compatibilidad con correo institucional.</p>
+            </div>
+        </li>
+
+        <li class="requerimiento media">
+            <div class="requerimiento-header">
+                <span class="req-id">REQ-003</span>
+                <span class="req-title">Gestión de proyectos</span>
+                <span class="req-prioridad">Media</span>
+                <button class="toggle-comentario" onclick="this.nextElementSibling.classList.toggle('show')">Comentarios</button>
+            </div>
+            <div class="requerimiento-comentario">
+                <p>Permitir creación, edición y eliminación de proyectos. Comentario: considerar permisos por rol.</p>
+            </div>
+        </li>
+
+        <li class="requerimiento baja">
+            <div class="requerimiento-header">
+                <span class="req-id">REQ-004</span>
+                <span class="req-title">Exportar reportes</span>
+                <span class="req-prioridad">Baja</span>
+                <button class="toggle-comentario" onclick="this.nextElementSibling.classList.toggle('show')">Comentarios</button>
+            </div>
+            <div class="requerimiento-comentario">
+                <p>Permitir exportar reportes en PDF y Excel.</p>
+            </div>
+        </li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // opcional: cerrar otras secciones de comentario al abrir una
+    document.querySelectorAll('.toggle-comentario').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const allComentarios = document.querySelectorAll('.requerimiento-comentario.show');
+            allComentarios.forEach(c => { if(c !== btn.nextElementSibling) c.classList.remove('show'); });
+        });
+    });
+</script>
+{% endblock %}

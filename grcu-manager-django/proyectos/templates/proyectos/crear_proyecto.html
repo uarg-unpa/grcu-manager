@@ -8,7 +8,6 @@
 
 {% block content %}
 <div class="proyecto-form-container">
-    <h2 class="proyecto-form-titulo">Crear Proyecto</h2>
 
     <form method="post" enctype="multipart/form-data" class="proyecto-form">
         {% csrf_token %}
@@ -35,6 +34,17 @@
                     <option value="{{ usuario.id }}">{{ usuario.nombre }} ({{ usuario.email }})</option>
                 {% endfor %}
             </select>
+        </div>
+        <div class="proyecto-form-group">
+            <label for="participantes">Participantes:</label>
+           <select name="participantes" multiple>
+                {% for alumno in usuarios %}
+                    <option value="{{ alumno.id }}" {% if alumno.id in participantes_ids %}selected{% endif %}>
+                        {{ alumno.nombre }}
+                    </option>
+                {% endfor %}
+            </select>
+            <small>Puedes seleccionar varios usuarios con Ctrl o Shift.</small>
         </div>
 
         <div class="proyecto-form-acciones">
