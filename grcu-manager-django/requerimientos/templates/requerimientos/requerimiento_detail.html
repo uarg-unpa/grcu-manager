@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>{{ requerimiento.nombre }}</h2>
+<p><strong>Tipo:</strong> {{ requerimiento.get_tipo_display }}</p>
+<p><strong>Estado:</strong> {{ requerimiento.get_estado_display }}</p>
+<p><strong>Descripción:</strong> {{ requerimiento.descripcion }}</p>
+<p><strong>Proyecto:</strong> {{ requerimiento.proyecto }}</p>
+<p><strong>Creado por:</strong> {{ requerimiento.creado_por }}</p>
+<p><strong>Fecha de creación:</strong> {{ requerimiento.fecha_creacion }}</p>
+<a href="{% url 'requerimientos:requerimiento_list' %}">Volver a la lista</a>
+{% endblock %}

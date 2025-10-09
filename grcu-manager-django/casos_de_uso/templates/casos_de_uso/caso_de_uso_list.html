@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Casos de Uso{% if proyecto %} de {{ proyecto.nombre }}{% endif %}</h2>
+<ul>
+  {% for caso in casos %}
+    <li><a href="{% url 'casos_de_uso:caso_de_uso_detail' caso.pk %}">{{ caso.nombre }}</a></li>
+  {% empty %}
+    <li>No hay casos de uso.</li>
+  {% endfor %}
+</ul>
+{% endblock %}

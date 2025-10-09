@@ -1,62 +1,71 @@
+
 {% extends "core/base.html" %}
 {% load static %}
-
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'dashboards/css/lider_casos_styles.css' %}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'dashboards/css/lider_casos_styles.css' %}?v=2.0">
 {% endblock %}
-
 {% block content %}
-<div class="casos-container">
-    <h3>Lista de Casos de Uso (Simulados)</h3>
-    <ul class="casos-list card">
-        <li class="caso critica">
-            <div class="caso-header">
-                <span class="cu-id">CU-01</span>
-                <span class="cu-title">Iniciar sesión</span>
-                <span class="cu-criticidad">Crítica</span>
-                <button class="toggle-detalle" onclick="this.nextElementSibling.classList.toggle('show')">Detalles</button>
-            </div>
-            <div class="caso-detalle">
-                <p>El usuario debe poder iniciar sesión con correo y contraseña seguros.</p>
-            </div>
-        </li>
-
-        <li class="caso alta">
-            <div class="caso-header">
-                <span class="cu-id">CU-02</span>
-                <span class="cu-title">Registrar usuario</span>
-                <span class="cu-criticidad">Alta</span>
-                <button class="toggle-detalle" onclick="this.nextElementSibling.classList.toggle('show')">Detalles</button>
-            </div>
-            <div class="caso-detalle">
-                <p>Formulario de registro con validación y asignación de roles.</p>
-            </div>
-        </li>
-
-        <li class="caso media">
-            <div class="caso-header">
-                <span class="cu-id">CU-03</span>
-                <span class="cu-title">Crear proyecto</span>
-                <span class="cu-criticidad">Media</span>
-                <button class="toggle-detalle" onclick="this.nextElementSibling.classList.toggle('show')">Detalles</button>
-            </div>
-            <div class="caso-detalle">
-                <p>El líder puede crear proyectos con título, descripción y fecha límite.</p>
-            </div>
-        </li>
-
-        <li class="caso baja">
-            <div class="caso-header">
-                <span class="cu-id">CU-04</span>
-                <span class="cu-title">Exportar reportes</span>
-                <span class="cu-criticidad">Baja</span>
-                <button class="toggle-detalle" onclick="this.nextElementSibling.classList.toggle('show')">Detalles</button>
-            </div>
-            <div class="caso-detalle">
-                <p>Exportar reportes en PDF o Excel para seguimiento.</p>
-            </div>
-        </li>
-    </ul>
+<div class="container py-4">
+    <h3 class="mb-4">Lista de Casos de Uso</h3>
+    {% with proyectos=request.user.lidera_proyectos.all %}
+    {% if proyectos %}
+        {% with proyecto=proyectos.first %}
+            {% with casos=proyecto.casos_de_uso.all %}
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nombre</th>
+                                    <th>Descripción</th>
+                                    <th>Detalles</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cu in casos %}
+                                <tr>
+                                    <td>{{ cu.pk }}</td>
+                                    <td>{{ cu.nombre }}</td>
+                                    <td>{{ cu.descripcion|truncatechars:60 }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-info" type="button" data-bs-toggle="collapse" data-bs-target="#detalle-{{ cu.pk }}">Ver</button>
+                                        <div class="collapse mt-2" id="detalle-{{ cu.pk }}">
+                                            <div class="card card-body">
+                                                {% if cu.detalle_tradicional %}
+                                                    <b>Actor principal:</b> {{ cu.detalle_tradicional.actor_principal|default:'-' }}<br>
+                                                    <b>Precondiciones:</b> {{ cu.detalle_tradicional.precondiciones|default:'-' }}<br>
+                                                    <b>Flujo principal:</b> {{ cu.detalle_tradicional.flujo_principal|default:'-' }}<br>
+                                                    <b>Flujo alternativo:</b> {{ cu.detalle_tradicional.flujo_alternativo|default:'-' }}<br>
+                                                    <b>Postcondiciones:</b> {{ cu.detalle_tradicional.postcondiciones|default:'-' }}<br>
+                                                    <b>Observaciones:</b> {{ cu.detalle_tradicional.observaciones|default:'-' }}
+                                                {% elif cu.detalle_agil %}
+                                                    <b>Historia de usuario:</b> {{ cu.detalle_agil.historia_usuario|default:'-' }}<br>
+                                                    <b>Criterio de aceptación:</b> {{ cu.detalle_agil.criterio_aceptacion|default:'-' }}<br>
+                                                    <b>Responsable:</b> {{ cu.detalle_agil.responsable|default:'-' }}<br>
+                                                    <b>Estado Scrum:</b> {{ cu.detalle_agil.estado_scrum|default:'-' }}<br>
+                                                    <b>Observaciones:</b> {{ cu.detalle_agil.observaciones|default:'-' }}
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="4" class="text-center">No hay casos de uso cargados.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endwith %}
+        {% endwith %}
+    {% else %}
+        <div class="alert alert-info">No liderás ningún proyecto.</div>
+    {% endif %}
+    {% endwith %}
 </div>
 {% endblock %}
 

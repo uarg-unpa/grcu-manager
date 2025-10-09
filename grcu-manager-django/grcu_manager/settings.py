@@ -49,6 +49,8 @@ INSTALLED_APPS = [
     'permisos',
     'proyectos',
     'grupos',
+    'requerimientos',
+    'casos_de_uso',
 ]
 
 MIDDLEWARE = [

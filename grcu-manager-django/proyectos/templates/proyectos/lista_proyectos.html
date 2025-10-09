@@ -9,7 +9,7 @@
 <div class="proyecto-lista-container">
 
     <div class="proyecto-lista-acciones">
-        <a href="{% url 'proyectos:crear_proyecto' %}" class="proyecto-lista-btn-crear">Nuevo Proyecto</a>
+        <a href="{% url 'proyectos:crear_proyecto' %}" class="btn btn-sm btn-success">Nuevo Proyecto</a>
     </div>
 
     {% if proyectos %}
@@ -51,8 +51,9 @@
                 </td>
                 <td>{{ proyecto.fecha_creacion|date:"d/m/Y H:i" }}</td>
                 <td>
-                    <a href="{% url 'proyectos:editar_proyecto' proyecto.id %}" class="proyecto-lista-btn-warning">Editar</a>
-                    <a href="{% url 'proyectos:eliminar_proyecto' proyecto.id %}" class="proyecto-lista-btn-danger">Eliminar</a>
+                    <a href="{% url 'proyectos:editar_proyecto' proyecto.id %}" class="btn btn-sm btn-warning">Editar</a>
+                    <a href="{% url 'proyectos:eliminar_proyecto' proyecto.id %}" class="btn btn-sm btn-danger">Eliminar</a>
+                    <a href="{% url 'dashboards:admin_proyecto_detail' proyecto.id %}" class="btn btn-sm btn-primary">Ver</a>
                 </td>
             </tr>
             {% endfor %}

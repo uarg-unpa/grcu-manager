@@ -29,6 +29,8 @@ urlpatterns = [
     path('usuarios/', include('usuarios.urls', namespace='usuarios')),
     path('proyectos/', include('proyectos.urls', namespace='proyectos')),
     path('grupos/', include('grupos.urls', namespace='grupos')),
+    path('requerimientos/', include('requerimientos.urls', namespace='requerimientos')),
+    path('casos_de_uso/', include('casos_de_uso.urls', namespace='casos_de_uso')),
 ]
 
 # Servir archivos estáticos y media en desarrollo

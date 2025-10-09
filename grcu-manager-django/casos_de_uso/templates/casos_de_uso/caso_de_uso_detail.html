@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>{{ caso.nombre }}</h2>
+<p><strong>Descripción:</strong> {{ caso.descripcion }}</p>
+<p><strong>Proyecto:</strong> {{ caso.proyecto }}</p>
+<p><strong>Creado por:</strong> {{ caso.creado_por }}</p>
+<p><strong>Fecha de creación:</strong> {{ caso.fecha_creacion }}</p>
+<a href="{% url 'casos_de_uso:caso_de_uso_list' %}">Volver a la lista</a>
+{% endblock %}

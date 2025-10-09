@@ -1,62 +1,66 @@
+
 {% extends "core/base.html" %}
 {% load static %}
-
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'dashboards/css/lider_requerimientos_styles.css' %}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'dashboards/css/lider_requerimientos_styles.css' %}?v=2.0">
 {% endblock %}
-
 {% block content %}
-<div class="requerimientos-container">
-    <h3>Lista de Requerimientos (Simulados)</h3>
-    <ul class="requerimientos-list card">
-        <li class="requerimiento alta">
-            <div class="requerimiento-header">
-                <span class="req-id">REQ-001</span>
-                <span class="req-title">Login seguro</span>
-                <span class="req-prioridad">Alta</span>
-                <button class="toggle-comentario" onclick="this.nextElementSibling.classList.toggle('show')">Comentarios</button>
-            </div>
-            <div class="requerimiento-comentario">
-                <p>Permitir que los usuarios inicien sesión de manera segura.</p>
-            </div>
-        </li>
-
-        <li class="requerimiento alta">
-            <div class="requerimiento-header">
-                <span class="req-id">REQ-002</span>
-                <span class="req-title">Registro de usuarios</span>
-                <span class="req-prioridad">Alta</span>
-                <button class="toggle-comentario" onclick="this.nextElementSibling.classList.toggle('show')">Comentarios</button>
-            </div>
-            <div class="requerimiento-comentario">
-                <p>Formulario de registro con validación de datos. Revisar compatibilidad con correo institucional.</p>
-            </div>
-        </li>
-
-        <li class="requerimiento media">
-            <div class="requerimiento-header">
-                <span class="req-id">REQ-003</span>
-                <span class="req-title">Gestión de proyectos</span>
-                <span class="req-prioridad">Media</span>
-                <button class="toggle-comentario" onclick="this.nextElementSibling.classList.toggle('show')">Comentarios</button>
-            </div>
-            <div class="requerimiento-comentario">
-                <p>Permitir creación, edición y eliminación de proyectos. Comentario: considerar permisos por rol.</p>
-            </div>
-        </li>
-
-        <li class="requerimiento baja">
-            <div class="requerimiento-header">
-                <span class="req-id">REQ-004</span>
-                <span class="req-title">Exportar reportes</span>
-                <span class="req-prioridad">Baja</span>
-                <button class="toggle-comentario" onclick="this.nextElementSibling.classList.toggle('show')">Comentarios</button>
-            </div>
-            <div class="requerimiento-comentario">
-                <p>Permitir exportar reportes en PDF y Excel.</p>
-            </div>
-        </li>
-    </ul>
+<div class="container py-4">
+    <h3 class="mb-4">Lista de Requerimientos</h3>
+    {% with proyectos=request.user.lidera_proyectos.all %}
+    {% if proyectos %}
+        {% with proyecto=proyectos.first %}
+            {% with requerimientos=proyecto.requerimientos.all %}
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nombre</th>
+                                    <th>Descripción</th>
+                                    <th>Tipo</th>
+                                    <th>Estado</th>
+                                    <th>Prioridad</th>
+                                    <th>Comentarios</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for req in requerimientos %}
+                                <tr>
+                                    <td>{{ req.pk }}</td>
+                                    <td>{{ req.nombre }}</td>
+                                    <td>{{ req.descripcion|truncatechars:60 }}</td>
+                                    <td>{{ req.get_tipo_display }}</td>
+                                    <td>{{ req.get_estado_display }}</td>
+                                    <td>
+                                        {% if req.detalle_tradicional %}
+                                            {{ req.detalle_tradicional.prioridad|default:'-' }}
+                                        {% else %}-{% endif %}
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-info" type="button" data-bs-toggle="collapse" data-bs-target="#comentario-{{ req.pk }}">Ver</button>
+                                        <div class="collapse mt-2" id="comentario-{{ req.pk }}">
+                                            <div class="card card-body">
+                                                {{ req.detalle_tradicional.observaciones|default:'-' }}
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="7" class="text-center">No hay requerimientos cargados.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endwith %}
+        {% endwith %}
+    {% else %}
+        <div class="alert alert-info">No liderás ningún proyecto.</div>
+    {% endif %}
+    {% endwith %}
 </div>
 {% endblock %}
 

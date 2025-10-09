@@ -1,111 +1,130 @@
+
 {% extends "core/base.html" %}
-
 {% load static %}
-
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'dashboards/css/lider_dashboard_styles.css' %}?v=1.2">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'dashboards/css/lider_dashboard_styles.css' %}?v=2.0">
 {% endblock %}
-
+{% block extra_js %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
 {% block content %}
-<div class="dashboard-container">
-    {% comment %} <h2 class="dashboard-title">Dashboard del Líder - {{ request.user.nombre }}</h2> {% endcomment %}
-
-    <!-- Main content area for projects -->
-    <div class="proyectos-section">
-        {% for proyecto in proyectos %}
-        <div class="proyecto-card">
-            <div class="proyecto-header">
-                {% if proyecto.logo %}
-                    <img src="{{ proyecto.logo.url }}" class="proyecto-logo" alt="Logo de {{ proyecto.nombre }}">
-                {% endif %}
-                <div>
-                    <h3>{{ proyecto.nombre }}</h3>
-                    {% if proyecto.metodologia %}
-                        <p>Metodología: {{ proyecto.get_metodologia_display }}</p>
-                    {% else %}
-                        <form method="post" class="metodologia-form">
-                            {% csrf_token %}
-                            <input type="hidden" name="proyecto_id" value="{{ proyecto.id }}">
-                            <select name="metodologia" required>
-                                <option value="" selected disabled>Elegir metodología</option>
-                                <option value="AGIL">Ágil</option>
-                                <option value="TRADICIONAL">Tradicional</option>
-                            </select>
-                            <button type="submit">Guardar</button>
-                            <p class="leyenda-metodologia">Esto se realiza una sola vez y definirá la forma de cargar requerimientos y casos de uso en este proyecto.</p>
-                        </form>
+<div class="container-fluid py-4">
+    {% comment %} <h2 class="mb-4">Dashboard del Líder</h2> {% endcomment %}
+    {% if dashboard_data %}
+        {% for data in dashboard_data %}
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                    {% if data.proyecto.logo %}
+                        <img src="{{ data.proyecto.logo.url }}" alt="Logo" class="rounded me-3" style="width:48px;height:48px;object-fit:cover;">
                     {% endif %}
+                    <div>
+                        <h4 class="mb-0">{{ data.proyecto.nombre }}</h4>
+                        <small class="text-muted">Metodología: {{ data.proyecto.get_metodologia_display }}</small>
+                    </div>
                 </div>
+                <span class="badge bg-primary">Integrantes: {{ data.integrantes|length }}</span>
             </div>
-
-            <div class="proyecto-body">
-                <div class="integrantes card">
-                    <h4>Integrantes del proyecto ({{ proyecto.participantes.count }})</h4>
-                    <ul>
-                        {% for integrante in proyecto.participantes.all %}
-                            <li>{{ integrante.nombre }} ({{ integrante.email }})</li>
-                        {% empty %}
-                            <li>No hay integrantes asignados</li>
-                        {% endfor %}
-                    </ul>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-3">
+                        <div class="card text-bg-light mb-3">
+                            <div class="card-body">
+                                <h6 class="card-title">Requerimientos</h6>
+                                <h3 class="card-text">{{ data.requerimientos|length }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-bg-light mb-3">
+                            <div class="card-body">
+                                <h6 class="card-title">Casos de Uso</h6>
+                                <h3 class="card-text">{{ data.casos_de_uso|length }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-bg-light mb-3">
+                            <div class="card-body">
+                                <h6 class="card-title">Huérfanos</h6>
+                                <span class="text-danger">Reqs: {{ data.reqs_huerfanos|length }}</span><br>
+                                <span class="text-danger">CUs: {{ data.casos_huerfanos|length }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-bg-light mb-3">
+                            <div class="card-body">
+                                <h6 class="card-title">Acciones recientes</h6>
+                                <h3 class="card-text">{{ data.acciones|length }}</h3>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-
-                <div class="matriz-container card">
-                    <h3>Matriz de Trazabilidad</h3>
-                    <table class="matriz-trazabilidad">
-                        <thead>
-                            <tr>
-                                <th>Requerimiento \ Caso de Uso</th>
-                                <th>CU-01 Iniciar Sesión</th>
-                                <th>CU-02 Registrar Usuario</th>
-                                <th>CU-03 Crear Proyecto</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>REQ-001 - Login seguro</td>
-                                <td class="check">✔</td>
-                                <td></td>
-                                <td></td>
-                            </tr>
-                            <tr>
-                                <td>REQ-002 - Registro de usuarios</td>
-                                <td></td>
-                                <td class="check">✔</td>
-                                <td></td>
-                            </tr>
-                            <tr>
-                                <td>REQ-003 - Gestión de proyectos</td>
-                                <td></td>
-                                <td></td>
-                                <td class="check">✔</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="row">
+                    <div class="col-md-8">
+                        <h5>Integrantes</h5>
+                        <ul class="list-group mb-3">
+                            {% for integrante in data.integrantes %}
+                                <li class="list-group-item">{{ integrante.nombre }} ({{ integrante.email }})</li>
+                            {% empty %}
+                                <li class="list-group-item">No hay integrantes asignados</li>
+                            {% endfor %}
+                        </ul>
+                        <h5>Requerimientos huérfanos <span class="badge bg-danger">{{ data.reqs_huerfanos|length }}</span></h5>
+                        <ul class="list-group mb-3">
+                            {% for req in data.reqs_huerfanos %}
+                                <li class="list-group-item text-danger">{{ req.nombre }}</li>
+                            {% empty %}
+                                <li class="list-group-item">Ninguno</li>
+                            {% endfor %}
+                        </ul>
+                        <h5>Casos de uso huérfanos <span class="badge bg-danger">{{ data.casos_huerfanos|length }}</span></h5>
+                        <ul class="list-group mb-3">
+                            {% for cu in data.casos_huerfanos %}
+                                <li class="list-group-item text-danger">{{ cu.nombre }}</li>
+                            {% empty %}
+                                <li class="list-group-item">Ninguno</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h5>Últimas 20 acciones</h5>
+                        <ul class="list-group mb-3">
+                            {% for accion in data.acciones %}
+                                <li class="list-group-item small">{{ accion.fecha|date:"d/m/Y H:i" }} - <b>{{ accion.usuario.nombre }}</b>: {{ accion.accion }}</li>
+                            {% empty %}
+                                <li class="list-group-item">No hay acciones recientes</li>
+                            {% endfor %}
+                        </ul>
+                        <canvas id="chart-{{ forloop.counter }}" height="180"></canvas>
+                        <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            var ctx = document.getElementById('chart-{{ forloop.counter }}').getContext('2d');
+                            new Chart(ctx, {
+                                type: 'doughnut',
+                                data: {
+                                    labels: ['Requerimientos', 'Casos de Uso', 'Huérfanos'],
+                                    datasets: [{
+                                        data: [{{ data.requerimientos|length }}, {{ data.casos_de_uso|length }}, {{ data.reqs_huerfanos|length|add:data.casos_huerfanos|length }}],
+                                        backgroundColor: ['#0d6efd', '#198754', '#dc3545'],
+                                    }]
+                                },
+                                options: {
+                                    plugins: { legend: { position: 'bottom' } },
+                                    cutout: '70%'
+                                }
+                            });
+                        });
+                        </script>
+                    </div>
                 </div>
             </div>
         </div>
-        {% empty %}
-        <p class="empty-state">No liderás ningún proyecto.</p>
         {% endfor %}
-    </div>
-
-    <!-- Sidebar for last activities -->
-    <div class="ultimas-actividades-sidebar">
-        <div class="ultimas-actividades card">
-            <h4>Últimas actividades</h4>
-            <ul>
-                {% for proyecto in proyectos %}
-                    {% for act in proyecto.ultimas_actividades %}
-                        <li>{{ act }} ({{ proyecto.nombre }})</li>
-                    {% empty %}
-                        <li>No hay actividades registradas para {{ proyecto.nombre }}</li>
-                    {% endfor %}
-                {% empty %}
-                    <li>No hay actividades registradas</li>
-                {% endfor %}
-            </ul>
-        </div>
-    </div>
+    {% else %}
+        <div class="alert alert-info">No liderás ningún proyecto.</div>
+    {% endif %}
 </div>
 {% endblock %}

@@ -326,3 +326,9 @@
         min-width: 100px;
     }
 }
+
+.matriz-trazabilidad .pendiente {
+    color: gray;
+    text-align: center;
+    font-style: italic;
+}

@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Requerimientos{% if proyecto %} de {{ proyecto.nombre }}{% endif %}</h2>
+<ul>
+  {% for req in requerimientos %}
+    <li><a href="{% url 'requerimientos:requerimiento_detail' req.pk %}">{{ req.nombre }}</a> ({{ req.get_tipo_display }}, {{ req.get_estado_display }})</li>
+  {% empty %}
+    <li>No hay requerimientos.</li>
+  {% endfor %}
+</ul>
+{% endblock %}
