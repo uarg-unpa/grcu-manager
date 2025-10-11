@@ -28,55 +28,9 @@
     border: 1px solid #f39c12;
 }
 
-.roles-container {
-    display: flex;
-    gap: 16px;
-    flex-wrap: wrap;
-    margin-top: 8px;
-}
-
-.roles-badge {
-    display: inline-flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 12px 16px;
-    border-radius: 12px;
-    margin: 4px;
-    cursor: pointer;
-    color: #fff !important;
-    font-weight: bold;
-    background: #444C8A;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-    transition: background 0.2s, transform 0.1s;
-    min-width: 90px;
-    min-height: 90px;
-}
-
-.roles-badge.active {
-    background: #363c70;
-    transform: scale(1.05);
-}
-
-.roles-badge.inactive {
-    background: #b3b3b3;
-    opacity: 0.7;
-}
-
-.roles-badge:hover {
-    background: #2d8cf0;
-    color: #fff !important;
-}
-
-.rol-icon {
-    width: 48px;
-    height: 48px;
-    margin-bottom: 8px;
-}
-
-
+/* Contenedor principal del formulario (aumentado para mostrar roles en una línea) */
 .usuario-form-container {
-    max-width: 500px;
+    max-width: 820px;
     margin: 40px auto;
     padding: 25px;
     background: #fff;
@@ -90,7 +44,6 @@
     font-weight: 600;
     margin-bottom: 25px;
 }
-
 
 /* Labels */
 .usuario-form-container label {
@@ -118,9 +71,66 @@
     box-shadow: 0 0 4px rgba(68,76,138,0.3);
 }
 
+/* Roles: mantener en una sola línea y permitir scroll horizontal si hace falta */
+.roles-container {
+    display: flex;
+    gap: 16px;
+    flex-wrap: nowrap; /* mantener en una sola línea */
+    overflow-x: auto;  /* permitir scroll horizontal si hay muchas opciones */
+    -webkit-overflow-scrolling: touch;
+    margin-top: 8px;
+    padding-bottom: 6px; /* espacio para el scroll */
+}
 
-/* Eliminado bloque repetido de roles-badge */
+.roles-badge {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 16px;
+    border-radius: 14px;
+    margin: 4px;
+    cursor: pointer;
+    color: #25324c;
+    font-weight: 600;
+    background: #eef2ff;
+    border: 2px solid transparent;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    transition: background 0.2s, transform 0.1s, border-color 0.2s, color 0.2s;
+    min-width: 100px;
+    min-height: 100px;
+}
 
+.roles-badge.active {
+    background: #2d8cf0;
+    color: #ffffff !important;
+    border-color: #1a6ad8;
+    box-shadow: 0 6px 16px rgba(45, 140, 240, 0.35);
+    transform: translateY(-2px);
+}
+
+.roles-badge.inactive {
+    background: #f4f4f6;
+    color: #5d6370;
+    opacity: 1;
+}
+
+.roles-badge:hover {
+    background: #4361ee;
+    color: #ffffff !important;
+    border-color: #3a5bdb;
+}
+
+.roles-badge:focus {
+    outline: 3px solid rgba(58, 91, 219, 0.45);
+    outline-offset: 3px;
+}
+
+.rol-icon {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 8px;
+}
 
 /* Switch activo */
 .form-check {

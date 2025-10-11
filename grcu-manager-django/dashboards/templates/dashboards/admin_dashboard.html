@@ -1,5 +1,4 @@
 {% extends "core/base.html" %}
-
 {% load static %}
 
 {% block title %}Dashboard Admin{% endblock %}
@@ -7,41 +6,84 @@
 {% block content %}
 <div class="container mt-4">
 
-
   <!-- Métricas -->
   <div class="row mb-4">
-    <div class="col-md-3">
-      <div class="card text-white bg-primary mb-3 shadow">
-        <div class="card-body">
+    <!-- Tarjeta Usuarios -->
+    <div class="col-md-4">
+      <div class="card bg-white text-dark mb-3 shadow" style="border: 1px solid #e0e0e0;">
+        <div class="card-body text-center">
           <h5 class="card-title"><i class="bi bi-person"></i> Usuarios</h5>
           <p class="card-text display-6">{{ total_usuarios }}</p>
+
+          <canvas id="usuariosRolesChart" width="90" height="90"
+                  style="width: 90px; height: 90px; margin: 0 auto 10px; display: block;"></canvas>
+
+          <div class="d-flex justify-content-center flex-wrap gap-2 mt-2">
+            {% for label in usuarios_roles_labels %}
+              <span class="badge"
+                style="background-color:
+                      {% if forloop.counter0 == 0 %}#007bff
+                      {% elif forloop.counter0 == 1 %}#28a745
+                      {% elif forloop.counter0 == 2 %}#ffc107
+                      {% elif forloop.counter0 == 3 %}#6c757d
+                      {% else %}#adb5bd{% endif %};
+                      color: #fff; font-size: 1em; min-width: 100px; text-align: center;">
+                {{ label }}
+              </span>
+            {% endfor %}
+          </div>
         </div>
       </div>
     </div>
 
-    <div class="col-md-3">
-      <div class="card text-white bg-success mb-3 shadow">
-        <div class="card-body">
+    <!-- Tarjeta Proyectos -->
+    <div class="col-md-4">
+      <div class="card bg-white text-dark mb-3 shadow" style="border: 1px solid #e0e0e0;">
+        <div class="card-body text-center">
           <h5 class="card-title"><i class="bi bi-kanban"></i> Proyectos</h5>
           <p class="card-text display-6">{{ total_proyectos }}</p>
+
+          <canvas id="proyectosEstadoChart" width="90" height="90"
+                  style="width: 90px; height: 90px; margin: 0 auto 10px; display: block;"></canvas>
+
+          <div class="d-flex justify-content-center flex-wrap gap-2 mt-2">
+            {% for label in proyectos_estado_labels %}
+              <span class="badge"
+                style="background-color:
+                      {% if forloop.counter0 == 0 %}#17a2b8
+                      {% elif forloop.counter0 == 1 %}#adb5bd
+                      {% else %}#6c757d{% endif %};
+                      color: #fff; font-size: 1em; min-width: 100px; text-align: center;">
+                {{ label }}
+              </span>
+            {% endfor %}
+          </div>
         </div>
       </div>
     </div>
 
-    <div class="col-md-3">
-      <div class="card text-white bg-info mb-3 shadow">
-        <div class="card-body">
-          <h5 class="card-title"><i class="bi bi-shield-lock"></i> Roles</h5>
-          <p class="card-text display-6">{{ total_roles }}</p>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-md-3">
-      <div class="card text-white bg-secondary mb-3 shadow">
-        <div class="card-body">
+    <!-- Tarjeta Grupos -->
+    <div class="col-md-4">
+      <div class="card bg-white text-dark mb-3 shadow" style="border: 1px solid #e0e0e0;">
+        <div class="card-body text-center">
           <h5 class="card-title"><i class="bi bi-people"></i> Grupos</h5>
           <p class="card-text display-6">{{ total_grupos }}</p>
+
+          <canvas id="gruposEstadoChart" width="90" height="90"
+                  style="width: 90px; height: 90px; margin: 0 auto 10px; display: block;"></canvas>
+
+          <div class="d-flex justify-content-center flex-wrap gap-2 mt-2">
+            {% for label in grupos_estado_labels %}
+              <span class="badge"
+                style="background-color:
+                      {% if forloop.counter0 == 0 %}#20c997
+                      {% elif forloop.counter0 == 1 %}#dc3545
+                      {% else %}#6c757d{% endif %};
+                      color: #fff; font-size: 1em; min-width: 100px; text-align: center;">
+                {{ label }}
+              </span>
+            {% endfor %}
+          </div>
         </div>
       </div>
     </div>
@@ -58,19 +100,43 @@
       </tr>
     </thead>
     <tbody>
-  {% for accion in ultimas_acciones %}
-  <tr>
-    <td>{{ accion.action_time|date:"Y-m-d H:i" }}</td>
-    <td>{{ accion.user }}</td>
-    <td>{{ accion.get_change_message }}</td>
-  </tr>
-  {% empty %}
-  <tr>
-    <td colspan="3" class="text-center text-muted">No hay acciones registradas</td>
-  </tr>
-  {% endfor %}
-</tbody>
+      {% for accion in ultimas_acciones %}
+      <tr>
+        <td>{{ accion.action_time|date:"Y-m-d H:i" }}</td>
+        <td>{{ accion.user }}</td>
+        <td>{{ accion.get_change_message }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="3" class="text-center text-muted">No hay acciones registradas</td>
+      </tr>
+      {% endfor %}
+    </tbody>
   </table>
 
 </div>
+
+<!-- === Scripts === -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const renderChart = (id, labels, values, colors) => {
+    const ctx = document.getElementById(id)?.getContext('2d');
+    if (ctx) {
+      new Chart(ctx, {
+        type: 'doughnut',
+        data: { labels, datasets: [{ data: values, backgroundColor: colors }] },
+        options: { plugins: { legend: { display: false } }, responsive: false, maintainAspectRatio: false }
+      });
+    }
+  };
+
+  renderChart('usuariosRolesChart', {{ usuarios_roles_labels_json|safe }}, {{ usuarios_roles_values_json|safe }},
+              ['#007bff', '#28a745', '#ffc107', '#6c757d']);
+  renderChart('proyectosEstadoChart', {{ proyectos_estado_labels_json|safe }}, {{ proyectos_estado_values_json|safe }},
+              ['#17a2b8', '#adb5bd']);
+  renderChart('gruposEstadoChart', {{ grupos_estado_labels_json|safe }}, {{ grupos_estado_values_json|safe }},
+              ['#20c997', '#dc3545']);
+});
+</script>
 {% endblock %}

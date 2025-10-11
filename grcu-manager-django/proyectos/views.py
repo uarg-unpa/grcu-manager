@@ -4,6 +4,8 @@ from django.contrib import messages
 from proyectos.models import Proyecto, ParticipacionProyecto
 from roles.models import Rol
 from accounts.models import Usuario
+from django.core.paginator import Paginator
+from django.db.models import Q
 
 
 # Helpers
@@ -42,8 +44,9 @@ def crear_proyecto(request):
             logo=logo
         )
 
-        # Agregar participantes con rol por defecto (ej. Developer)
-        rol_dev = Rol.objects.get(nombre="Developer")  # o lo que quieras
+        # Agregar participantes con rol por defecto (Desarrollador)
+        # Usamos get_or_create para evitar errores si el rol no existe
+        rol_dev, _ = Rol.objects.get_or_create(nombre="Desarrollador", defaults={"color": "#ffc107"})
         for usuario_id in participantes_ids:
             usuario = Usuario.objects.get(id=usuario_id)
             ParticipacionProyecto.objects.create(
@@ -54,9 +57,21 @@ def crear_proyecto(request):
 
         return redirect("proyectos:lista_proyectos")
 
-    usuarios = Usuario.objects.all().distinct()
+    # Lista de participantes con búsqueda y paginación
+    q = request.GET.get('q', '').strip()
+    p_page = request.GET.get('p_page')
+    usuarios_qs = Usuario.objects.all().distinct().order_by('id')
+    if q:
+        usuarios_qs = usuarios_qs.filter(Q(nombre__icontains=q) | Q(email__icontains=q))
+    paginator = Paginator(usuarios_qs, 10)
+    participantes_page = paginator.get_page(p_page)
+
+    usuarios_all = Usuario.objects.all().order_by('nombre')
     return render(request, "proyectos/crear_proyecto.html", {
-        "usuarios": usuarios,
+        "usuarios_page": participantes_page,
+        "usuarios_all": usuarios_all,
+        "participantes_ids": [],
+        "q": q,
         "page_title": "Crear Proyecto"
     })
 
@@ -80,7 +95,7 @@ def editar_proyecto(request, proyecto_id):
 
         # Actualizar participantes: borrar los antiguos y agregar los seleccionados
         proyecto.participantes.clear()
-        rol_dev = Rol.objects.get(nombre="Developer")
+        rol_dev, _ = Rol.objects.get_or_create(nombre="Desarrollador", defaults={"color": "#ffc107"})
         for usuario_id in participantes_ids:
             usuario = Usuario.objects.get(id=usuario_id)
             ParticipacionProyecto.objects.create(
@@ -92,12 +107,23 @@ def editar_proyecto(request, proyecto_id):
         messages.success(request, "Proyecto actualizado.")
         return redirect("proyectos:lista_proyectos")
 
-    alumnos = Usuario.objects.all().distinct()
+    # Lista de participantes con búsqueda y paginación
+    q = request.GET.get('q', '').strip()
+    p_page = request.GET.get('p_page')
+    alumnos_qs = Usuario.objects.all().distinct().order_by('id')
+    if q:
+        alumnos_qs = alumnos_qs.filter(Q(nombre__icontains=q) | Q(email__icontains=q))
+    paginator = Paginator(alumnos_qs, 10)
+    alumnos_page = paginator.get_page(p_page)
+
     participantes_ids = list(proyecto.participantes.values_list('id', flat=True))
+    usuarios_all = Usuario.objects.all().order_by('nombre')
     return render(request, "proyectos/editar_proyecto.html", {
         "proyecto": proyecto,
-        "alumnos": alumnos,
+        "alumnos_page": alumnos_page,
+        "usuarios_all": usuarios_all,
         "participantes_ids": participantes_ids,
+        "q": q,
         "page_title": "Editar Proyecto"
     })
 

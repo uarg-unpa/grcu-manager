@@ -1,16 +1,20 @@
-/* Contenedor general */
+/* === Contenedor general === */
 .grupo-form-container {
-    max-width: 600px;
-    width: 90%;
-    margin: 40px auto;
-    background: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    padding: 20px;
-    text-align: center;
+    max-width: 900px;
+    width: 100%;
+    margin: 28px auto;
+    padding: 0 12px;
 }
 
-/* Ícono y título */
+/* Card general del formulario */
+.grupo-form-card {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+    padding: 22px;
+}
+
+/* Títulos e íconos */
 .grupo-form-icon {
     color: #3b82f6;
     font-size: 2.5rem;
@@ -18,79 +22,69 @@
 }
 
 .grupo-form-titulo {
-    font-size: 1.75rem;
-    color: #1f2937;
+    font-size: 1.5rem;
+    color: #0f172a;
     font-weight: 700;
-    margin-bottom: 20px;
+    margin: 0;
 }
+
+.grupo-form-header {
+    padding-bottom: 12px;
+    border-bottom: 1px solid #eef2ff;
+    margin-bottom: 18px;
+}
+
+.grupo-form-header p { margin:0; font-size:0.95rem; }
 
 /* Errores del formulario */
 .form-errors {
-    background: #fee2e2;
-    color: #991b1b;
-    padding: 12px;
+    background: #fff4f4;
+    color: #7f1d1d;
+    padding: 12px 14px;
     border-radius: 8px;
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    font-size: 0.9rem;
+    margin-bottom: 18px;
+    font-size: 0.95rem;
 }
 
-.form-errors-icon {
-    color: #991b1b;
-    font-size: 1.1rem;
-}
-
-/* Grid para los campos */
+/* Grid de campos */
 .form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 16px;
+    gap: 18px;
     margin-bottom: 20px;
 }
 
-@media (max-width: 600px) {
-    .form-grid {
-        grid-template-columns: 1fr;
-    }
-}
+/* Secciones */
+.form-sections { display: flex; flex-direction: column; gap: 14px; }
+.card-section { padding: 14px; border-radius: 10px; background: #fff; border: 1px solid #f1f5f9; }
+.section-title { margin:0 0 8px 0; font-size:1.05rem; font-weight:700; color:#0f172a; }
 
-/* Campos del formulario */
-.form-field {
-    margin-bottom: 10px;
-}
+.card-section--general { border-left:6px solid #3b82f6; }
+.card-section--miembros { border-left:6px solid #06b6d4; }
+
+/* Campos */
+.form-field { margin-bottom: 8px; }
 
 .form-label {
     display: block;
-    font-weight: 500;
+    font-weight: 600;
     color: #374151;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
     font-size: 0.95rem;
-    text-align: left;
 }
 
-/* Inputs y selects */
+/* Inputs */
 .grupo-form input[type="text"],
 .grupo-form input[type="file"],
 .grupo-form select,
 .grupo-form textarea {
     width: 100%;
     padding: 8px 12px;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
+    border: 1px solid #e6eefc;
+    border-radius: 8px;
     font-size: 0.95rem;
     background: #ffffff;
-}
-
-.grupo-form input[type="file"]::file-selector-button {
-    padding: 8px 12px;
-    border: 1px solid #d1d5db;
-    background: #f9fafb;
-    border-radius: 6px;
-    margin-right: 8px;
-    cursor: pointer;
+    box-shadow: inset 0 1px 0 rgba(16,24,40,0.02);
 }
 
 .grupo-form input[type="text"]:focus,
@@ -101,7 +95,7 @@
     outline: none;
 }
 
-/* Checkbox estilizado */
+/* Checkbox */
 .checkbox-field {
     display: flex;
     align-items: center;
@@ -135,49 +129,36 @@
     transform: translate(-50%, -50%);
 }
 
-/* Campo de búsqueda de usuarios */
-.user-search-field .select2-container {
-    width: 100% !important;
+/* === Lista de miembros mejorada === */
+.participantes-container {
+    border: 1px solid #e6eefc;
+    border-radius: 8px;
+    overflow: hidden;
 }
 
-.user-search-field .select2-selection--multiple {
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    background: #ffffff;
-    min-height: 40px;
-    padding: 4px 8px;
-}
-
-.user-search-field .select2-selection__rendered {
+.participante-badge {
     display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    padding: 0;
-}
-
-.user-search-field .select2-selection__choice {
-    background: #e0e7ff;
-    color: #1f2937;
-    border: 1px solid #93c5fd;
-    border-radius: 4px;
-    padding: 4px 8px;
-    font-size: 0.9rem;
-    font-weight: 500;
-}
-
-.user-search-field .select2-selection__choice__remove {
-    color: #6b7280;
-    margin-left: 6px;
+    justify-content: space-between;
+    padding: 10px 12px;
     cursor: pointer;
+    align-items: center;
+    transition: background-color 0.2s;
 }
 
-.user-search-field .select2-selection__choice__remove:hover {
-    color: #dc2626;
-}
+.participante-badge:nth-child(odd) { background-color: #f9fafb; }
+.participante-badge:nth-child(even) { background-color: #ffffff; }
 
-.user-search-field .select2-container--focus .select2-selection--multiple {
-    border-color: #3b82f6;
-}
+.participante-badge.active { background-color: #3b82f6; color: #fff; }
+.participante-badge.active .participante-email { color: #dbeafe; }
+
+.participante-info { display: flex; flex-direction: column; }
+.participante-nombre { font-weight: 600; }
+.participante-email { font-size: 0.85rem; color: #6b7280; }
+
+.participante-badge:hover { background-color: #e0f2fe; }
+
+/* Paginación */
+.pagination { justify-content: center; margin-top:10px; }
 
 /* Botones */
 .grupo-form-acciones {
@@ -204,9 +185,7 @@
     text-decoration: none;
 }
 
-.grupo-form-btn-cancelar:hover {
-    background: #e5e7eb;
-}
+.grupo-form-btn-cancelar:hover { background: #e5e7eb; }
 
 .grupo-form-btn-guardar {
     background: #3b82f6;
@@ -214,24 +193,13 @@
     border: none;
 }
 
-.grupo-form-btn-guardar:hover {
-    background: #2563eb;
-}
+.grupo-form-btn-guardar:hover { background: #2563eb; }
 
 /* Responsividad */
 @media (max-width: 600px) {
-    .grupo-form-container {
-        margin: 20px;
-        padding: 16px;
-    }
-
-    .grupo-form-acciones {
-        flex-direction: column-reverse;
-        gap: 10px;
-    }
-
+    .form-grid { grid-template-columns: 1fr; }
+    .form-sections { gap: 12px; }
+    .grupo-form-acciones { flex-direction: column-reverse; gap: 10px; }
     .grupo-form-btn-cancelar,
-    .grupo-form-btn-guardar {
-        width: 100%;
-    }
+    .grupo-form-btn-guardar { width: 100%; }
 }

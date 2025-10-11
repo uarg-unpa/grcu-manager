@@ -61,8 +61,8 @@
         </div>
         {% endif %}
 
-        <button type="submit" class="btn btn-primary">Crear</button>
-        <a href="{% url 'usuarios:lista' %}" class="btn btn-secondary">Cancelar</a>
+    <button type="submit" class="btn btn-primary" title="Crear usuario" data-bs-toggle="tooltip"><i class="bi bi-person-plus"></i> Crear</button>
+    <a href="{% url 'usuarios:lista' %}" class="btn btn-secondary" title="Cancelar" data-bs-toggle="tooltip"><i class="bi bi-x-lg"></i> Cancelar</a>
     </form>
 </div>
 {% endblock %}
@@ -71,12 +71,30 @@
 <script src="{% static 'core/js/bootstrap.bundle.min.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const setBadgeState = (badge, isChecked) => {
+        badge.classList.toggle('active', isChecked);
+        badge.classList.toggle('inactive', !isChecked);
+        badge.setAttribute('aria-checked', isChecked);
+    };
+
     document.querySelectorAll('.roles-badge').forEach(badge => {
-        badge.addEventListener('click', function() {
-            let checkbox = badge.querySelector('input');
+        const checkbox = badge.querySelector('input');
+        badge.setAttribute('role', 'checkbox');
+        badge.setAttribute('tabindex', '0');
+        setBadgeState(badge, checkbox.checked);
+
+        badge.addEventListener('click', function(event) {
+            event.preventDefault();
             checkbox.checked = !checkbox.checked;
-            badge.classList.toggle('active', checkbox.checked);
-            badge.classList.toggle('inactive', !checkbox.checked);
+            setBadgeState(badge, checkbox.checked);
+        });
+
+        badge.addEventListener('keydown', function(event) {
+            if (event.key === ' ' || event.key === 'Enter') {
+                event.preventDefault();
+                checkbox.checked = !checkbox.checked;
+                setBadgeState(badge, checkbox.checked);
+            }
         });
     });
 });

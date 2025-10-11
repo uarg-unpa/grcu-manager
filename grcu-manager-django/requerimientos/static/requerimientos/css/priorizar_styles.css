@@ -1,0 +1,60 @@
+/* Estilos coherentes con header/footer institucionales */
+.priorizar-header {
+    background: #343A40;
+    color: #fff;
+    padding: 1rem 1.5rem;
+    border-radius: 0.5rem 0.5rem 0 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.priorizar-header i {
+    color: #17A2B8;
+    font-size: 1.6rem;
+}
+
+/* Colorea los íconos de los encabezados de tabla y acciones */
+.table thead th i {
+    color: #17A2B8;
+}
+.btn-priorizar i {
+    color: #fff;
+    transition: color 0.2s;
+}
+.btn-priorizar:hover i {
+    color: #17A2B8;
+}
+.btn-outline-primary i {
+    color: #17A2B8;
+    transition: color 0.2s;
+}
+.btn-outline-primary:hover i {
+    color: #fff;
+}
+
+.card.priorizar-card {
+    border: 1.5px solid #17A2B8;
+    box-shadow: 0 2px 8px rgba(23,162,184,0.08);
+}
+.table thead {
+    background: #343A40;
+    color: #fff;
+}
+.btn-priorizar {
+    background: #17A2B8;
+    color: #fff;
+    border: none;
+}
+.btn-priorizar:hover {
+    background: #343A40;
+    color: #17A2B8;
+    border: 1.5px solid #17A2B8;
+    transition: background 0.2s, color 0.2s;
+}
+.badge-proyecto {
+    background: #17A2B8;
+    color: #fff;
+    font-size: 1rem;
+    padding: 0.5em 1em;
+    border-radius: 0.5em;
+}

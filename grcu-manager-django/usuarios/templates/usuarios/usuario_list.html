@@ -13,6 +13,9 @@
 <div class="usuario-lista-container container-fluid">
 
     <div class="usuario-lista-acciones">
+        <form method="get" class="d-inline-block me-2">
+            <input type="search" name="q" placeholder="Buscar por nombre o email" value="{{ q|default_if_none:'' }}" class="form-control form-control-sm" style="display:inline-block; width:220px;" />
+        </form>
         <a href="{% url 'usuarios:crear' %}" class="usuario-lista-btn-crear">
             <i class="bi bi-plus-circle"></i> Añadir Usuario
         </a>
@@ -21,6 +24,7 @@
     <table class="usuario-lista-tabla">
         <thead>
             <tr>
+                <th style="width:40px"><input type="checkbox" id="selectAllUsers"></th>
                 <th></th>  {# avatar sin título #}
                 <th>Activo</th>
                 <th>Nombre</th>
@@ -31,7 +35,8 @@
         </thead>
         <tbody>
             {% for usuario in usuarios %}
-            <tr>
+            <tr data-user-id="{{ usuario.id }}">
+                <td><input type="checkbox" class="row-checkbox" value="{{ usuario.id }}"></td>
                 <!-- Avatar -->
                 <td class="usuario-lista-avatar-cell">
                     {% if usuario.avatar %}
@@ -66,10 +71,10 @@
 
                 <!-- Acciones -->
                 <td>
-                    <a href="{% url 'usuarios:editar' usuario.id %}" class="usuario-lista-btn-warning">
+                    <a href="{% url 'usuarios:editar' usuario.id %}" class="usuario-lista-btn-warning" title="Editar" data-bs-toggle="tooltip">
                         <i class="bi bi-pencil"></i>
                     </a>
-                    <a href="{% url 'usuarios:eliminar' usuario.id %}" class="usuario-lista-btn-danger">
+                    <a href="{% url 'usuarios:eliminar' usuario.id %}" class="usuario-lista-btn-danger" title="Eliminar" data-bs-toggle="tooltip">
                         <i class="bi bi-trash"></i>
                     </a>
                 </td>
@@ -104,4 +109,28 @@
     </nav>
 </div>
 
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+    const selectAll = document.getElementById('selectAllUsers');
+    const checkboxes = Array.from(document.querySelectorAll('.row-checkbox'));
+    if(selectAll){
+        selectAll.addEventListener('change', function(){
+            checkboxes.forEach(cb => {
+                cb.checked = selectAll.checked;
+                const tr = cb.closest('tr');
+                tr.classList.toggle('selected', cb.checked);
+            });
+        });
+    }
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', function(){
+            const tr = cb.closest('tr');
+            tr.classList.toggle('selected', cb.checked);
+        });
+    });
+});
+</script>
 {% endblock %}

@@ -31,19 +31,49 @@
     <div class="proyecto-form-group">
       <label for="lider">Líder:</label>
       <select name="lider" id="lider" required>
-        {% for alumno in alumnos %}
-          <option value="{{ alumno.id }}" {% if proyecto.lider.id == alumno.id %}selected{% endif %}>{{ alumno.nombre }} ({{ alumno.email }})</option>
+        {% for alumno in usuarios_all %}
+          <option value="{{ alumno.id }}" {% if proyecto.lider and proyecto.lider.id == alumno.id %}selected{% endif %}>{{ alumno.nombre }} ({{ alumno.email }})</option>
         {% endfor %}
       </select>
     </div>
     <div class="proyecto-form-group">
       <label for="participantes">Participantes:</label>
-      <select name="participantes" id="participantes" multiple class="proyecto-select-multiple">
-        {% for alumno in alumnos %}
-          <option value="{{ alumno.id }}" {% if alumno.id in participantes_ids %}selected{% endif %}>{{ alumno.nombre }} ({{ alumno.email }})</option>
+    <div class="participantes-search" style="margin-bottom:8px;">
+      <input type="search" id="participantesSearchInput" name="q" placeholder="Buscar participantes..." value="{{ q|default_if_none:'' }}" style="width:240px; padding:6px 8px;" />
+      <button type="button" id="participantesSearchBtn" class="btn btn-sm btn-light" style="margin-left:6px;">Buscar</button>
+    </div>
+
+      <div class="participantes-container">
+        {% for alumno in alumnos_page %}
+    <label class="participante-badge" data-id="{{ alumno.id }}">
+      <input type="checkbox" class="visually-hidden-checkbox" name="participantes" value="{{ alumno.id }}" {% if alumno.id in participantes_ids %}checked{% endif %}>
+      <div class="participante-info">
+        <div class="participante-nombre">{{ alumno.nombre }}</div>
+        <div class="participante-email">{{ alumno.email }}</div>
+      </div>
+    </label>
         {% endfor %}
-      </select>
-      <small>Puedes seleccionar varios usuarios con Ctrl o Shift.</small>
+      </div>
+
+      <nav aria-label="Participantes pagination" style="margin-top:10px;">
+        <ul class="pagination pagination-sm">
+          {% if alumnos_page.has_previous %}
+            <li class="page-item"><a class="page-link" href="?q={{ q }}&p_page={{ alumnos_page.previous_page_number }}">&laquo;</a></li>
+          {% endif %}
+          {% for num in alumnos_page.paginator.page_range %}
+            {% if alumnos_page.number == num %}
+              <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+            {% else %}
+              <li class="page-item"><a class="page-link" href="?q={{ q }}&p_page={{ num }}">{{ num }}</a></li>
+            {% endif %}
+          {% endfor %}
+          {% if alumnos_page.has_next %}
+            <li class="page-item"><a class="page-link" href="?q={{ q }}&p_page={{ alumnos_page.next_page_number }}">&raquo;</a></li>
+          {% endif %}
+        </ul>
+      </nav>
+
+      <small>Haz clic en los participantes para seleccionarlos (clic o teclado). Se muestra 10 por página.</small>
     </div>
     <div class="proyecto-form-acciones">
       <button type="submit" class="proyecto-form-btn-crear">Guardar</button>
@@ -51,4 +81,53 @@
     </div>
   </form>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.participante-badge').forEach(b => {
+    const cb = b.querySelector('input[type="checkbox"]');
+    const setState = checked => b.classList.toggle('active', checked);
+    setState(cb.checked);
+
+    b.setAttribute('role','checkbox');
+    b.setAttribute('tabindex','0');
+
+    b.addEventListener('click', function(e){
+      e.preventDefault();
+      cb.checked = !cb.checked;
+      setState(cb.checked);
+    });
+
+    b.addEventListener('keydown', function(e){
+      if (e.key === ' ' || e.key === 'Enter'){
+        e.preventDefault();
+        cb.checked = !cb.checked;
+        setState(cb.checked);
+      }
+    });
+  });
+
+  // Buscador de participantes (no someter el formulario padre)
+  const searchInput = document.getElementById('participantesSearchInput');
+  const searchBtn = document.getElementById('participantesSearchBtn');
+  const goSearch = () => {
+    const q = encodeURIComponent(searchInput.value || '');
+    const base = window.location.pathname;
+    window.location.href = base + '?q=' + q + '&p_page=1';
+  };
+  if (searchBtn) searchBtn.addEventListener('click', goSearch);
+  if (searchInput) searchInput.addEventListener('keydown', function(e){ if (e.key === 'Enter') { e.preventDefault(); goSearch(); } });
+
+  // Debug: mostrar cuántos participantes están seleccionados al submit
+  const form = document.querySelector('.proyecto-form');
+  if (form) {
+    form.addEventListener('submit', function(){
+      const checked = Array.from(document.querySelectorAll('input[name="participantes"]:checked')).map(i=>i.value);
+      console.log('Participantes seleccionados (submit):', checked.length, checked);
+    });
+  }
+});
+</script>
 {% endblock %}

@@ -1,3 +1,4 @@
+import json
 from django.shortcuts import render, redirect
 from accounts.models import Usuario
 from roles.models import Rol
@@ -8,23 +9,81 @@ from django.contrib.admin.models import LogEntry
 from django.db.models import Count
 
 @login_required
+def lider_casos(request):
+    from django.urls import reverse
+    return redirect(reverse('casos_de_uso:caso_de_uso_list'))
+
+from django.contrib.admin.models import LogEntry
+from django.contrib.auth.decorators import login_required
+from django.db.models import Count
+from django.shortcuts import render
+import json
+
+from accounts.models import Usuario
+from proyectos.models import Proyecto
+from grupos.models import Grupo
+
+@login_required
 def admin_dashboard(request):
+    # Métricas generales
     total_usuarios = Usuario.objects.count()
     total_proyectos = Proyecto.objects.count()
-    total_roles = Rol.objects.count()
-    from grupos.models import Grupo
+    proyectos_activos = Proyecto.objects.filter(activo=True).count()
+    proyectos_inactivos = Proyecto.objects.filter(activo=False).count()
     total_grupos = Grupo.objects.count()
+    grupos_activos = Grupo.objects.filter(activo=True).count()
+    grupos_inactivos = Grupo.objects.filter(activo=False).count()
 
+    # Roles esperados
+    roles_labels = ["Admin", "Líder", "Desarrollador", "Visitante"]
+
+    # Conteo de usuarios por rol
+    usuarios_roles_qs = (
+        Usuario.objects
+        .values("roles__nombre")
+        .annotate(count=Count("id"))
+        .order_by()
+    )
+    usuarios_roles_map = {item["roles__nombre"]: item["count"] for item in usuarios_roles_qs if item["roles__nombre"]}
+    usuarios_por_rol = [usuarios_roles_map.get(rol, 0) for rol in roles_labels]
+
+    # Serializamos para los gráficos
+    roles_labels_json = json.dumps(roles_labels)
+    usuarios_por_rol_json = json.dumps(usuarios_por_rol)
+
+    proyectos_estado_labels = ["Activos", "Inactivos"]
+    proyectos_estado_values = [proyectos_activos, proyectos_inactivos]
+    proyectos_estado_labels_json = json.dumps(proyectos_estado_labels)
+    proyectos_estado_values_json = json.dumps(proyectos_estado_values)
+
+    grupos_estado_labels = ["Activos", "Inactivos"]
+    grupos_estado_values = [grupos_activos, grupos_inactivos]
+    grupos_estado_labels_json = json.dumps(grupos_estado_labels)
+    grupos_estado_values_json = json.dumps(grupos_estado_values)
+
+    # Últimas acciones
     ultimas_acciones = LogEntry.objects.select_related("user").order_by("-action_time")[:10]
 
-    return render(request, "dashboards/admin_dashboard.html", {
+    # Contexto para el template
+    context = {
         "total_usuarios": total_usuarios,
         "total_proyectos": total_proyectos,
-        "total_roles": total_roles,
         "total_grupos": total_grupos,
+        "usuarios_roles_labels": roles_labels,
+        "usuarios_roles_labels_json": roles_labels_json,
+        "usuarios_roles_values_json": usuarios_por_rol_json,
+        "proyectos_estado_labels": proyectos_estado_labels,
+        "proyectos_estado_labels_json": proyectos_estado_labels_json,
+        "proyectos_estado_values_json": proyectos_estado_values_json,
+        "grupos_estado_labels": grupos_estado_labels,
+        "grupos_estado_labels_json": grupos_estado_labels_json,
+        "grupos_estado_values_json": grupos_estado_values_json,
         "ultimas_acciones": ultimas_acciones,
-        "page_title": "Panel de Administración"
-    })
+        "page_title": "Panel de Administración",
+    }
+
+    return render(request, "dashboards/admin_dashboard.html", context)
+
 
 @login_required
 def admin_proyecto_detail(request, project_id):
@@ -43,8 +102,12 @@ def admin_proyecto_detail(request, project_id):
     casos = CasoDeUso.objects.filter(proyecto=proyecto)
     acciones = AccionUsuario.objects.filter(usuario__in=integrantes).order_by('-fecha')[:20]
 
-    reqs_huerfanos = requerimientos.filter(detalle_agil__responsable="") | requerimientos.filter(detalle_agil__isnull=True, detalle_tradicional__isnull=True)
-    casos_huerfanos = casos.filter(detalle_agil__responsable="") | casos.filter(detalle_agil__isnull=True, detalle_tradicional__isnull=True)
+    # Huérfanos definidos como aquellos sin relación persistida en la tabla intermedia RequerimientoCaso
+    from requerimientos.models import RequerimientoCaso
+    reqs_huerfanos = requerimientos.annotate(rel_count=Count('relaciones_casos')).filter(rel_count=0)
+    casos_huerfanos = casos.annotate(rel_count=Count('relaciones_requerimientos')).filter(rel_count=0)
+    reqs_huerfanos_ids = list(reqs_huerfanos.values_list('pk', flat=True))
+    casos_huerfanos_ids = list(casos_huerfanos.values_list('pk', flat=True))
 
     # Matriz de trazabilidad simple: relacionar requerimientos y casos por nombre parcial (heurística)
     matriz = []
@@ -85,7 +148,9 @@ def admin_proyecto_detail(request, project_id):
         'casos': casos,
         'acciones': acciones,
         'reqs_huerfanos': reqs_huerfanos,
+    'reqs_huerfanos_ids': reqs_huerfanos_ids,
         'casos_huerfanos': casos_huerfanos,
+    'casos_huerfanos_ids': casos_huerfanos_ids,
         'matriz': matriz,
         # Datos para gráficos
         'req_estado_labels': req_estado_labels,
@@ -115,19 +180,15 @@ def lider_dashboard(request):
         # Acciones recientes de los integrantes del proyecto
         acciones = AccionUsuario.objects.filter(usuario__in=integrantes).order_by('-fecha')[:20]
 
-        # Requerimientos huérfanos: sin responsable/asignación
-        reqs_huerfanos = requerimientos.filter(
-            detalle_agil__responsable="", detalle_tradicional__fuente=""
-        ) | requerimientos.filter(
-            detalle_agil__isnull=True, detalle_tradicional__isnull=True
-        )
+        # Huérfanos definidos por ausencia de relación en la tabla intermedia RequerimientoCaso
+        reqs_huerfanos = requerimientos.annotate(rel_count=Count('relaciones_casos')).filter(rel_count=0)
+        casos_huerfanos = casos_de_uso.annotate(rel_count=Count('relaciones_requerimientos')).filter(rel_count=0)
+        reqs_huerfanos_ids = list(reqs_huerfanos.values_list('pk', flat=True))
+        casos_huerfanos_ids = list(casos_huerfanos.values_list('pk', flat=True))
+        total_huerfanos = reqs_huerfanos.count() + casos_huerfanos.count()
 
-        # Casos de uso huérfanos: sin responsable/asignación
-        casos_huerfanos = casos_de_uso.filter(
-            detalle_agil__responsable="", detalle_tradicional__actor_principal=""
-        ) | casos_de_uso.filter(
-            detalle_agil__isnull=True, detalle_tradicional__isnull=True
-        )
+        reqs_relacionados = requerimientos.count() - reqs_huerfanos.count()
+        casos_relacionados = casos_de_uso.count() - casos_huerfanos.count()
 
         dashboard_data.append({
             "proyecto": proyecto,
@@ -136,7 +197,12 @@ def lider_dashboard(request):
             "casos_de_uso": casos_de_uso,
             "acciones": acciones,
             "reqs_huerfanos": reqs_huerfanos,
+            "reqs_huerfanos_ids": reqs_huerfanos_ids,
             "casos_huerfanos": casos_huerfanos,
+            "casos_huerfanos_ids": casos_huerfanos_ids,
+            "total_huerfanos": total_huerfanos,
+            "reqs_relacionados": reqs_relacionados,
+            "casos_relacionados": casos_relacionados,
         })
 
     return render(request, "dashboards/lider_dashboard.html", {
@@ -153,13 +219,10 @@ def lider_matriz(request):
 
 @login_required
 def lider_requerimientos(request):
-    # Solo mostramos el HTML simulado
-    return render(request, 'dashboards/lider_requerimientos.html')
+    # Redirigir directamente a la lista de requerimientos
+    # La vista de requerimientos se encargará de detectar si es líder y filtrar automáticamente
+    return redirect('requerimientos:requerimiento_list')
 
-@login_required
-def lider_casos(request):
-    # Solo mostramos el HTML simulado
-    return render(request, 'dashboards/lider_casos.html')
 
 @login_required
 def lider_reportes(request):
@@ -168,33 +231,5 @@ def lider_reportes(request):
 
 @login_required
 def lider_priorizar(request):
-    from requerimientos.models import Requerimiento
-    from proyectos.models import Proyecto
-
-    proyectos = Proyecto.objects.filter(lider=request.user)
-    # Para simplicidad, priorizamos el primer proyecto liderado
-    proyecto = proyectos.first() if proyectos.exists() else None
-    requerimientos = Requerimiento.objects.filter(proyecto=proyecto) if proyecto else []
-
-    MOSCOW_CHOICES = [
-        ("MUST", "Must"),
-        ("SHOULD", "Should"),
-        ("COULD", "Could"),
-        ("WONT", "Won't")
-    ]
-
-    if request.method == "POST":
-        for req in requerimientos:
-            prioridad = request.POST.get(f"prioridad_{req.pk}")
-            if prioridad:
-                # Guardamos la prioridad en el campo 'prioridad' del detalle tradicional
-                if req.detalle_tradicional:
-                    req.detalle_tradicional.prioridad = prioridad
-                    req.detalle_tradicional.save()
-        return redirect('dashboards:lider_priorizar')
-
-    return render(request, 'dashboards/lider_priorizar.html', {
-        "proyecto": proyecto,
-        "requerimientos": requerimientos,
-        "MOSCOW_CHOICES": MOSCOW_CHOICES,
-    })
+    from django.urls import reverse
+    return redirect(reverse('requerimientos:requerimiento_priorizar'))

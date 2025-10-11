@@ -4,6 +4,8 @@ from django.contrib import messages
 from .models import Grupo
 from accounts.models import Usuario
 from .forms import GrupoForm
+from django.core.paginator import Paginator
+from django.db.models import Q
 
 def is_admin(user):
 	return hasattr(user, 'es_admin') and user.es_admin()
@@ -35,10 +37,21 @@ def crear_grupo(request):
 			return redirect("grupos:lista_grupos")
 	else:
 		form = GrupoForm()
+	# preparar listado de usuarios paginado (buscador compatible)
+	q = request.GET.get('q', '')
+	p_page = request.GET.get('p_page', 1)
+	usuarios_qs = Usuario.objects.all().order_by('nombre')
+	if q:
+		usuarios_qs = usuarios_qs.filter(Q(nombre__icontains=q) | Q(email__icontains=q))
+	paginator = Paginator(usuarios_qs, 10)
+	alumnos_page = paginator.get_page(p_page)
 	return render(request, "grupos/form_grupo.html", {
 		"form": form,
 		"accion": "Crear",
-		"page_title": "Crear Grupo"
+		"page_title": "Crear Grupo",
+		"alumnos_page": alumnos_page,
+		"q": q,
+		"integrantes_ids": [],
 	})
 
 @login_required
@@ -53,10 +66,24 @@ def editar_grupo(request, grupo_id):
 			return redirect("grupos:lista_grupos")
 	else:
 		form = GrupoForm(instance=grupo)
+	# paginación y búsqueda para miembros (igual que en proyectos)
+	q = request.GET.get('q', '')
+	p_page = request.GET.get('p_page', 1)
+	usuarios_qs = Usuario.objects.all().order_by('nombre')
+	if q:
+		usuarios_qs = usuarios_qs.filter(Q(nombre__icontains=q) | Q(email__icontains=q))
+	paginator = Paginator(usuarios_qs, 10)
+	alumnos_page = paginator.get_page(p_page)
+
+	integrantes_ids = list(grupo.integrantes.values_list('id', flat=True))
 	return render(request, "grupos/form_grupo.html", {
 		"form": form,
 		"accion": "Editar",
-		"page_title": "Editar Grupo"
+		"page_title": "Editar Grupo",
+		"alumnos_page": alumnos_page,
+		"q": q,
+		"integrantes_ids": integrantes_ids,
+		"grupo": grupo,
 	})
 
 @login_required

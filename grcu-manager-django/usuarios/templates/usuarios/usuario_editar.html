@@ -61,8 +61,8 @@
         </div>
         {% endif %}
 
-        <button type="submit" class="btn btn-primary">Actualizar</button>
-        <a href="{% url 'usuarios:lista' %}" class="btn btn-secondary">Cancelar</a>
+    <button type="submit" class="btn btn-primary" title="Actualizar usuario" data-bs-toggle="tooltip"><i class="bi bi-check-lg"></i> Actualizar</button>
+    <a href="{% url 'usuarios:lista' %}" class="btn btn-secondary" title="Cancelar" data-bs-toggle="tooltip"><i class="bi bi-x-lg"></i> Cancelar</a>
     </form>
 </div>
 {% endblock %}

@@ -53,8 +53,21 @@
     vertical-align: middle;
 }
 
+/* Zebra striping: filas alternadas */
+.usuario-lista-tabla tbody tr:nth-child(odd) {
+    background: #ffffff;
+}
+.usuario-lista-tabla tbody tr:nth-child(even) {
+    background: #fbfbfd; /* gris clarito */
+}
+
 .usuario-lista-tabla tr:hover {
-    background: #f4f6ff;
+    background: #eef4ff; /* hover claro y contrastado */
+}
+
+/* Fila seleccionada por checkbox */
+.usuario-lista-tabla tbody tr.selected {
+    background: #dceeff !important;
 }
 
 /* --- Avatar --- */

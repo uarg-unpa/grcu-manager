@@ -1,0 +1,57 @@
+
+{% extends "core/base.html" %}
+{% load static %}
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'requerimientos/css/priorizar_styles.css' %}?v=1.0">
+{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <div class="priorizar-header mb-4">
+        <i class="bi bi-funnel-fill"></i>
+        <span class="fs-4 fw-bold">Priorización de Requerimientos <span class="text-info">(MoSCoW)</span></span>
+    </div>
+    {% if proyecto %}
+    <div class="mb-3">
+        <span class="badge-proyecto"><i class="bi bi-diagram-3 me-1"></i> Proyecto: {{ proyecto.nombre }}</span>
+    </div>
+    <form method="post" class="card priorizar-card">
+        {% csrf_token %}
+        <div class="table-responsive">
+        <table class="table table-bordered align-middle mb-0">
+            <thead>
+                <tr>
+                    <th><i class="bi bi-file-earmark-text me-1"></i> Requerimiento</th>
+                    <th><i class="bi bi-card-text me-1"></i> Descripción</th>
+                    <th><i class="bi bi-flag me-1"></i> Prioridad</th>
+                    <th><i class="bi bi-chat-left-text me-1"></i> Comentarios</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for req in requerimientos %}
+                <tr>
+                    <td>{{ req.nombre }}</td>
+                    <td>{{ req.descripcion|truncatechars:60 }}</td>
+                    <td>
+                        <select name="prioridad_{{ req.pk }}" class="form-select">
+                            {% for val, label in MOSCOW_CHOICES %}
+                                <option value="{{ val }}" {% if req.detalle_tradicional and req.detalle_tradicional.prioridad == val %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td>{{ req.detalle_tradicional.observaciones|default:"-" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="text-center">No hay requerimientos para priorizar.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        <div class="text-end p-3">
+            <button type="submit" class="btn btn-priorizar"><i class="bi bi-save me-1"></i> Guardar Priorización</button>
+        </div>
+    </form>
+    {% else %}
+        <div class="alert alert-info">No liderás ningún proyecto.</div>
+    {% endif %}
+</div>
+{% endblock %}

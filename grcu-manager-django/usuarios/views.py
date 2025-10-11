@@ -5,6 +5,7 @@ from accounts.models import Usuario
 from .forms import UsuarioEditarForm, UsuarioCrearForm
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.db.models import Q
 
 
 from usuarios.models import Usuario   # tu modelo de usuario
@@ -16,15 +17,21 @@ def is_admin(user):
 
 @login_required
 def lista_usuarios(request):
-    usuarios_list = Usuario.objects.all().order_by("id")  # ordenados por ID
-    paginator = Paginator(usuarios_list, 10)  # 10 por página
+    q = request.GET.get('q', '').strip()
+    usuarios_qs = Usuario.objects.all().order_by('id')
+    if q:
+        usuarios_qs = usuarios_qs.filter(
+            Q(nombre__icontains=q) | Q(email__icontains=q)
+        )
+    paginator = Paginator(usuarios_qs, 10)  # 10 por página
 
     page_number = request.GET.get("page")
     usuarios = paginator.get_page(page_number)
 
     return render(request, "usuarios/usuario_list.html", {
         "usuarios": usuarios,
-        "page_title": "Listado de Usuarios"
+        "page_title": "Listado de Usuarios",
+        "q": q,
     })
 
 @login_required
@@ -45,13 +52,13 @@ def crear_usuario(request):
         form = UsuarioCrearForm()
 
     # Solo mostrar roles permitidos para el admin
-    roles_qs = Rol.objects.filter(nombre__in=["Admin", "Developer", "Lider", "Visitante"])
+    roles_qs = Rol.objects.filter(nombre__in=["Admin", "Líder", "Visitante"])
     roles = []
     for rol in roles_qs:
         icon = (
             "admin.png" if rol.nombre == "Admin" else
-            "developer.png" if rol.nombre == "Developer" else
-            "lider.png" if rol.nombre == "Lider" else
+            "developer.png" if rol.nombre == "Desarrollador" else
+            "lider.png" if rol.nombre == "Líder" else
             "visitante.png"
         )
         roles.append((rol.nombre, icon, rol.pk))
@@ -81,13 +88,13 @@ def editar_usuario(request, pk):
         form = UsuarioEditarForm(instance=usuario)
 
     # Solo mostrar roles permitidos para el admin
-    roles_qs = Rol.objects.filter(nombre__in=["Admin", "Developer", "Lider", "Visitante"])
+    roles_qs = Rol.objects.filter(nombre__in=["Admin", "Líder", "Visitante"])
     roles = []
     for rol in roles_qs:
         icon = (
             "admin.png" if rol.nombre == "Admin" else
-            "developer.png" if rol.nombre == "Developer" else
-            "lider.png" if rol.nombre == "Lider" else
+            "developer.png" if rol.nombre == "Desarrollador" else
+            "lider.png" if rol.nombre == "Líder" else
             "visitante.png"
         )
         roles.append((rol.nombre, icon, rol.pk))

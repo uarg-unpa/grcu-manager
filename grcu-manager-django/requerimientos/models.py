@@ -27,6 +27,9 @@ class Requerimiento(models.Model):
     detalle_tradicional = models.OneToOneField('DetalleRequerimientoTradicional', on_delete=models.SET_NULL, null=True, blank=True, related_name='requerimiento', verbose_name="Detalle Tradicional")
     detalle_agil = models.OneToOneField('DetalleRequerimientoAgil', on_delete=models.SET_NULL, null=True, blank=True, related_name='requerimiento', verbose_name="Detalle Ágil")
 
+    # Relación opcional con Casos de Uso (muchos a muchos) usando tabla intermedia para mantener 3FN
+    casos_relacionados = models.ManyToManyField('casos_de_uso.CasoDeUso', through='RequerimientoCaso', blank=True, related_name='requerimientos_relacionados')
+
     def __str__(self):
         return self.nombre
 
@@ -60,3 +63,19 @@ class DetalleRequerimientoAgil(models.Model):
 
     def __str__(self):
         return f"Ágil: {self.requerimiento_padre.nombre}"
+
+
+class RequerimientoCaso(models.Model):
+    """Tabla intermedia que persiste la relación entre Requerimiento y CasoDeUso.
+    Permite extender con atributos en el futuro sin violar 3FN."""
+    requerimiento = models.ForeignKey(Requerimiento, on_delete=models.CASCADE, related_name='relaciones_casos')
+    caso_de_uso = models.ForeignKey('casos_de_uso.CasoDeUso', on_delete=models.CASCADE, related_name='relaciones_requerimientos')
+    fecha_vinculacion = models.DateTimeField(auto_now_add=True)
+    nota = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        unique_together = ('requerimiento', 'caso_de_uso')
+
+    def __str__(self):
+        # usar .pk para evitar advertencias del analizador estático (pylance)
+        return f"Req {self.requerimiento.pk} <-> CU {self.caso_de_uso.pk}"

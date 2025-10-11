@@ -17,15 +17,15 @@
     {% else %}
     <div class="d-flex align-items-center mb-3">
         {% if proyecto.logo %}
-            <img src="{{ proyecto.logo.url }}" alt="logo" style="width:64px;height:64px;object-fit:cover;border-radius:8px;" class="me-3">
+            <img src="{{ proyecto.logo.url }}" alt="logo" style="width:150px;height:150px;object-fit:contain;border-radius:12px;background:#fff;padding:6px;" class="me-3">
         {% endif %}
         <div>
             <h3 class="mb-0">{{ proyecto.nombre }}</h3>
             <small class="text-muted">Líder: {% if lider %}{{ lider.nombre }}{% else %}No asignado{% endif %}</small>
         </div>
         <div class="ms-auto">
-            <a href="{% url 'proyectos:editar_proyecto' proyecto.id %}" class="btn btn-sm btn-warning">Editar</a>
-            <a href="{% url 'proyectos:eliminar_proyecto' proyecto.id %}" class="btn btn-sm btn-danger">Eliminar</a>
+            <a href="{% url 'proyectos:editar_proyecto' proyecto.id %}" class="btn btn-sm btn-warning" title="Editar" data-bs-toggle="tooltip"><i class="bi bi-pencil-square"></i></a>
+            <a href="{% url 'proyectos:eliminar_proyecto' proyecto.id %}" class="btn btn-sm btn-danger" title="Eliminar" data-bs-toggle="tooltip"><i class="bi bi-trash"></i></a>
         </div>
     </div>
 
@@ -49,7 +49,7 @@
                     <h5>Requerimientos ({{ requerimientos|length }})</h5>
                     <ul class="list-group list-group-flush">
                         {% for r in requerimientos %}
-                            <li class="list-group-item {% if r in reqs_huerfanos %}text-danger{% endif %}">{{ r.nombre }} - {{ r.get_tipo_display }}</li>
+                            <li class="list-group-item {% if r.pk in reqs_huerfanos_ids %}text-danger{% endif %}">{{ r.nombre }} - {{ r.get_tipo_display }}</li>
                         {% empty %}
                             <li class="list-group-item text-muted">No hay requerimientos</li>
                         {% endfor %}
@@ -62,7 +62,7 @@
                     <h5>Casos de Uso ({{ casos|length }})</h5>
                     <ul class="list-group list-group-flush">
                         {% for c in casos %}
-                            <li class="list-group-item {% if c in casos_huerfanos %}text-danger{% endif %}">{{ c.nombre }}</li>
+                            <li class="list-group-item {% if c.pk in casos_huerfanos_ids %}text-danger{% endif %}">{{ c.nombre }}</li>
                         {% empty %}
                             <li class="list-group-item text-muted">No hay casos de uso</li>
                         {% endfor %}

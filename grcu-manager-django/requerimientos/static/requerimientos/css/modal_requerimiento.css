@@ -1,0 +1,32 @@
+/* Modal institucional para agregar requerimiento (solo para requerimiento_list.html) */
+#requerimientoModal .modal-content {
+    border: 2px solid #17A2B8;
+    border-radius: 1rem;
+    box-shadow: 0 4px 24px rgba(23,162,184,0.12);
+}
+#requerimientoModal .modal-header {
+    background: linear-gradient(135deg, #17A2B8 0%, #343A40 100%);
+    color: #fff;
+    border-radius: 1rem 1rem 0 0;
+    border-bottom: 1.5px solid #17A2B8;
+}
+#requerimientoModal .modal-title i {
+    color: #fff;
+}
+#requerimientoModal .btn-close {
+    filter: invert(1) grayscale(1);
+}
+#requerimientoModal .modal-footer {
+    background: #f8f9fa;
+    border-radius: 0 0 1rem 1rem;
+    border-top: 1.5px solid #17A2B8;
+}
+#requerimientoModal .btn-secondary {
+    background: #343A40;
+    color: #fff;
+    border: none;
+}
+#requerimientoModal .btn-secondary:hover {
+    background: #17A2B8;
+    color: #fff;
+}

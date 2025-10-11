@@ -1,0 +1,5 @@
+/* Borde institucional para listas de casos de uso */
+.card.casos-uso-list-card {
+    border: 1.5px solid #17A2B8;
+    box-shadow: 0 2px 8px rgba(23,162,184,0.08);
+}

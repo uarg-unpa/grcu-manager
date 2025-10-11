@@ -1,11 +1,64 @@
-{% extends 'base.html' %}
+{% extends 'core/base.html' %}
+{% load static %}
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'casos_de_uso/css/casos_de_uso_styles.css' %}?v=1.0">
+{% endblock %}
 {% block content %}
-<h2>Casos de Uso{% if proyecto %} de {{ proyecto.nombre }}{% endif %}</h2>
-<ul>
-  {% for caso in casos %}
-    <li><a href="{% url 'casos_de_uso:caso_de_uso_detail' caso.pk %}">{{ caso.nombre }}</a></li>
-  {% empty %}
-    <li>No hay casos de uso.</li>
-  {% endfor %}
-</ul>
+<div class="container py-4">
+  <div class="priorizar-header mb-4">
+    <i class="bi bi-diagram-3"></i>
+    <span class="fs-4 fw-bold">Lista de Casos de Uso</span>
+  </div>
+  <div class="card casos-uso-list-card">
+    <div class="table-responsive mb-0">
+      <table class="table table-bordered table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th><i class="bi bi-hash me-1"></i> ID</th>
+            <th><i class="bi bi-diagram-3 me-1"></i> Nombre</th>
+            <th><i class="bi bi-card-text me-1"></i> Descripción</th>
+            <th><i class="bi bi-eye me-1"></i> Detalles</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cu in casos %}
+          <tr>
+            <td>{{ cu.pk }}</td>
+            <td>{{ cu.nombre }}</td>
+            <td>{{ cu.descripcion|truncatechars:60 }}</td>
+            <td>
+              <button class="btn btn-sm btn-outline-info" type="button" data-bs-toggle="collapse" data-bs-target="#detalle-{{ cu.pk }}" title="Ver"><i class="bi bi-eye"></i></button>
+              <a href="{% url 'casos_de_uso:caso_de_uso_detail' cu.pk %}" class="btn btn-sm btn-outline-secondary" title="Ver">
+                <i class="bi bi-eye"></i>
+              </a>
+              <div class="collapse mt-2" id="detalle-{{ cu.pk }}">
+                <div class="card card-body">
+                  {% if cu.detalle_tradicional %}
+                    <b>Actor principal:</b> {{ cu.detalle_tradicional.actor_principal|default:'-' }}<br>
+                    <b>Precondiciones:</b> {{ cu.detalle_tradicional.precondiciones|default:'-' }}<br>
+                    <b>Flujo principal:</b> {{ cu.detalle_tradicional.flujo_principal|default:'-' }}<br>
+                    <b>Flujo alternativo:</b> {{ cu.detalle_tradicional.flujo_alternativo|default:'-' }}<br>
+                    <b>Postcondiciones:</b> {{ cu.detalle_tradicional.postcondiciones|default:'-' }}<br>
+                    <b>Observaciones:</b> {{ cu.detalle_tradicional.observaciones|default:'-' }}
+                  {% elif cu.detalle_agil %}
+                    <b>Historia de usuario:</b> {{ cu.detalle_agil.historia_usuario|default:'-' }}<br>
+                    <b>Criterio de aceptación:</b> {{ cu.detalle_agil.criterio_aceptacion|default:'-' }}<br>
+                    <b>Responsable:</b> {{ cu.detalle_agil.responsable|default:'-' }}<br>
+                    <b>Estado Scrum:</b> {{ cu.detalle_agil.estado_scrum|default:'-' }}<br>
+                    <b>Observaciones:</b> {{ cu.detalle_agil.observaciones|default:'-' }}
+                  {% else %}
+                    -
+                  {% endif %}
+                </div>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="text-center">No hay casos de uso cargados.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
 {% endblock %}

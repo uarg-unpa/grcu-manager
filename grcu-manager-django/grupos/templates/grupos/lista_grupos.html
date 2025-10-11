@@ -48,8 +48,8 @@
                     {% endif %}
                 </td>
                 <td>
-                    <a href="{% url 'grupos:editar_grupo' grupo.id %}" class="grupo-lista-btn-warning">Editar</a>
-                    <a href="{% url 'grupos:eliminar_grupo' grupo.id %}" class="grupo-lista-btn-danger">Eliminar</a>
+                    <a href="{% url 'grupos:editar_grupo' grupo.id %}" class="grupo-lista-btn-warning" title="Editar" data-bs-toggle="tooltip"><i class="bi bi-pencil-square"></i></a>
+                    <a href="{% url 'grupos:eliminar_grupo' grupo.id %}" class="grupo-lista-btn-danger" title="Eliminar" data-bs-toggle="tooltip"><i class="bi bi-trash"></i></a>
                 </td>
             </tr>
             {% endfor %}

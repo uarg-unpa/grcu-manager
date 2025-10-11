@@ -1,3 +1,45 @@
+/* Unificación de estilos institucionales para dashboard del líder */
+.lider-dashboard-header {
+    background: #343A40;
+    color: #fff;
+    padding: 1rem 1.5rem;
+    border-radius: 0.5rem 0.5rem 0 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+}
+.lider-dashboard-header i {
+    color: #17A2B8;
+    font-size: 1.7rem;
+}
+.card.lider-dashboard-card {
+    border: 1.5px solid #17A2B8;
+    box-shadow: 0 2px 8px rgba(23,162,184,0.08);
+}
+.proyecto-logo {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    border-radius: 0.5rem;
+    border: 2px solid #b6b6b6;
+    background: #fff;
+    margin-right: 1rem;
+}
+.badge-proyecto {
+    background: #17A2B8;
+    color: #fff;
+    font-size: 1rem;
+    padding: 0.5em 1em;
+    border-radius: 0.5em;
+}
+.list-group-item.text-danger {
+    background: #fff0f0;
+    color: #c82333;
+}
+.lider-dashboard-card .card-title i {
+    color: #17A2B8;
+}
 /* Reset potential Bootstrap conflicts */
 * {
     box-sizing: border-box;
@@ -61,11 +103,14 @@
 }
 
 .proyecto-logo {
-    width: 60px;
-    height: 60px;
-    object-fit: cover;
-    border-radius: 8px;
-    border: 2px solid #60A5FA;
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    border-radius: 12px;
+    border: 2.5px solid #60A5FA;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(59,130,246,0.10);
+    padding: 6px;
 }
 
 .proyecto-header h3 {

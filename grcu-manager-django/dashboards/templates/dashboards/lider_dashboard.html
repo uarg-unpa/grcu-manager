@@ -1,123 +1,194 @@
-
 {% extends "core/base.html" %}
 {% load static %}
 {% block extra_css %}
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'dashboards/css/lider_dashboard_styles.css' %}?v=2.0">
+    <link rel="stylesheet" href="{% static 'dashboards/css/lider_dashboard_styles.css' %}?v=2.1">
 {% endblock %}
 {% block extra_js %}
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+          new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+        // Renderiza los gráficos circulares para cada proyecto
+        {% for data in dashboard_data %}
+        // Gráfico de requerimientos: huérfanos vs relacionados
+        var ctxReq{{ forloop.counter0 }} = document.getElementById('grafico-req-{{ forloop.counter0 }}');
+        if (ctxReq{{ forloop.counter0 }}) {
+          new Chart(ctxReq{{ forloop.counter0 }}, {
+            type: 'doughnut',
+            data: {
+              labels: ['Huérfanos', 'Relacionados'],
+              datasets: [{
+                data: [
+                  {{ data.reqs_huerfanos|length }},
+                  {{ data.reqs_relacionados }}
+                ],
+                backgroundColor: [
+                  '#EF4444',
+                  '#3B82F6'
+                ],
+                borderWidth: 1
+              }]
+            },
+            options: {
+              plugins: {
+                legend: { display: true, position: 'bottom' }
+              },
+              cutout: '65%'
+            }
+          });
+        }
+        // Gráfico de casos de uso: huérfanos vs relacionados
+        var ctxCu{{ forloop.counter0 }} = document.getElementById('grafico-cu-{{ forloop.counter0 }}');
+        if (ctxCu{{ forloop.counter0 }}) {
+          new Chart(ctxCu{{ forloop.counter0 }}, {
+            type: 'doughnut',
+            data: {
+              labels: ['Huérfanos', 'Relacionados'],
+              datasets: [{
+                data: [
+                  {{ data.casos_huerfanos|length }},
+                  {{ data.casos_relacionados }}
+                ],
+                backgroundColor: [
+                  '#EF4444',
+                  '#10B981'
+                ],
+                borderWidth: 1
+              }]
+            },
+            options: {
+              plugins: {
+                legend: { display: true, position: 'bottom' }
+              },
+              cutout: '65%'
+            }
+          });
+        }
+        {% endfor %}
+      });
+    </script>
 {% endblock %}
 {% block content %}
-<div class="container-fluid py-4">
-    {% comment %} <h2 class="mb-4">Dashboard del Líder</h2> {% endcomment %}
+<div class="container py-4">
+    {% comment %} <div class="lider-dashboard-header mb-4">
+        <i class="bi bi-speedometer2"></i>
+        <span class="fs-4 fw-bold">Dashboard del Líder</span>
+    </div> {% endcomment %}
     {% if dashboard_data %}
         {% for data in dashboard_data %}
-        <div class="card mb-4 shadow-sm">
+        <div class="card mb-4 shadow-sm lider-dashboard-card">
             <div class="card-header d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center">
                     {% if data.proyecto.logo %}
-                        <img src="{{ data.proyecto.logo.url }}" alt="Logo" class="rounded me-3" style="width:48px;height:48px;object-fit:cover;">
+                        <img src="{{ data.proyecto.logo.url }}" alt="Logo" class="proyecto-logo me-3">
                     {% endif %}
                     <div>
-                        <h4 class="mb-0">{{ data.proyecto.nombre }}</h4>
+                        <span class="badge-proyecto mb-1"><i class="bi bi-diagram-3 me-1"></i> {{ data.proyecto.nombre }}</span><br>
                         <small class="text-muted">Metodología: {{ data.proyecto.get_metodologia_display }}</small>
                     </div>
                 </div>
-                <span class="badge bg-primary">Integrantes: {{ data.integrantes|length }}</span>
+                <div class="d-flex flex-column align-items-end">
+                    <div class="integrantes-list-header">
+                        <small class="text-muted">Integrantes:</small>
+                        <span>
+                            {% for integrante in data.integrantes %}
+                                <span class="badge bg-secondary me-1">{{ integrante.nombre }}</span>
+                            {% empty %}
+                                <span class="text-muted">Sin integrantes</span>
+                            {% endfor %}
+                        </span>
+                    </div>
+                </div>
             </div>
             <div class="card-body">
                 <div class="row mb-3">
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <div class="card text-bg-light mb-3">
                             <div class="card-body">
-                                <h6 class="card-title">Requerimientos</h6>
+                                <h6 class="card-title">
+                                    <i class="bi bi-list-check me-2"></i> Requerimientos
+                                </h6>
                                 <h3 class="card-text">{{ data.requerimientos|length }}</h3>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <div class="card text-bg-light mb-3">
                             <div class="card-body">
-                                <h6 class="card-title">Casos de Uso</h6>
+                                <h6 class="card-title">
+                                    <i class="bi bi-diagram-3 me-2"></i> Casos de Uso
+                                </h6>
                                 <h3 class="card-text">{{ data.casos_de_uso|length }}</h3>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <div class="card text-bg-light mb-3">
                             <div class="card-body">
-                                <h6 class="card-title">Huérfanos</h6>
+                                <h6 class="card-title">
+                                    <i class="bi bi-exclamation-triangle me-2"></i> Huérfanos
+                                </h6>
                                 <span class="text-danger">Reqs: {{ data.reqs_huerfanos|length }}</span><br>
                                 <span class="text-danger">CUs: {{ data.casos_huerfanos|length }}</span>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-3">
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
                         <div class="card text-bg-light mb-3">
                             <div class="card-body">
-                                <h6 class="card-title">Acciones recientes</h6>
-                                <h3 class="card-text">{{ data.acciones|length }}</h3>
+                                <h6 class="card-title">
+                                    <i class="bi bi-pie-chart me-2"></i> Distribución Requerimientos
+                                </h6>
+                                <canvas id="grafico-req-{{ forloop.counter0 }}" width="80" height="80" style="max-width:80px;max-height:80px;display:block;margin:auto;"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card text-bg-light mb-3">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i class="bi bi-pie-chart-fill me-2"></i> Distribución Casos de Uso
+                                </h6>
+                                <canvas id="grafico-cu-{{ forloop.counter0 }}" width="80" height="80" style="max-width:80px;max-height:80px;display:block;margin:auto;"></canvas>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col-md-8">
-                        <h5>Integrantes</h5>
-                        <ul class="list-group mb-3">
-                            {% for integrante in data.integrantes %}
-                                <li class="list-group-item">{{ integrante.nombre }} ({{ integrante.email }})</li>
-                            {% empty %}
-                                <li class="list-group-item">No hay integrantes asignados</li>
-                            {% endfor %}
-                        </ul>
+                    <div class="col-md-6">
                         <h5>Requerimientos huérfanos <span class="badge bg-danger">{{ data.reqs_huerfanos|length }}</span></h5>
                         <ul class="list-group mb-3">
                             {% for req in data.reqs_huerfanos %}
-                                <li class="list-group-item text-danger">{{ req.nombre }}</li>
-                            {% empty %}
-                                <li class="list-group-item">Ninguno</li>
-                            {% endfor %}
-                        </ul>
-                        <h5>Casos de uso huérfanos <span class="badge bg-danger">{{ data.casos_huerfanos|length }}</span></h5>
-                        <ul class="list-group mb-3">
-                            {% for cu in data.casos_huerfanos %}
-                                <li class="list-group-item text-danger">{{ cu.nombre }}</li>
+                                <li class="list-group-item text-danger"
+                                    data-bs-toggle="tooltip"
+                                    data-bs-placement="top"
+                                    title="Tipo: {{ req.get_tipo_display }} | Estado: {{ req.get_estado_display }}&#10;{{ req.descripcion|default:'Sin descripción'|striptags|truncatechars:120 }}">
+                                    {{ req.nombre }}
+                                </li>
                             {% empty %}
                                 <li class="list-group-item">Ninguno</li>
                             {% endfor %}
                         </ul>
                     </div>
-                    <div class="col-md-4">
-                        <h5>Últimas 20 acciones</h5>
+                    <div class="col-md-6">
+                        <h5>Casos de uso huérfanos <span class="badge bg-danger">{{ data.casos_huerfanos|length }}</span></h5>
                         <ul class="list-group mb-3">
-                            {% for accion in data.acciones %}
-                                <li class="list-group-item small">{{ accion.fecha|date:"d/m/Y H:i" }} - <b>{{ accion.usuario.nombre }}</b>: {{ accion.accion }}</li>
+                            {% for cu in data.casos_huerfanos %}
+                                <li class="list-group-item text-danger"
+                                    data-bs-toggle="tooltip"
+                                    data-bs-placement="top"
+                                    title="{{ cu.descripcion|default:'Sin descripción'|striptags|truncatechars:120 }}">
+                                    {{ cu.nombre }}
+                                </li>
                             {% empty %}
-                                <li class="list-group-item">No hay acciones recientes</li>
+                                <li class="list-group-item">Ninguno</li>
                             {% endfor %}
                         </ul>
-                        <canvas id="chart-{{ forloop.counter }}" height="180"></canvas>
-                        <script>
-                        document.addEventListener('DOMContentLoaded', function() {
-                            var ctx = document.getElementById('chart-{{ forloop.counter }}').getContext('2d');
-                            new Chart(ctx, {
-                                type: 'doughnut',
-                                data: {
-                                    labels: ['Requerimientos', 'Casos de Uso', 'Huérfanos'],
-                                    datasets: [{
-                                        data: [{{ data.requerimientos|length }}, {{ data.casos_de_uso|length }}, {{ data.reqs_huerfanos|length|add:data.casos_huerfanos|length }}],
-                                        backgroundColor: ['#0d6efd', '#198754', '#dc3545'],
-                                    }]
-                                },
-                                options: {
-                                    plugins: { legend: { position: 'bottom' } },
-                                    cutout: '70%'
-                                }
-                            });
-                        });
-                        </script>
                     </div>
                 </div>
             </div>

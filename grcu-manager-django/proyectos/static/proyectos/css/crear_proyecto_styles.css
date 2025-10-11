@@ -55,6 +55,66 @@
     transition: border-color 0.2s;
 }
 
+/* Participantes como badges seleccionables */
+.participantes-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.participante-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #f4f6ff;
+    border: 2px solid transparent;
+    cursor: pointer;
+    min-width: 160px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+    transition: background 0.15s, transform 0.08s, border-color 0.15s;
+}
+
+.participante-badge .participante-nombre {
+    font-weight: 600;
+    color: #25324c;
+}
+.participante-badge .participante-email {
+    font-size: 0.85rem;
+    color: #6b7280;
+}
+
+.participante-badge:hover {
+    background: #e7eefc;
+}
+
+.participante-badge.active {
+    background: #2d8cf0;
+    color: #fff;
+    border-color: #1a6ad8;
+    transform: translateY(-2px);
+}
+
+.participante-badge:focus {
+    outline: 3px solid rgba(45,140,240,0.25);
+    outline-offset: 2px;
+}
+
+/* Visually hide the checkbox but keep it in the DOM for form submission and accessibility */
+.visually-hidden-checkbox {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+
 .proyecto-form-group input:focus,
 .proyecto-form-group textarea:focus,
 .proyecto-form-group select:focus {

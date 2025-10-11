@@ -2,13 +2,17 @@
 
 {% load static %}
 
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'usuarios/css/confirmacion_eliminar_usuario.css' %}">
+{% endblock %}
+
 {% block content %}
-<div class="grupo-eliminar-container">
+<div class="confirmacion-eliminar-container">
     <p>¿Estás seguro de que deseas eliminar el grupo <strong>{{ grupo.nombre }}</strong>?</p>
     <form method="post">
         {% csrf_token %}
-        <button type="submit" class="grupo-eliminar-btn-confirmar">Sí, eliminar</button>
-        <a href="{% url 'grupos:lista_grupos' %}" class="grupo-eliminar-btn-cancelar">Cancelar</a>
+        <button type="submit" class="btn btn-danger" data-bs-toggle="tooltip" title="Confirmar eliminación"><i class="bi bi-trash"></i> Sí, eliminar</button>
+        <a href="{% url 'grupos:lista_grupos' %}" class="btn btn-secondary" title="Cancelar" data-bs-toggle="tooltip"><i class="bi bi-x-lg"></i> Cancelar</a>
     </form>
 </div>
 {% endblock %}

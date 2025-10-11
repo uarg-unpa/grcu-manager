@@ -129,7 +129,7 @@ def google_login_callback(request):
 
     if user.roles.filter(nombre__iexact="Admin").exists():
         return redirect("dashboards:admin_dashboard")
-    elif user.roles.filter(nombre__iexact="Lider").exists():
+    elif user.roles.filter(nombre__iexact="Líder").exists():
         return redirect("dashboards:lider_dashboard")
     else:
         return redirect("dashboards:usuario_dashboard") 

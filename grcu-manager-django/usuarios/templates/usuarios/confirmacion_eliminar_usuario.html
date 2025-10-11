@@ -13,8 +13,8 @@
     <p>¿Estás seguro de que deseas eliminar al usuario <strong>{{ user.nombre }}</strong> ({{ user.email }})?</p>
     <form method="post">
         {% csrf_token %}
-        <button type="submit" class="btn btn-danger">Sí, eliminar</button>
-        <a href="{% url 'usuarios:lista' %}" class="btn btn-secondary">Cancelar</a>
+    <button type="submit" class="btn btn-danger" data-bs-toggle="tooltip" title="Confirmar eliminación"><i class="bi bi-trash"></i> Sí, eliminar</button>
+        <a href="{% url 'usuarios:lista' %}" class="btn btn-secondary" title="Cancelar" data-bs-toggle="tooltip"><i class="bi bi-x-lg"></i> Cancelar</a>
     </form>
 </div>
 {% endblock %}

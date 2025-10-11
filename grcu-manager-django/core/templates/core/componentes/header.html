@@ -22,6 +22,9 @@
                     {% endif %}
                     <span class="user-name">
                         {{ user.nombre|default:user.email }}
+                        <span class="user-role small ms-2" style="color: #fff;">
+                            {% if user.es_admin %}Administrador{% elif user.es_lider %}Líder{% elif user.es_miembro %}Miembro{% else %}Usuario{% endif %}
+                        </span>
                     </span>
                     <a href="{% url 'accounts:logout' %}" class="logout-btn">
                         <i class="bi bi-box-arrow-right"></i> Salir

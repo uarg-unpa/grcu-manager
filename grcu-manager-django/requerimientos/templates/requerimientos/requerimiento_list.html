@@ -1,11 +1,268 @@
-{% extends 'base.html' %}
+{% extends 'core/base.html' %}
+
+{% load static %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'requerimientos/css/modal_requerimiento.css' %}?v=1.0">
+{% endblock %}
+
 {% block content %}
-<h2>Requerimientos{% if proyecto %} de {{ proyecto.nombre }}{% endif %}</h2>
-<ul>
-  {% for req in requerimientos %}
-    <li><a href="{% url 'requerimientos:requerimiento_detail' req.pk %}">{{ req.nombre }}</a> ({{ req.get_tipo_display }}, {{ req.get_estado_display }})</li>
-  {% empty %}
-    <li>No hay requerimientos.</li>
-  {% endfor %}
+<div class="container py-4">
+  <div class="priorizar-header mb-4 justify-content-between" style="display: flex; align-items: center;">
+    <div style="display: flex; align-items: center; gap: 0.5rem;">
+      <i class="bi bi-list-task"></i>
+      <span class="fs-4 fw-bold">Lista de Requerimientos</span>
+    </div>
+    <button type="button"
+            id="addRequerimientoBtn"
+            class="btn btn-priorizar btn-lg px-4 py-2 shadow-sm"
+            data-proyecto-id="{% if proyecto %}{{ proyecto.pk }}{% endif %}">
+      <i class="bi bi-plus-circle-fill me-2"></i>
+      Nuevo Requerimiento
+    </button>
+  </div>
+  <div class="card priorizar-card">
+    <div class="table-responsive mb-0">
+      <table class="table table-bordered table-hover align-middle mb-0">
+        <thead>
+          <tr style="background: #343A40; color: #fff;">
+            <th><i class="bi bi-file-earmark-text me-1"></i> Nombre</th>
+            <th><i class="bi bi-tag me-1"></i> Tipo</th>
+            <th><i class="bi bi-flag me-1"></i> Estado</th>
+            <th><i class="bi bi-card-text me-1"></i> Descripción</th>
+            <th><i class="bi bi-diagram-3 me-1"></i> Proyecto</th>
+            <th><i class="bi bi-calendar me-1"></i> Fecha</th>
+            <th><i class="bi bi-link-45deg me-1"></i> Huérfano / Caso de Uso</th>
+            <th><i class="bi bi-gear me-1"></i> Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for req in requerimientos %}
+            <tr>
+              <td>
+                <a href="{% url 'requerimientos:requerimiento_detail' req.pk %}" class="fw-bold text-decoration-none">
+                  {{ req.nombre }}
+                </a>
+              </td>
+              <td>{{ req.get_tipo_display }}</td>
+              <td>{{ req.get_estado_display }}</td>
+              <td>{{ req.descripcion|default:'-'|truncatechars:60 }}</td>
+              <td>
+                {% if req.proyecto %}
+                  {{ req.proyecto.nombre }}
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td>{{ req.fecha_creacion|date:'d/m/Y' }}</td>
+              <td>
+                {% with casos=req.casos_relacionados.all %}
+                  {% if casos|length == 0 %}
+                    <span class="badge bg-danger">Huérfano</span>
+                  {% else %}
+                    {% for caso in casos %}
+                      <a href="{% url 'casos_de_uso:caso_de_uso_detail' caso.pk %}" class="badge bg-info text-dark me-1">{{ caso.nombre }}</a>{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                  {% endif %}
+                {% endwith %}
+              </td>
+              <td>
+                <a href="{% url 'requerimientos:requerimiento_detail' req.pk %}" class="btn btn-outline-primary btn-sm" title="Ver Detalle">
+                  <i class="bi bi-eye"></i>
+                </a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="8" class="text-center text-muted">No hay requerimientos.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<!-- Enhanced Modal for Requirements -->
+<div class="modal fade" id="requerimientoModal" tabindex="-1" aria-labelledby="requerimientoModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title fw-bold" id="requerimientoModalLabel">
+          <i class="bi bi-file-earmark-plus me-2"></i>
+          Crear Nuevo Requerimiento
+        </h4>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body p-4" id="requerimientoModalBody">
+        <div class="d-flex justify-content-center align-items-center py-5">
+          <div class="spinner-border text-success" role="status">
+            <span class="visually-hidden">Cargando formulario...</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="bi bi-x-circle me-1"></i>Cancelar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var modalEl = document.getElementById('requerimientoModal');
+  var modal = new bootstrap.Modal(modalEl);
+
+  function openForm(url) {
+    fetch(url, {headers: {'x-requested-with': 'XMLHttpRequest'}})
+      .then(function(resp){ return resp.text(); })
+      .then(function(html){
+        document.getElementById('requerimientoModalBody').innerHTML = html;
+        modal.show();
+        bindForm();
+      });
+  }
+
+  function bindForm(){
+    var form = document.getElementById('requerimiento-form');
+    if(!form) return;
+    form.addEventListener('submit', function(ev){
+      ev.preventDefault();
+      var action = form.getAttribute('action');
+      var data = new FormData(form);
+      fetch(action, {
+        method: 'POST',
+        headers: {'x-requested-with': 'XMLHttpRequest'},
+        body: data
+      }).then(function(resp){
+        var ct = resp.headers.get('content-type') || '';
+        if(ct.indexOf('application/json') !== -1){
+          return resp.json().then(function(json){ return {json: json}; });
+        }
+        return resp.text().then(function(html){ return {html: html}; });
+      }).then(function(result){
+        if(result.json){
+          var json = result.json;
+          if(json.success){
+            modal.hide();
+            // insert the new item into the list dynamically
+            var ul = document.querySelector('ul');
+            if(ul){
+              var li = document.createElement('li');
+              var a = document.createElement('a');
+              a.href = '{% url "requerimientos:requerimiento_detail" 0 %}'.replace('/0/', '/' + json.pk + '/');
+              a.textContent = json.nombre;
+              li.appendChild(a);
+              li.insertAdjacentHTML('beforeend', ' (' + json.tipo + ', ' + json.estado + ')');
+              // if placeholder 'No hay requerimientos.' is present remove it
+              var empty = ul.querySelector('li');
+              if(empty && empty.textContent.trim() === 'No hay requerimientos.'){
+                ul.innerHTML = '';
+              }
+              ul.insertBefore(li, ul.firstChild);
+            }
+          }
+        } else if(result.html){
+          // validation errors: replace modal body with returned HTML
+          document.getElementById('requerimientoModalBody').innerHTML = result.html;
+          bindForm();
+        }
+      }).catch(function(){
+        // on error, fallback to full submit
+        form.submit();
+      });
+    });
+  }
+
+  // wire buttons
+  var addButtons = document.querySelectorAll('a[href*="requerimiento_create"]');
+  addButtons.forEach(function(btn){
+    btn.addEventListener('click', function(ev){
+      ev.preventDefault();
+      openForm(btn.getAttribute('href'));
+    });
+  });
+});
+</script>
+
+<!-- Simple Button Styles -->
+<style>
+  #addRequerimientoBtn {
+    transition: all 0.3s ease;
+    font-weight: bold;
+  }
+  
+  #addRequerimientoBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(25, 135, 84, 0.3);
+  }
+</style>
+
 </ul>
+
+<script>
+// Enhanced Add Button with Modal Integration
+document.addEventListener('DOMContentLoaded', function() {
+  var addBtn = document.getElementById('addRequerimientoBtn');
+  var modalEl = document.getElementById('requerimientoModal');
+  var modal = new bootstrap.Modal(modalEl);
+  
+  if (!addBtn) return;
+  
+  addBtn.addEventListener('click', function(ev) {
+    ev.preventDefault();
+    
+    // Show loading state
+    var originalHTML = addBtn.innerHTML;
+    addBtn.disabled = true;
+    addBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Cargando...';
+    
+    // Get project ID from button data attribute
+    var proyectoId = addBtn.getAttribute('data-proyecto-id');
+    var url = proyectoId ? 
+      '{% url "requerimientos:requerimiento_create_proyecto" 0 %}'.replace('0', proyectoId) :
+      '{% url "requerimientos:requerimiento_create" %}';
+    
+    // Fetch form via AJAX
+    fetch(url, {
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'Accept': 'text/html'
+      }
+    })
+    .then(function(response) {
+      if (!response.ok) throw new Error('Network response was not ok');
+      return response.text();
+    })
+    .then(function(html) {
+      // Load form into modal
+      document.getElementById('requerimientoModalBody').innerHTML = html;
+      
+      // Reset button state
+      addBtn.disabled = false;
+      addBtn.innerHTML = originalHTML;
+      
+      // Show modal
+      modal.show();
+      
+      // Bind form submission if bindForm function exists
+      if (typeof bindForm === 'function') {
+        bindForm();
+      }
+    })
+    .catch(function(error) {
+      console.error('Error loading form:', error);
+      addBtn.disabled = false;
+      addBtn.innerHTML = originalHTML;
+      
+      // Show error message
+      document.getElementById('requerimientoModalBody').innerHTML = 
+        '<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>Error al cargar el formulario. Por favor, inténtelo de nuevo.</div>';
+      modal.show();
+    });
+  });
+});
+</script>
+
 {% endblock %}

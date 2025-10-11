@@ -29,7 +29,7 @@
             <tr>
                 <td>
                     {% if proyecto.logo %}
-                        <img src="{{ proyecto.logo.url }}" width="90" height="90" style="object-fit:cover; border-radius:12px; box-shadow:0 2px 8px rgba(68,76,138,0.10); border:2px solid #eee;">
+                        <img src="{{ proyecto.logo.url }}" width="150" height="150" style="object-fit:contain; border-radius:12px; box-shadow:0 2px 8px rgba(68,76,138,0.10); border:2px solid #eee; background:#fff; padding:8px;">
                     {% else %}
                         <span class="text-muted">Sin logo</span>
                     {% endif %}
@@ -51,9 +51,15 @@
                 </td>
                 <td>{{ proyecto.fecha_creacion|date:"d/m/Y H:i" }}</td>
                 <td>
-                    <a href="{% url 'proyectos:editar_proyecto' proyecto.id %}" class="btn btn-sm btn-warning">Editar</a>
-                    <a href="{% url 'proyectos:eliminar_proyecto' proyecto.id %}" class="btn btn-sm btn-danger">Eliminar</a>
-                    <a href="{% url 'dashboards:admin_proyecto_detail' proyecto.id %}" class="btn btn-sm btn-primary">Ver</a>
+                    <a href="{% url 'dashboards:admin_proyecto_detail' proyecto.id %}" class="btn btn-sm btn-outline-secondary" title="Ver" data-bs-toggle="tooltip">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                    <a href="{% url 'proyectos:editar_proyecto' proyecto.id %}" class="btn btn-sm btn-warning" title="Editar" data-bs-toggle="tooltip">
+                        <i class="bi bi-pencil-square"></i>
+                    </a>
+                    <a href="{% url 'proyectos:eliminar_proyecto' proyecto.id %}" class="btn btn-sm btn-danger delete-project" title="Eliminar" data-bs-toggle="tooltip">
+                        <i class="bi bi-trash"></i>
+                    </a>
                 </td>
             </tr>
             {% endfor %}
@@ -63,4 +69,17 @@
     <p class="proyecto-lista-vacio">No hay proyectos creados.</p>
     {% endif %}
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+    document.querySelectorAll('.delete-project').forEach(btn => {
+        btn.addEventListener('click', function(e){
+            const ok = confirm('¿Va a eliminar este proyecto. Está seguro? Esta acción no se puede deshacer.');
+            if(!ok) e.preventDefault();
+        });
+    });
+});
+</script>
 {% endblock %}
