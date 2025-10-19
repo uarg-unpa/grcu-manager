@@ -57,7 +57,7 @@
                     <a href="{% url 'proyectos:editar_proyecto' proyecto.id %}" class="btn btn-sm btn-warning" title="Editar" data-bs-toggle="tooltip">
                         <i class="bi bi-pencil-square"></i>
                     </a>
-                    <a href="{% url 'proyectos:eliminar_proyecto' proyecto.id %}" class="btn btn-sm btn-danger delete-project" title="Eliminar" data-bs-toggle="tooltip">
+                    <a href="{% url 'proyectos:eliminar_proyecto' proyecto.id %}" class="btn btn-sm btn-danger" title="Eliminar" data-bs-toggle="tooltip">
                         <i class="bi bi-trash"></i>
                     </a>
                 </td>
@@ -72,14 +72,4 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function(){
-    document.querySelectorAll('.delete-project').forEach(btn => {
-        btn.addEventListener('click', function(e){
-            const ok = confirm('¿Va a eliminar este proyecto. Está seguro? Esta acción no se puede deshacer.');
-            if(!ok) e.preventDefault();
-        });
-    });
-});
-</script>
 {% endblock %}

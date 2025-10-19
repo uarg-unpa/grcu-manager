@@ -10,11 +10,71 @@
 
 {% block content %}
 <div class="confirmacion-eliminar-container">
-    <p>¿Estás seguro de que deseas eliminar al usuario <strong>{{ user.nombre }}</strong> ({{ user.email }})?</p>
-    <form method="post">
-        {% csrf_token %}
-    <button type="submit" class="btn btn-danger" data-bs-toggle="tooltip" title="Confirmar eliminación"><i class="bi bi-trash"></i> Sí, eliminar</button>
-        <a href="{% url 'usuarios:lista' %}" class="btn btn-secondary" title="Cancelar" data-bs-toggle="tooltip"><i class="bi bi-x-lg"></i> Cancelar</a>
-    </form>
+    <h3>¿Estás seguro de que deseas eliminar al usuario <strong>{{ user.nombre }}</strong> ({{ user.email }})?</h3>
+
+    <div class="alert alert-warning" role="alert">
+        <h5><i class="bi bi-exclamation-triangle-fill"></i> ¡Advertencia!</h5>
+        <p>Esta acción no se puede deshacer. Se eliminarán permanentemente:</p>
+        <ul class="mb-0">
+            <li>El usuario y toda su información</li>
+            {% if proyectos_como_lider %}
+            <li>La asignación como líder de {{ proyectos_como_lider.count }} proyecto{{ proyectos_como_lider.count|pluralize }}:
+                <ul>
+                    {% for proyecto in proyectos_como_lider %}
+                    <li><strong>{{ proyecto.nombre }}</strong></li>
+                    {% endfor %}
+                </ul>
+            </li>
+            {% endif %}
+            {% if proyectos_como_participante %}
+            <li>La participación en {{ proyectos_como_participante.count }} proyecto{{ proyectos_como_participante.count|pluralize }}:
+                <ul>
+                    {% for proyecto in proyectos_como_participante %}
+                    <li><strong>{{ proyecto.nombre }}</strong></li>
+                    {% endfor %}
+                </ul>
+            </li>
+            {% endif %}
+            {% if grupos_como_lider %}
+            <li>La asignación como líder de {{ grupos_como_lider.count }} grupo{{ grupos_como_lider.count|pluralize }}:
+                <ul>
+                    {% for grupo in grupos_como_lider %}
+                    <li><strong>{{ grupo.nombre }}</strong></li>
+                    {% endfor %}
+                </ul>
+            </li>
+            {% endif %}
+            {% if grupos_como_creador %}
+            <li>La creación de {{ grupos_como_creador.count }} grupo{{ grupos_como_creador.count|pluralize }}:
+                <ul>
+                    {% for grupo in grupos_como_creador %}
+                    <li><strong>{{ grupo.nombre }}</strong></li>
+                    {% endfor %}
+                </ul>
+            </li>
+            {% endif %}
+            {% if grupos_como_integrante %}
+            <li>La integración en {{ grupos_como_integrante.count }} grupo{{ grupos_como_integrante.count|pluralize }}:
+                <ul>
+                    {% for grupo in grupos_como_integrante %}
+                    <li><strong>{{ grupo.nombre }}</strong></li>
+                    {% endfor %}
+                </ul>
+            </li>
+            {% endif %}
+        </ul>
+    </div>
+
+    <div class="mt-4">
+        <form method="post" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger" data-bs-toggle="tooltip" title="Confirmar eliminación">
+                <i class="bi bi-trash"></i> Sí, eliminar usuario
+            </button>
+        </form>
+        <a href="{% url 'usuarios:lista' %}" class="btn btn-secondary ms-2" title="Cancelar" data-bs-toggle="tooltip">
+            <i class="bi bi-x-lg"></i> Cancelar
+        </a>
+    </div>
 </div>
 {% endblock %}

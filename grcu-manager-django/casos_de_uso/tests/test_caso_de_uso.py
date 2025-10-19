@@ -7,7 +7,7 @@ from casos_de_uso.models import CasoDeUso
 def test_caso_de_uso_creation():
     # Crear usuario y proyecto base
     user = Usuario.objects.create_user(email='caso@demo.com', nombre='Caso User', password='casopass123')
-    proyecto = Proyecto.objects.create(nombre='Proyecto Caso', descripcion='desc', metodologia='TRADICIONAL')
+    proyecto = Proyecto.objects.create(nombre='Proyecto Caso', descripcion='desc')
 
     # Crear caso de uso
     caso = CasoDeUso.objects.create(

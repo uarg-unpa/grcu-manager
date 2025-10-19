@@ -29,14 +29,6 @@
         </div>
 
         <div class="proyecto-form-group">
-            {{ form.metodologia.label_tag }}
-            {{ form.metodologia }}
-            {% if form.metodologia.errors %}
-                <div class="text-danger">{{ form.metodologia.errors.as_text }}</div>
-            {% endif %}
-        </div>
-
-        <div class="proyecto-form-group">
             {{ form.logo.label_tag }}
             {% if proyecto.logo %}
                 <div style="margin-bottom:12px;">

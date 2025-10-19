@@ -1,0 +1,42 @@
+{% extends "core/base.html" %}
+
+{% load static %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'proyectos/css/confirmar_eliminar_proyecto.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="confirmacion-eliminar-container">
+    <h3>¿Estás seguro de que deseas eliminar el proyecto <strong>{{ proyecto.nombre }}</strong>?</h3>
+
+    <div class="alert alert-warning" role="alert">
+        <h5><i class="bi bi-exclamation-triangle-fill"></i> ¡Advertencia!</h5>
+        <p>Esta acción no se puede deshacer. Se eliminarán permanentemente:</p>
+        <ul class="mb-0">
+            <li>El proyecto y toda su información</li>
+            {% if proyecto.lider %}
+            <li>La asignación del líder <strong>{{ proyecto.lider.nombre }}</strong></li>
+            {% endif %}
+            {% if proyecto.participantes.exists %}
+            <li>Todas las participaciones de los {{ proyecto.participantes.count }} miembros del equipo</li>
+            {% endif %}
+            {% if proyecto.grupo %}
+            <li>La relación con el grupo <strong>{{ proyecto.grupo.nombre }}</strong></li>
+            {% endif %}
+        </ul>
+    </div>
+
+    <div class="mt-4">
+        <form method="post" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger" data-bs-toggle="tooltip" title="Confirmar eliminación">
+                <i class="bi bi-trash"></i> Sí, eliminar proyecto
+            </button>
+        </form>
+        <a href="{% url 'proyectos:lista_proyectos' %}" class="btn btn-secondary ms-2" title="Cancelar" data-bs-toggle="tooltip">
+            <i class="bi bi-x-lg"></i> Cancelar
+        </a>
+    </div>
+</div>
+{% endblock %}

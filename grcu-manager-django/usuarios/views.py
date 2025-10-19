@@ -110,7 +110,21 @@ def eliminar_usuario(request, pk):
         user.delete()
         return redirect("usuarios:lista")  # volver a la lista de usuarios
 
+    # Obtener proyectos donde el usuario es líder o participante
+    proyectos_como_lider = user.lidera_proyectos.all()
+    proyectos_como_participante = user.proyectos.all()
+
+    # Obtener grupos donde el usuario es líder, creador o integrante
+    grupos_como_lider = user.lider_grupos.all()
+    grupos_como_creador = user.grupos_creados.all()
+    grupos_como_integrante = user.grupos.all()
+
     return render(request, "usuarios/confirmacion_eliminar_usuario.html", {
         "user": user,
+        "proyectos_como_lider": proyectos_como_lider,
+        "proyectos_como_participante": proyectos_como_participante,
+        "grupos_como_lider": grupos_como_lider,
+        "grupos_como_creador": grupos_como_creador,
+        "grupos_como_integrante": grupos_como_integrante,
         "page_title": "Eliminar Usuario"
     })

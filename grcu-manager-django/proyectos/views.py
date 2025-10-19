@@ -164,6 +164,13 @@ def editar_proyecto(request, proyecto_id):
 @user_passes_test(is_admin)
 def eliminar_proyecto(request, proyecto_id):
     proyecto = get_object_or_404(Proyecto, id=proyecto_id)
-    proyecto.delete()
-    messages.success(request, "Proyecto eliminado.")
-    return redirect("proyectos:lista_proyectos")
+
+    if request.method == "POST":
+        proyecto.delete()
+        messages.success(request, f"Proyecto '{proyecto.nombre}' eliminado correctamente.")
+        return redirect("proyectos:lista_proyectos")
+
+    return render(request, "proyectos/confirmar_eliminar_proyecto.html", {
+        "proyecto": proyecto,
+        "page_title": "Eliminar Proyecto"
+    })

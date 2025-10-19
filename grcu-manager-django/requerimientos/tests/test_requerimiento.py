@@ -7,7 +7,7 @@ from requerimientos.models import Requerimiento
 def test_requerimiento_creation():
     # Crear usuario y proyecto base
     user = Usuario.objects.create_user(email='req@demo.com', nombre='Req User', password='reqpass123')
-    proyecto = Proyecto.objects.create(nombre='Proyecto Test', descripcion='desc', metodologia='AGIL')
+    proyecto = Proyecto.objects.create(nombre='Proyecto Test', descripcion='desc')
 
     # Crear requerimiento
     req = Requerimiento.objects.create(

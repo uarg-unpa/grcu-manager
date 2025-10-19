@@ -18,11 +18,10 @@ class ProyectoCrearForm(forms.ModelForm):
 
     class Meta:
         model = Proyecto
-        fields = ['nombre', 'descripcion', 'metodologia', 'logo', 'grupo']
+        fields = ['nombre', 'descripcion', 'logo', 'grupo']
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control', 'required': True}),
             'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'metodologia': forms.Select(attrs={'class': 'form-control'}),
             'logo': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
         }
 
