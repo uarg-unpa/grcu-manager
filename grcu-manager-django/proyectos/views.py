@@ -2,8 +2,10 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from proyectos.models import Proyecto, ParticipacionProyecto
+from proyectos.forms import ProyectoCrearForm
 from roles.models import Rol
 from accounts.models import Usuario
+from grupos.models import Grupo
 from django.core.paginator import Paginator
 from django.db.models import Q
 
@@ -15,7 +17,7 @@ def is_admin(user):
 @login_required
 @user_passes_test(is_admin)
 def lista_proyectos(request):
-    proyectos = Proyecto.objects.select_related('lider').all()
+    proyectos = Proyecto.objects.select_related('lider', 'grupo').all()
     return render(request, "proyectos/lista_proyectos.html", {
         "proyectos": proyectos,
         "page_title": "Lista de Proyectos"
@@ -26,52 +28,63 @@ def lista_proyectos(request):
 @user_passes_test(is_admin)
 def crear_proyecto(request):
     if request.method == "POST":
-        nombre = request.POST.get("nombre")
-        descripcion = request.POST.get("descripcion")
-        lider_id = request.POST.get("lider")
-        logo = request.FILES.get("logo")
-        participantes_ids = request.POST.getlist("participantes")  # <- lista de IDs seleccionados
+        form = ProyectoCrearForm(request.POST, request.FILES)
+        if form.is_valid():
+            # Crear el proyecto
+            proyecto = form.save(commit=False)
+            proyecto.creado_por = request.user
+            proyecto.save()
 
-        lider = None
-        if lider_id:
-            lider = Usuario.objects.get(id=lider_id)
+            # Obtener el grupo seleccionado (puede ser None)
+            grupo = proyecto.grupo
 
-        proyecto = Proyecto.objects.create(
-            nombre=nombre,
-            descripcion=descripcion,
-            lider=lider,
-            creado_por=request.user,
-            logo=logo
-        )
+            if grupo:
+                # Solo procesar líder y participantes si hay grupo
+                lider_id = form.cleaned_data.get('lider')
+                if lider_id:
+                    lider = Usuario.objects.get(id=lider_id)
 
-        # Agregar participantes con rol por defecto (Desarrollador)
-        # Usamos get_or_create para evitar errores si el rol no existe
-        rol_dev, _ = Rol.objects.get_or_create(nombre="Desarrollador", defaults={"color": "#ffc107"})
-        for usuario_id in participantes_ids:
-            usuario = Usuario.objects.get(id=usuario_id)
-            ParticipacionProyecto.objects.create(
-                usuario=usuario,
-                proyecto=proyecto,
-                rol=rol_dev
-            )
+                    # Crear rol "Líder" si no existe
+                    rol_lider, _ = Rol.objects.get_or_create(
+                        nombre="Líder",
+                        defaults={"color": "#28a745"}
+                    )
 
-        return redirect("proyectos:lista_proyectos")
+                    # Asignar líder al proyecto
+                    proyecto.lider = lider
+                    proyecto.save()
 
-    # Lista de participantes con búsqueda y paginación
-    q = request.GET.get('q', '').strip()
-    p_page = request.GET.get('p_page')
-    usuarios_qs = Usuario.objects.all().distinct().order_by('id')
-    if q:
-        usuarios_qs = usuarios_qs.filter(Q(nombre__icontains=q) | Q(email__icontains=q))
-    paginator = Paginator(usuarios_qs, 10)
-    participantes_page = paginator.get_page(p_page)
+                    # Agregar líder con rol "Líder"
+                    ParticipacionProyecto.objects.create(
+                        usuario=lider,
+                        proyecto=proyecto,
+                        rol=rol_lider
+                    )
 
-    usuarios_all = Usuario.objects.all().order_by('nombre')
+                    # Agregar todos los demás integrantes del grupo como "Desarrollador"
+                    rol_dev, _ = Rol.objects.get_or_create(
+                        nombre="Desarrollador",
+                        defaults={"color": "#ffc107"}
+                    )
+
+                    for integrante in grupo.integrantes.exclude(id=lider_id):
+                        ParticipacionProyecto.objects.create(
+                            usuario=integrante,
+                            proyecto=proyecto,
+                            rol=rol_dev
+                        )
+
+                messages.success(request, f"Proyecto '{proyecto.nombre}' creado exitosamente con el grupo '{grupo.nombre}'.")
+            else:
+                # Proyecto sin grupo
+                messages.success(request, f"Proyecto '{proyecto.nombre}' creado exitosamente sin grupo asignado.")
+
+            return redirect("proyectos:lista_proyectos")
+    else:
+        form = ProyectoCrearForm()
+
     return render(request, "proyectos/crear_proyecto.html", {
-        "usuarios_page": participantes_page,
-        "usuarios_all": usuarios_all,
-        "participantes_ids": [],
-        "q": q,
+        "form": form,
         "page_title": "Crear Proyecto"
     })
 
@@ -82,48 +95,67 @@ def editar_proyecto(request, proyecto_id):
     proyecto = get_object_or_404(Proyecto, id=proyecto_id)
 
     if request.method == "POST":
-        proyecto.nombre = request.POST.get("nombre")
-        proyecto.descripcion = request.POST.get("descripcion")
-        lider_id = request.POST.get("lider")
-        logo = request.FILES.get("logo")
-        participantes_ids = request.POST.getlist("participantes")  # <- lista de IDs seleccionados
+        form = ProyectoCrearForm(request.POST, request.FILES, instance=proyecto)
+        if form.is_valid():
+            proyecto = form.save()
 
-        proyecto.lider = get_object_or_404(Usuario, id=lider_id)
-        if logo:
-            proyecto.logo = logo
-        proyecto.save()
+            # Obtener el grupo seleccionado (puede ser None)
+            grupo = proyecto.grupo
 
-        # Actualizar participantes: borrar los antiguos y agregar los seleccionados
-        proyecto.participantes.clear()
-        rol_dev, _ = Rol.objects.get_or_create(nombre="Desarrollador", defaults={"color": "#ffc107"})
-        for usuario_id in participantes_ids:
-            usuario = Usuario.objects.get(id=usuario_id)
-            ParticipacionProyecto.objects.create(
-                usuario=usuario,
-                proyecto=proyecto,
-                rol=rol_dev
-            )
+            if grupo:
+                # Solo procesar líder y participantes si hay grupo
+                lider_id = form.cleaned_data.get('lider')
+                if lider_id:
+                    lider = Usuario.objects.get(id=lider_id)
 
-        messages.success(request, "Proyecto actualizado.")
-        return redirect("proyectos:lista_proyectos")
+                    # Crear rol "Líder" si no existe
+                    rol_lider, _ = Rol.objects.get_or_create(
+                        nombre="Líder",
+                        defaults={"color": "#28a745"}
+                    )
 
-    # Lista de participantes con búsqueda y paginación
-    q = request.GET.get('q', '').strip()
-    p_page = request.GET.get('p_page')
-    alumnos_qs = Usuario.objects.all().distinct().order_by('id')
-    if q:
-        alumnos_qs = alumnos_qs.filter(Q(nombre__icontains=q) | Q(email__icontains=q))
-    paginator = Paginator(alumnos_qs, 10)
-    alumnos_page = paginator.get_page(p_page)
+                    # Asignar líder al proyecto
+                    proyecto.lider = lider
+                    proyecto.save()
 
-    participantes_ids = list(proyecto.participantes.values_list('id', flat=True))
-    usuarios_all = Usuario.objects.all().order_by('nombre')
+                    # Limpiar participantes actuales
+                    proyecto.participantes.clear()
+
+                    # Agregar líder con rol "Líder"
+                    ParticipacionProyecto.objects.create(
+                        usuario=lider,
+                        proyecto=proyecto,
+                        rol=rol_lider
+                    )
+
+                    # Agregar todos los demás integrantes del grupo como "Desarrollador"
+                    rol_dev, _ = Rol.objects.get_or_create(
+                        nombre="Desarrollador",
+                        defaults={"color": "#ffc107"}
+                    )
+
+                    for integrante in grupo.integrantes.exclude(id=lider_id):
+                        ParticipacionProyecto.objects.create(
+                            usuario=integrante,
+                            proyecto=proyecto,
+                            rol=rol_dev
+                        )
+
+                messages.success(request, f"Proyecto '{proyecto.nombre}' actualizado exitosamente con el grupo '{grupo.nombre}'.")
+            else:
+                # Proyecto sin grupo - limpiar líder y participantes
+                proyecto.lider = None
+                proyecto.save()
+                proyecto.participantes.clear()
+                messages.success(request, f"Proyecto '{proyecto.nombre}' actualizado exitosamente sin grupo asignado.")
+
+            return redirect("proyectos:lista_proyectos")
+    else:
+        form = ProyectoCrearForm(instance=proyecto)
+
     return render(request, "proyectos/editar_proyecto.html", {
+        "form": form,
         "proyecto": proyecto,
-        "alumnos_page": alumnos_page,
-        "usuarios_all": usuarios_all,
-        "participantes_ids": participantes_ids,
-        "q": q,
         "page_title": "Editar Proyecto"
     })
 

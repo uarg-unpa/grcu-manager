@@ -1,0 +1,243 @@
+/* Estilos específicos para la página de crear usuario */
+
+/* Toggle Switch para Estado Activo */
+.active-status-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-top: 10px;
+}
+
+.active-status-toggle {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    background: #f8f9fa;
+    border: 2px solid #e9ecef;
+    border-radius: 25px;
+    padding: 8px 16px;
+    transition: all 0.3s ease;
+    min-width: 180px;
+    justify-content: space-between;
+}
+
+.active-status-toggle:hover {
+    border-color: #007bff;
+    background: #f0f8ff;
+}
+
+.active-status-text {
+    font-weight: 500;
+    color: #dc3545;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    margin-right: 12px;
+}
+
+.active-status-toggle input:checked ~ .active-status-text {
+    color: #28a745;
+}
+
+.active-status-slider {
+    position: relative;
+    width: 50px;
+    height: 24px;
+    background: #dc3545;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.active-status-slider::before {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.active-status-toggle input:checked ~ .active-status-slider {
+    background: #28a745;
+}
+
+.active-status-toggle input:checked ~ .active-status-slider::before {
+    transform: translateX(26px);
+}
+
+/* Estilos compartidos del formulario */
+.usuario-form-messages {
+    margin-bottom: 24px;
+    text-align: center;
+}
+.usuario-form-message {
+    display: inline-block;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 1.05rem;
+    font-weight: 500;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 8px rgba(68,76,138,0.10);
+    transition: background 0.2s;
+}
+.usuario-form-message.success {
+    background: #eafaf1;
+    color: #27ae60;
+    border: 1px solid #27ae60;
+}
+.usuario-form-message.error {
+    background: #fdecea;
+    color: #e74c3c;
+    border: 1px solid #e74c3c;
+}
+.usuario-form-message.warning {
+    background: #fffbe6;
+    color: #f39c12;
+    border: 1px solid #f39c12;
+}
+
+/* Contenedor principal del formulario (aumentado para mostrar roles en una línea) */
+.usuario-form-container {
+    max-width: 820px;
+    margin: 40px auto;
+    padding: 25px;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.usuario-form-titulo {
+    text-align: center;
+    color: #444C8A;
+    font-weight: 600;
+    margin-bottom: 25px;
+}
+
+/* Labels */
+.usuario-form-container label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    color: #444C8A;
+}
+
+/* Inputs */
+.usuario-form-container input,
+.usuario-form-container select {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    transition: border-color 0.2s;
+}
+
+.usuario-form-container input:focus,
+.usuario-form-container select:focus {
+    border-color: #444C8A;
+    outline: none;
+    box-shadow: 0 0 4px rgba(68,76,138,0.3);
+}
+
+/* Roles: mantener en una sola línea y permitir scroll horizontal si hace falta */
+.roles-container {
+    display: flex;
+    gap: 16px;
+    flex-wrap: nowrap; /* mantener en una sola línea */
+    overflow-x: auto;  /* permitir scroll horizontal si hay muchas opciones */
+    -webkit-overflow-scrolling: touch;
+    margin-top: 8px;
+    padding-bottom: 6px; /* espacio para el scroll */
+}
+
+.roles-badge {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 16px;
+    border-radius: 14px;
+    margin: 4px;
+    cursor: pointer;
+    color: #25324c;
+    font-weight: 600;
+    background: #eef2ff;
+    border: 2px solid transparent;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    transition: background 0.2s, transform 0.1s, border-color 0.2s, color 0.2s;
+    min-width: 100px;
+    min-height: 100px;
+}
+
+.roles-badge.active {
+    background: #28a745;
+    color: #ffffff !important;
+    border-color: #1e7e34;
+    box-shadow: 0 6px 16px rgba(40, 167, 69, 0.35);
+    transform: translateY(-2px);
+}
+
+.roles-badge.inactive {
+    background: #f8f9fa;
+    color: #6c757d;
+    border: 2px solid #dee2e6;
+    opacity: 0.8;
+}
+
+.roles-badge:hover {
+    background: #4361ee;
+    color: #ffffff !important;
+    border-color: #3a5bdb;
+}
+
+.roles-badge:focus {
+    outline: 3px solid rgba(58, 91, 219, 0.45);
+    outline-offset: 3px;
+}
+
+.rol-icon {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 8px;
+}
+
+/* Switch activo */
+.form-check {
+    margin-top: 15px;
+}
+
+.form-check label {
+    margin-left: 8px;
+    color: #444C8A;
+    font-weight: 500;
+}
+
+/* Botones */
+.btn-primary {
+    background-color: #444C8A;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-weight: 500;
+    transition: background 0.2s, transform 0.1s;
+}
+
+.btn-primary:hover {
+    background-color: #363c70;
+    transform: scale(1.02);
+}
+
+.btn-secondary {
+    background-color: #e0e0e0;
+    color: #333;
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-weight: 500;
+}
+
+.btn-secondary:hover {
+    background-color: #cfcfcf;
+}

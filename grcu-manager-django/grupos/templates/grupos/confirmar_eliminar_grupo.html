@@ -3,16 +3,41 @@
 {% load static %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'usuarios/css/confirmacion_eliminar_usuario.css' %}">
+    <link rel="stylesheet" href="{% static 'grupos/css/confirmar_eliminar_grupo.css' %}">
 {% endblock %}
 
 {% block content %}
 <div class="confirmacion-eliminar-container">
-    <p>¿Estás seguro de que deseas eliminar el grupo <strong>{{ grupo.nombre }}</strong>?</p>
-    <form method="post">
-        {% csrf_token %}
-        <button type="submit" class="btn btn-danger" data-bs-toggle="tooltip" title="Confirmar eliminación"><i class="bi bi-trash"></i> Sí, eliminar</button>
-        <a href="{% url 'grupos:lista_grupos' %}" class="btn btn-secondary" title="Cancelar" data-bs-toggle="tooltip"><i class="bi bi-x-lg"></i> Cancelar</a>
-    </form>
+    <h3>¿Estás seguro de que deseas eliminar el grupo <strong>{{ grupo.nombre }}</strong>?</h3>
+
+    {% if proyectos_asignados %}
+    <div class="alert alert-warning" role="alert">
+        <h5><i class="bi bi-exclamation-triangle-fill"></i> ¡Advertencia!</h5>
+        <p>Este grupo está asignado a los siguientes proyectos:</p>
+        <ul>
+            {% for proyecto in proyectos_asignados %}
+            <li><strong>{{ proyecto.nombre }}</strong></li>
+            {% endfor %}
+        </ul>
+        <p class="mb-0"><strong>Al eliminar el grupo, se limpiarán todas las relaciones con estos proyectos:</strong></p>
+        <ul class="mb-0">
+            <li>El líder del proyecto será removido si era integrante de este grupo</li>
+            <li>Todos los integrantes del grupo serán removidos del proyecto</li>
+            <li>Los usuarios quedarán sin grupo asignado</li>
+        </ul>
+    </div>
+    {% endif %}
+
+    <div class="mt-4">
+        <form method="post" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger" data-bs-toggle="tooltip" title="Confirmar eliminación">
+                <i class="bi bi-trash"></i> Sí, eliminar grupo
+            </button>
+        </form>
+        <a href="{% url 'grupos:lista_grupos' %}" class="btn btn-secondary ms-2" title="Cancelar" data-bs-toggle="tooltip">
+            <i class="bi bi-x-lg"></i> Cancelar
+        </a>
+    </div>
 </div>
 {% endblock %}

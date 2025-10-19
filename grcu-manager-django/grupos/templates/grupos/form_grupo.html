@@ -1,157 +1,105 @@
-{% extends "core/base.html" %}
-
+{% extends 'core/base.html' %}
 {% load static %}
 
+{% block title %}{% if accion == "Crear" %}Crear Grupo{% else %}Editar Grupo{% endif %}{% endblock %}
+
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'proyectos/css/editar_proyecto_styles.css' %}">
-        <style>
-            /* Forzar lista vertical: un participante por fila */
-            .participantes-container { display:block; }
-            .participante-badge { display:flex !important; width:100% !important; align-items:center; justify-content:space-between; padding:10px 12px; margin-bottom:8px; border-radius:8px; }
-            .participante-badge .participante-info { flex:1; }
-            .participante-badge .participante-nombre { font-weight:600; }
-            .participante-badge:hover { background:#eef6ff; }
-            .participante-badge.active { background:#2d8cf0; color:#fff; }
-        </style>
+    <link rel="stylesheet" href="{% static 'grupos/css/grupo_form.css' %}">
 {% endblock %}
 
 {% block content %}
-<div class="proyecto-form-container">
-    <p class="text-muted">Completa los datos del grupo y selecciona los integrantes.</p>
-    <div style="text-align:right; margin-bottom:12px;">
-        <a href="{% url 'grupos:lista_grupos' %}" class="btn btn-outline-secondary">Volver</a>
-    </div>
+<div class="usuario-form-container">
 
-    <form method="post" enctype="multipart/form-data" class="proyecto-form">
+    {% if messages %}
+        <div class="usuario-form-messages">
+            {% for message in messages %}
+                <div class="usuario-form-message {{ message.tags }}" role="alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
+        
+        <!-- Campo oculto para almacenar los IDs de integrantes seleccionados -->
+        <input type="hidden" name="integrantes_seleccionados" id="integrantes_seleccionados" value="{{ integrantes_ids_json|default:'[]' }}">;
 
-        <!-- Mostrar errores del formulario -->
-        {% if form.errors %}
-            <div class="form-errors">
-                <ul>
-                    {% for field in form %}
-                        {% for error in field.errors %}
-                            <li>{{ field.label }}: {{ error }}</li>
-                        {% endfor %}
-                    {% endfor %}
-                    {% for error in form.non_field_errors %}
-                        <li>{{ error }}</li>
-                    {% endfor %}
-                </ul>
+        <div class="mb-3">
+            <label for="id_nombre">Nombre del Grupo</label>
+            {{ form.nombre }}
+            {% if form.nombre.errors %}
+                <div class="text-danger">{{ form.nombre.errors.as_text }}</div>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            <label for="id_logo">Logo del Grupo</label>
+            {{ form.logo }}
+            {% if form.logo.errors %}
+                <div class="text-danger">{{ form.logo.errors.as_text }}</div>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">¿El grupo está activo?</label>
+            <div class="active-status-container">
+                <label class="active-status-toggle">
+                    <input type="checkbox" name="activo" {% if form.activo.value %}checked{% endif %} hidden>
+                    <span class="active-status-text">
+                        {% if form.activo.value %}Sí, activo{% else %}No, inactivo{% endif %}
+                    </span>
+                    <span class="active-status-slider"></span>
+                </label>
             </div>
-        {% endif %}
+        </div>
 
-        <div class="form-sections">
+        <div class="mb-3">
+            <label>Integrantes seleccionados:</label>
+            <div id="integrantes-seleccionados" class="roles-container">
+                <!-- Los integrantes seleccionados aparecerán aquí dinámicamente -->
+            </div>
+            {% if not integrantes_ids %}
+                <p class="text-muted small mt-2">No hay integrantes seleccionados aún.</p>
+            {% endif %}
+        </div>
 
-            <!-- Sección General -->
-            <section class="form-section card-section card-section--general">
-                <h3 class="section-title">General</h3>
-                <div class="form-grid">
-                    <div>
-                        <label class="form-label">{{ form.nombre.label }}</label>
-                        {{ form.nombre }}
-                    </div>
-                    <div>
-                        <label class="form-label">{{ form.logo.label }}</label>
-                        {{ form.logo }}
-                    </div>
-                    <div class="checkbox-field">
-                        {{ form.activo }}
-                        {{ form.activo.label_tag }}
-                    </div>
-                </div>
-            </section>
+        <div class="mb-3">
+            <label>Buscar y seleccionar integrantes:</label>
+            <div class="mt-2 mb-3">
+                <input type="search" id="integrantesSearchInput" placeholder="Buscar integrantes..." class="form-control form-control-sm d-inline-block" style="width: auto;">
+            </div>
 
-            <!-- Sección Miembros -->
-            <section class="form-section card-section card-section--miembros">
-                <h3 class="section-title">Miembros</h3>
-                <label class="form-label">{{ form.integrantes.label }}</label>
-
-                <div class="participantes-search" style="margin-bottom:8px; display:flex; gap:8px; align-items:center;">
-                    <input type="search" id="participantesSearchInput" name="q" placeholder="Buscar miembros..." value="{{ q|default_if_none:'' }}" style="width:260px; padding:6px 8px;" />
-                    <button type="button" id="participantesSearchBtn" class="btn btn-sm btn-light">Buscar</button>
-                </div>
-
-                <div class="participantes-container">
-                    {% for alumno in alumnos_page %}
-                    <label class="participante-badge">
-                        <input type="checkbox" name="integrantes" value="{{ alumno.id }}" {% if alumno.id in integrantes_ids %}checked{% endif %} hidden>
-                        <div class="participante-info">
-                            <div class="participante-nombre">{{ alumno.nombre }}</div>
-                            <div class="participante-email">{{ alumno.email }}</div>
+            <div class="roles-container" id="usuarios-disponibles">
+                {% for usuario in usuarios %}
+                    <label class="roles-badge">
+                        <input type="checkbox" name="integrantes" value="{{ usuario.id }}" {% if usuario.id in integrantes_ids %}checked{% endif %} hidden>
+                        {% if usuario.avatar %}
+                            <img src="{{ usuario.avatar }}" alt="Avatar de {{ usuario.nombre }}" class="integrante-avatar">
+                        {% else %}
+                            <div class="integrante-avatar-placeholder">{{ usuario.nombre|slice:":1"|upper }}</div>
+                        {% endif %}
+                        <div class="integrante-info">
+                            <div class="integrante-nombre">{{ usuario.nombre }}</div>
+                            <div class="integrante-email">{{ usuario.email }}</div>
                         </div>
                     </label>
-                    {% endfor %}
-                </div>
-
-                <nav aria-label="Miembros pagination" style="margin-top:10px;">
-                    <ul class="pagination pagination-sm">
-                        {% if alumnos_page.has_previous %}
-                            <li class="page-item"><a class="page-link" href="?q={{ q }}&p_page={{ alumnos_page.previous_page_number }}">&laquo;</a></li>
-                        {% endif %}
-                        {% for num in alumnos_page.paginator.page_range %}
-                            {% if alumnos_page.number == num %}
-                                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-                            {% else %}
-                                <li class="page-item"><a class="page-link" href="?q={{ q }}&p_page={{ num }}">{{ num }}</a></li>
-                            {% endif %}
-                        {% endfor %}
-                        {% if alumnos_page.has_next %}
-                            <li class="page-item"><a class="page-link" href="?q={{ q }}&p_page={{ alumnos_page.next_page_number }}">&raquo;</a></li>
-                        {% endif %}
-                    </ul>
-                </nav>
-
-                <small>Haz clic en los miembros para seleccionarlos. Se muestra 10 por página.</small>
-            </section>
-
+                {% endfor %}
+            </div>
         </div>
 
-        <div class="proyecto-form-acciones">
-            <a href="{% url 'grupos:lista_grupos' %}" class="proyecto-form-btn-cancelar" style="margin-right:10px;">Cancelar</a>
-            <button type="submit" class="proyecto-form-btn-crear">Guardar</button>
-        </div>
+        <button type="submit" class="btn btn-primary" title="Guardar grupo" data-bs-toggle="tooltip">
+            <i class="bi bi-check-lg"></i> Guardar
+        </button>
+        <a href="{% url 'grupos:lista_grupos' %}" class="btn btn-secondary" title="Cancelar" data-bs-toggle="tooltip">
+            <i class="bi bi-x-lg"></i> Cancelar
+        </a>
     </form>
 </div>
 {% endblock %}
 
 {% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Inicializar badges seleccionables
-    document.querySelectorAll('.participante-badge').forEach(b => {
-        const cb = b.querySelector('input[type="checkbox"]');
-        const setState = checked => b.classList.toggle('active', checked);
-        setState(cb.checked);
-
-        b.setAttribute('role','checkbox');
-        b.setAttribute('tabindex','0');
-
-        b.addEventListener('click', function(e){
-            e.preventDefault();
-            cb.checked = !cb.checked;
-            setState(cb.checked);
-        });
-
-        b.addEventListener('keydown', function(e){
-            if (e.key === ' ' || e.key === 'Enter'){
-                e.preventDefault();
-                cb.checked = !cb.checked;
-                setState(cb.checked);
-            }
-        });
-    });
-
-    // Buscador de participantes
-    const searchInput = document.getElementById('participantesSearchInput');
-    const searchBtn = document.getElementById('participantesSearchBtn');
-    const goSearch = () => {
-        const q = encodeURIComponent(searchInput.value || '');
-        const base = window.location.pathname;
-        window.location.href = base + '?q=' + q + '&p_page=1';
-    };
-    if (searchBtn) searchBtn.addEventListener('click', goSearch);
-    if (searchInput) searchInput.addEventListener('keydown', function(e){ if (e.key === 'Enter') { e.preventDefault(); goSearch(); } });
-});
-</script>
+<script src="{% static 'core/js/bootstrap.bundle.min.js' %}"></script>
+<script src="{% static 'grupos/js/form_grupo.js' %}"></script>
 {% endblock %}

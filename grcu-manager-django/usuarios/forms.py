@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 
 class UsuarioCrearForm(forms.ModelForm):
     roles = forms.ModelMultipleChoiceField(
-        queryset=Rol.objects.all(),
+        queryset=Rol.objects.filter(nombre__in=["Admin", "Desarrollador"]),  # Roles Admin y Desarrollador disponibles
         widget=forms.CheckboxSelectMultiple,
         required=False
     )
@@ -26,12 +26,12 @@ class UsuarioCrearForm(forms.ModelForm):
 
 class UsuarioEditarForm(forms.ModelForm):
     roles = forms.ModelMultipleChoiceField(
-        queryset=Rol.objects.all(),
+        queryset=Rol.objects.filter(nombre__in=["Admin", "Desarrollador"]),  # Roles Admin y Desarrollador disponibles
         widget=forms.CheckboxSelectMultiple,
         required=False
     )
 
     class Meta:
         model = Usuario
-        fields = ["email", "roles", "is_active"]
+        fields = ["email", "nombre", "roles", "is_active"]
 

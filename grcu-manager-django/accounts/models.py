@@ -36,11 +36,11 @@ class Usuario(AbstractUser):
     email = models.EmailField(unique=True)
     nombre = models.CharField(max_length=255)
 
-    # Relación con roles (cada usuario puede tener varios roles)
-    roles = models.ManyToManyField(Rol, related_name="usuarios")
+    # Relación con roles (cada usuario puede tener múltiples roles)
+    roles = models.ManyToManyField(Rol, blank=True, related_name='usuarios')
 
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ["nombre"]
+    REQUIRED_FIELDS = []
 
     objects = UsuarioManager()  # type: ignore
 
@@ -49,10 +49,10 @@ class Usuario(AbstractUser):
 
     # Chequear si el usuario es administrador
     def es_admin(self):
-        return self.roles.filter(nombre__iexact="Admin").exists()
+        return self.roles.filter(nombre__iexact='Admin').exists()
     
     def es_lider(self):
-        return self.roles.filter(nombre__iexact="Líder").exists()
+        return self.roles.filter(nombre__iexact='Líder').exists()
 
 
     # Chequear si el usuario tiene cierto permiso

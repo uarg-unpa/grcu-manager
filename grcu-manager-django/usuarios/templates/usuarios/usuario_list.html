@@ -13,9 +13,7 @@
 <div class="usuario-lista-container container-fluid">
 
     <div class="usuario-lista-acciones">
-        <form method="get" class="d-inline-block me-2">
-            <input type="search" name="q" placeholder="Buscar por nombre o email" value="{{ q|default_if_none:'' }}" class="form-control form-control-sm" style="display:inline-block; width:220px;" />
-        </form>
+        <input type="search" id="usuariosSearchInput" placeholder="Buscar por nombre o email" class="form-control form-control-sm d-inline-block me-2" style="width:220px;" />
         <a href="{% url 'usuarios:crear' %}" class="usuario-lista-btn-crear">
             <i class="bi bi-plus-circle"></i> Añadir Usuario
         </a>
@@ -33,7 +31,7 @@
                 <th>Acciones</th>
             </tr>
         </thead>
-        <tbody>
+        <tbody id="usuariosTableBody">
             {% for usuario in usuarios %}
             <tr data-user-id="{{ usuario.id }}">
                 <td><input type="checkbox" class="row-checkbox" value="{{ usuario.id }}"></td>
@@ -112,25 +110,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function(){
-    const selectAll = document.getElementById('selectAllUsers');
-    const checkboxes = Array.from(document.querySelectorAll('.row-checkbox'));
-    if(selectAll){
-        selectAll.addEventListener('change', function(){
-            checkboxes.forEach(cb => {
-                cb.checked = selectAll.checked;
-                const tr = cb.closest('tr');
-                tr.classList.toggle('selected', cb.checked);
-            });
-        });
-    }
-    checkboxes.forEach(cb => {
-        cb.addEventListener('change', function(){
-            const tr = cb.closest('tr');
-            tr.classList.toggle('selected', cb.checked);
-        });
-    });
-});
-</script>
+<script src="{% static 'usuarios/js/usuario_list.js' %}"></script>
 {% endblock %}

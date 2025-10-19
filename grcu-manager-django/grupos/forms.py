@@ -4,7 +4,7 @@ from .models import Grupo
 class GrupoForm(forms.ModelForm):
     class Meta:
         model = Grupo
-        fields = ['nombre', 'logo', 'activo', 'integrantes']
+        fields = ['nombre', 'logo', 'activo']
         widgets = {
-            'integrantes': forms.SelectMultiple(attrs={'size': 8}),
+            'activo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }

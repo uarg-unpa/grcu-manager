@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from roles.models import Rol
+from grupos.models import Grupo
 
 class Proyecto(models.Model):
     METODOLOGIAS = [
@@ -10,10 +11,19 @@ class Proyecto(models.Model):
 
     nombre = models.CharField(max_length=200, unique=True)
     descripcion = models.TextField(blank=True, null=True)
-    metodologia = models.CharField(max_length=20, choices=METODOLOGIAS)
+    metodologia = models.CharField(max_length=20, choices=METODOLOGIAS, default="AGIL")
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     activo = models.BooleanField(default=True)
     logo = models.ImageField(upload_to="proyectos/logos/", blank=True, null=True)
+
+    # Grupo asignado al proyecto (opcional)
+    grupo = models.ForeignKey(
+        Grupo,
+        on_delete=models.SET_NULL,
+        related_name="proyectos",
+        null=True,
+        blank=True
+    )
 
     # Clave foránea: el líder se elige entre los usuarios participantes
     lider = models.ForeignKey(

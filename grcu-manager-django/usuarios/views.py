@@ -13,16 +13,11 @@ from roles.models import Rol
 
 # Helper para verificar si el usuario es administrador
 def is_admin(user):
-    return user.roles.filter(nombre__iexact="Admin").exists()
+    return user.roles.filter(nombre__iexact="admin").exists()
 
 @login_required
 def lista_usuarios(request):
-    q = request.GET.get('q', '').strip()
     usuarios_qs = Usuario.objects.all().order_by('id')
-    if q:
-        usuarios_qs = usuarios_qs.filter(
-            Q(nombre__icontains=q) | Q(email__icontains=q)
-        )
     paginator = Paginator(usuarios_qs, 10)  # 10 por página
 
     page_number = request.GET.get("page")
@@ -31,7 +26,6 @@ def lista_usuarios(request):
     return render(request, "usuarios/usuario_list.html", {
         "usuarios": usuarios,
         "page_title": "Listado de Usuarios",
-        "q": q,
     })
 
 @login_required
@@ -41,6 +35,7 @@ def crear_usuario(request):
         form = UsuarioCrearForm(request.POST)
         if form.is_valid():
             user = form.save(commit=False)
+            user.nombre = user.email  # Nombre temporal, se actualizará con Google login
             user.set_password("temporal123")
             user.save()
             form.save_m2m()
@@ -51,17 +46,17 @@ def crear_usuario(request):
     else:
         form = UsuarioCrearForm()
 
-    # Solo mostrar roles permitidos para el admin
-    roles_qs = Rol.objects.filter(nombre__in=["Admin", "Líder", "Visitante"])
+    # Mostrar roles Admin y Desarrollador para que el admin pueda asignarlos
+    roles_qs = Rol.objects.filter(nombre__in=["Admin", "Desarrollador"])
     roles = []
     for rol in roles_qs:
-        icon = (
-            "admin.png" if rol.nombre == "Admin" else
-            "developer.png" if rol.nombre == "Desarrollador" else
-            "lider.png" if rol.nombre == "Líder" else
-            "visitante.png"
-        )
-        roles.append((rol.nombre, icon, rol.pk))
+        if rol.nombre == "Admin":
+            icon = "admin.png"
+        elif rol.nombre == "Desarrollador":
+            icon = "developer.png"
+        else:
+            icon = "default.png"
+        roles.append((rol.nombre, icon, rol.pk, rol.color, rol.icono_url))
 
     return render(request, "usuarios/usuario_crear.html", {
         "form": form,
@@ -87,17 +82,17 @@ def editar_usuario(request, pk):
     else:
         form = UsuarioEditarForm(instance=usuario)
 
-    # Solo mostrar roles permitidos para el admin
-    roles_qs = Rol.objects.filter(nombre__in=["Admin", "Líder", "Visitante"])
+    # Mostrar roles Admin y Desarrollador para que el admin pueda asignarlos
+    roles_qs = Rol.objects.filter(nombre__in=["Admin", "Desarrollador"])
     roles = []
     for rol in roles_qs:
-        icon = (
-            "admin.png" if rol.nombre == "Admin" else
-            "developer.png" if rol.nombre == "Desarrollador" else
-            "lider.png" if rol.nombre == "Líder" else
-            "visitante.png"
-        )
-        roles.append((rol.nombre, icon, rol.pk))
+        if rol.nombre == "Admin":
+            icon = "admin.png"
+        elif rol.nombre == "Desarrollador":
+            icon = "developer.png"
+        else:
+            icon = "default.png"
+        roles.append((rol.nombre, icon, rol.pk, rol.color, rol.icono_url))
     return render(request, "usuarios/usuario_editar.html", {
         "form": form,
         "usuario": usuario,
