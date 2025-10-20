@@ -27,6 +27,12 @@ class Requerimiento(models.Model):
     creado_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, blank=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
+    
+    # Adjuntos y recursos externos
+    imagen = models.ImageField(upload_to='requerimientos/imagenes/', null=True, blank=True, 
+                               help_text='Imagen adjunta (PNG, JPG, JPEG)')
+    link_externo = models.URLField(max_length=500, blank=True, 
+                                   help_text='Enlace a recurso externo')
 
     # Relaciones a detalles específicos
     detalle_tradicional = models.OneToOneField('DetalleRequerimientoTradicional', on_delete=models.SET_NULL, null=True, blank=True, related_name='requerimiento', verbose_name="Detalle Tradicional")

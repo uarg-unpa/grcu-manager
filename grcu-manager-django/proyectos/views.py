@@ -668,3 +668,279 @@ def exportar_matriz(request, proyecto_id, formato):
     else:
         messages.error(request, "Formato de exportación no válido.")
         return redirect('proyectos:matriz_trazabilidad', proyecto_id=proyecto_id)
+
+
+@login_required
+def proyecto_reportes(request, proyecto_id):
+    """
+    Vista de reportes y estadísticas del proyecto.
+    Muestra métricas, gráficos y análisis del estado del proyecto.
+    Accesible por líder y participantes del proyecto.
+    """
+    from requerimientos.models import Requerimiento
+    from casos_de_uso.models import CasoDeUso
+    from django.db.models import Count, Q
+    import json
+    
+    proyecto = get_object_or_404(Proyecto, id=proyecto_id)
+    
+    # Verificar permisos: líder o participante del proyecto
+    es_lider = proyecto.lider == request.user
+    es_participante = proyecto.participantes.filter(id=request.user.id).exists()
+    
+    if not (es_lider or es_participante):
+        messages.error(request, "No tienes permiso para ver los reportes de este proyecto.")
+        return redirect("dashboards:lider_dashboard")
+    
+    # === MÉTRICAS GENERALES ===
+    total_requerimientos = Requerimiento.objects.filter(proyecto=proyecto).count()
+    total_casos_uso = CasoDeUso.objects.filter(proyecto=proyecto).count()
+    
+    # === REQUERIMIENTOS POR TIPO ===
+    reqs_funcionales = Requerimiento.objects.filter(proyecto=proyecto, tipo='FUNCIONAL').count()
+    reqs_no_funcionales = Requerimiento.objects.filter(proyecto=proyecto, tipo='NO_FUNCIONAL').count()
+    
+    # === REQUERIMIENTOS POR ESTADO ===
+    reqs_pendientes = Requerimiento.objects.filter(proyecto=proyecto, estado='PENDIENTE').count()
+    reqs_en_desarrollo = Requerimiento.objects.filter(proyecto=proyecto, estado='EN_DESARROLLO').count()
+    reqs_aprobados = Requerimiento.objects.filter(proyecto=proyecto, estado='APROBADO').count()
+    
+    # === TRAZABILIDAD ===
+    reqs_con_casos = Requerimiento.objects.filter(proyecto=proyecto).annotate(
+        casos_count=Count('casos_relacionados')
+    ).filter(casos_count__gt=0).count()
+    
+    reqs_huerfanos = total_requerimientos - reqs_con_casos
+    
+    casos_con_reqs = CasoDeUso.objects.filter(proyecto=proyecto).annotate(
+        reqs_count=Count('requerimientos_relacionados')
+    ).filter(reqs_count__gt=0).count()
+    
+    casos_huerfanos = total_casos_uso - casos_con_reqs
+    
+    # === COBERTURA ===
+    cobertura_reqs = (reqs_con_casos / total_requerimientos * 100) if total_requerimientos > 0 else 0
+    cobertura_casos = (casos_con_reqs / total_casos_uso * 100) if total_casos_uso > 0 else 0
+    
+    # === DATOS PARA GRÁFICOS (JSON) ===
+    # Gráfico de Requerimientos por Tipo
+    tipo_labels = ['Funcionales', 'No Funcionales']
+    tipo_values = [reqs_funcionales, reqs_no_funcionales]
+    tipo_colors = ['#3498db', '#e74c3c']
+    
+    # Gráfico de Requerimientos por Estado
+    estado_labels = ['Pendiente', 'En Desarrollo', 'Aprobado']
+    estado_values = [reqs_pendientes, reqs_en_desarrollo, reqs_aprobados]
+    estado_colors = ['#f39c12', '#3498db', '#27ae60']
+    
+    # Gráfico de Trazabilidad
+    trazabilidad_labels = ['Con Casos de Uso', 'Huérfanos']
+    trazabilidad_reqs_values = [reqs_con_casos, reqs_huerfanos]
+    trazabilidad_casos_values = [casos_con_reqs, casos_huerfanos]
+    
+    context = {
+        'proyecto': proyecto,
+        'es_lider': es_lider,
+        'page_title': f'Reportes - {proyecto.nombre}',
+        
+        # Métricas
+        'total_requerimientos': total_requerimientos,
+        'total_casos_uso': total_casos_uso,
+        'reqs_funcionales': reqs_funcionales,
+        'reqs_no_funcionales': reqs_no_funcionales,
+        'reqs_pendientes': reqs_pendientes,
+        'reqs_en_desarrollo': reqs_en_desarrollo,
+        'reqs_aprobados': reqs_aprobados,
+        'reqs_con_casos': reqs_con_casos,
+        'reqs_huerfanos': reqs_huerfanos,
+        'casos_con_reqs': casos_con_reqs,
+        'casos_huerfanos': casos_huerfanos,
+        'cobertura_reqs': round(cobertura_reqs, 1),
+        'cobertura_casos': round(cobertura_casos, 1),
+        
+        # Datos para gráficos (JSON)
+        'tipo_labels_json': json.dumps(tipo_labels),
+        'tipo_values_json': json.dumps(tipo_values),
+        'tipo_colors_json': json.dumps(tipo_colors),
+        'estado_labels_json': json.dumps(estado_labels),
+        'estado_values_json': json.dumps(estado_values),
+        'estado_colors_json': json.dumps(estado_colors),
+        'trazabilidad_labels_json': json.dumps(trazabilidad_labels),
+        'trazabilidad_reqs_values_json': json.dumps(trazabilidad_reqs_values),
+        'trazabilidad_casos_values_json': json.dumps(trazabilidad_casos_values),
+    }
+    
+    return render(request, 'proyectos/proyecto_reportes.html', context)
+
+
+@login_required
+def gestionar_integrantes(request, proyecto_id):
+    """
+    Vista para que el líder del proyecto gestione los roles de los integrantes.
+    Solo puede asignar roles de: Desarrollador, Stakeholder (Cliente) y Visitante.
+    """
+    proyecto = get_object_or_404(Proyecto, id=proyecto_id)
+    
+    # Validar que el usuario es el líder del proyecto
+    if proyecto.lider != request.user:
+        messages.error(request, "No tienes permisos para gestionar los integrantes de este proyecto.")
+        return redirect('dashboards:lider_dashboard')
+    
+    # Obtener roles permitidos para asignar
+    rol_desarrollador = get_object_or_404(Rol, nombre="Desarrollador")
+    rol_stakeholder = get_object_or_404(Rol, nombre="Stakeholder")
+    rol_visitante = get_object_or_404(Rol, nombre="Visitante")
+    
+    roles_permitidos = [rol_desarrollador, rol_stakeholder, rol_visitante]
+    
+    # Si es POST, procesar cambios de roles
+    if request.method == 'POST':
+        for key, value in request.POST.items():
+            if key.startswith('rol_'):
+                try:
+                    usuario_id = int(key.split('_')[1])
+                    nuevo_rol_id = int(value)
+                    
+                    # Validar que el usuario es participante del proyecto
+                    usuario = proyecto.participantes.get(id=usuario_id)
+                    
+                    # Validar que el rol es permitido
+                    nuevo_rol = Rol.objects.get(id=nuevo_rol_id)
+                    if nuevo_rol not in roles_permitidos:
+                        messages.error(request, f"El rol {nuevo_rol.nombre} no está permitido.")
+                        continue
+                    
+                    # No se puede cambiar el rol del líder del proyecto
+                    if usuario == proyecto.lider:
+                        messages.warning(request, f"No puedes cambiar tu propio rol como líder del proyecto.")
+                        continue
+                    
+                    # Actualizar o crear la participación
+                    participacion, created = ParticipacionProyecto.objects.update_or_create(
+                        usuario=usuario,
+                        proyecto=proyecto,
+                        defaults={'rol': nuevo_rol}
+                    )
+                    
+                except (ValueError, Usuario.DoesNotExist, Rol.DoesNotExist):
+                    continue
+        
+        messages.success(request, "Los roles de los integrantes han sido actualizados correctamente.")
+        return redirect('proyectos:gestionar_integrantes', proyecto_id=proyecto_id)
+    
+    # Obtener participaciones actuales
+    participaciones = ParticipacionProyecto.objects.filter(proyecto=proyecto).select_related('usuario', 'rol')
+    
+    # Crear un diccionario de usuarios con sus roles actuales
+    usuarios_con_roles = []
+    for participante in proyecto.participantes.all():
+        try:
+            participacion = participaciones.get(usuario=participante)
+            rol_actual = participacion.rol
+        except ParticipacionProyecto.DoesNotExist:
+            # Si no tiene participación, asignar rol por defecto (Desarrollador)
+            rol_actual = rol_desarrollador
+            ParticipacionProyecto.objects.create(
+                usuario=participante,
+                proyecto=proyecto,
+                rol=rol_desarrollador
+            )
+        
+        usuarios_con_roles.append({
+            'usuario': participante,
+            'rol_actual': rol_actual,
+            'es_lider': participante == proyecto.lider,
+        })
+    
+    context = {
+        'page_title': f'Gestión de Integrantes - {proyecto.nombre}',
+        'proyecto': proyecto,
+        'usuarios_con_roles': usuarios_con_roles,
+        'roles_permitidos': roles_permitidos,
+    }
+    
+    return render(request, 'proyectos/gestionar_integrantes.html', context)
+
+
+@login_required
+def proyecto_detail_admin(request, proyecto_id):
+    """
+    Vista detallada de un proyecto para administradores.
+    Muestra toda la información del proyecto incluyendo integrantes, requerimientos,
+    casos de uso, métricas y gráficos.
+    """
+    from requerimientos.models import Requerimiento, RequerimientoCaso
+    from casos_de_uso.models import CasoDeUso
+    from usuarios.models import AccionUsuario
+    from django.db.models import Count
+    
+    proyecto = get_object_or_404(Proyecto, id=proyecto_id)
+    
+    integrantes = list(proyecto.participantes.all())
+    lider = proyecto.lider
+    requerimientos = Requerimiento.objects.filter(proyecto=proyecto)
+    casos = CasoDeUso.objects.filter(proyecto=proyecto)
+    acciones = AccionUsuario.objects.filter(usuario__in=integrantes).order_by('-fecha')[:20]
+    
+    # Huérfanos definidos como aquellos sin relación persistida en la tabla intermedia RequerimientoCaso
+    reqs_huerfanos = requerimientos.annotate(rel_count=Count('relaciones_casos')).filter(rel_count=0)
+    casos_huerfanos = casos.annotate(rel_count=Count('relaciones_requerimientos')).filter(rel_count=0)
+    reqs_huerfanos_ids = list(reqs_huerfanos.values_list('pk', flat=True))
+    casos_huerfanos_ids = list(casos_huerfanos.values_list('pk', flat=True))
+    
+    # Matriz de trazabilidad simple: relacionar requerimientos y casos por nombre parcial (heurística)
+    matriz = []
+    for req in requerimientos:
+        relacionados = [cu for cu in casos if req.nombre.split()[0].lower() in cu.nombre.lower() or req.nombre.lower() in cu.descripcion.lower()]
+        matriz.append({'req': req, 'casos': relacionados})
+    
+    # Agregaciones para gráficos
+    # Requerimientos por estado
+    req_estado_qs = requerimientos.values('estado').annotate(count=Count('id'))
+    req_estado_map = {item['estado']: item['count'] for item in req_estado_qs}
+    req_estado_labels = ["PENDIENTE", "EN_DESARROLLO", "APROBADO"]
+    req_estado_values = [req_estado_map.get(k, 0) for k in req_estado_labels]
+    
+    # Requerimientos por tipo
+    req_tipo_qs = requerimientos.values('tipo').annotate(count=Count('id'))
+    req_tipo_map = {item['tipo']: item['count'] for item in req_tipo_qs}
+    req_tipo_labels = ["FUNCIONAL", "NO_FUNCIONAL"]
+    req_tipo_values = [req_tipo_map.get(k, 0) for k in req_tipo_labels]
+    
+    # Casos de uso: conteo por disponibilidad de detalle (Tradicional / Ágil / Sin detalle)
+    casos_trad = casos.filter(detalle_tradicional__isnull=False).count()
+    casos_agil = casos.filter(detalle_agil__isnull=False).count()
+    casos_sin = casos.filter(detalle_agil__isnull=True, detalle_tradicional__isnull=True).count()
+    casos_tipo_labels = ["Tradicional", "Ágil", "Sin detalle"]
+    casos_tipo_values = [casos_trad, casos_agil, casos_sin]
+    
+    # Acciones por usuario (top 5)
+    acciones_por_usuario_qs = AccionUsuario.objects.filter(usuario__in=integrantes).values('usuario__nombre').annotate(count=Count('id')).order_by('-count')[:5]
+    acciones_labels = [a['usuario__nombre'] for a in acciones_por_usuario_qs]
+    acciones_values = [a['count'] for a in acciones_por_usuario_qs]
+    
+    context = {
+        'page_title': f'Detalle del Proyecto - {proyecto.nombre}',
+        'proyecto': proyecto,
+        'integrantes': integrantes,
+        'lider': lider,
+        'requerimientos': requerimientos,
+        'casos': casos,
+        'acciones': acciones,
+        'reqs_huerfanos': reqs_huerfanos,
+        'reqs_huerfanos_ids': reqs_huerfanos_ids,
+        'casos_huerfanos': casos_huerfanos,
+        'casos_huerfanos_ids': casos_huerfanos_ids,
+        'matriz': matriz,
+        # Datos para gráficos
+        'req_estado_labels': req_estado_labels,
+        'req_estado_values': req_estado_values,
+        'req_tipo_labels': req_tipo_labels,
+        'req_tipo_values': req_tipo_values,
+        'casos_tipo_labels': casos_tipo_labels,
+        'casos_tipo_values': casos_tipo_values,
+        'acciones_labels': acciones_labels,
+        'acciones_values': acciones_values,
+    }
+    
+    return render(request, 'proyectos/proyecto_detail_admin.html', context)

@@ -1,0 +1,160 @@
+.metodologia-container {
+    max-width: 800px;
+    margin: 50px auto;
+    padding: 30px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.metodologia-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.metodologia-header h2 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+}
+
+.metodologia-header .proyecto-nombre {
+    font-size: 1.1em;
+    color: #7f8c8d;
+    font-weight: 500;
+}
+
+.metodologia-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin: 30px 0;
+}
+
+.metodologia-card {
+    border: 3px solid #ecf0f1;
+    border-radius: 12px;
+    padding: 30px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.metodologia-card:hover {
+    border-color: #3498db;
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(52, 152, 219, 0.2);
+}
+
+.metodologia-card input[type="radio"] {
+    display: none;
+}
+
+.metodologia-card input[type="radio"]:checked + .card-content {
+    color: #3498db;
+}
+
+.metodologia-card input[type="radio"]:checked ~ .check-icon {
+    opacity: 1;
+}
+
+.metodologia-card.selected {
+    border-color: #3498db;
+    background-color: #ebf5fb;
+}
+
+.card-content i {
+    font-size: 4em;
+    margin-bottom: 15px;
+    display: block;
+}
+
+.card-content h3 {
+    font-size: 1.5em;
+    margin-bottom: 10px;
+    color: #2c3e50;
+}
+
+.card-content p {
+    color: #7f8c8d;
+    line-height: 1.6;
+}
+
+.check-icon {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    color: #27ae60;
+    font-size: 2em;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.metodologia-tradicional i {
+    color: #e74c3c;
+}
+
+.metodologia-agil i {
+    color: #3498db;
+}
+
+.btn-container {
+    text-align: center;
+    margin-top: 30px;
+}
+
+.btn-asignar {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 15px 40px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-asignar:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.btn-asignar:disabled {
+    background: #95a5a6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn-cancelar {
+    background: #95a5a6;
+    color: white;
+    padding: 15px 40px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1em;
+    margin-left: 15px;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.3s ease;
+}
+
+.btn-cancelar:hover {
+    background: #7f8c8d;
+    color: white;
+}
+
+.alert-info-custom {
+    background-color: #d1ecf1;
+    border-left: 4px solid #0c5460;
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 25px;
+}
+
+.alert-warning-custom {
+    background-color: #fff3cd;
+    border-left: 4px solid #856404;
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 25px;
+}

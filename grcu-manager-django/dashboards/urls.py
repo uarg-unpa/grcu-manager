@@ -12,4 +12,5 @@ urlpatterns = [
     path('lider/casos/', views.lider_casos, name='lider_casos'),
     path('lider/reportes/', views.lider_reportes, name='lider_reportes'),
     path('lider/priorizar/', views.lider_priorizar, name='lider_priorizar'),
+    path("developer/", views.developer_dashboard, name="developer_dashboard"),
 ]

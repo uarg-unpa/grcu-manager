@@ -51,7 +51,7 @@
                 </td>
                 <td>{{ proyecto.fecha_creacion|date:"d/m/Y H:i" }}</td>
                 <td>
-                    <a href="{% url 'dashboards:admin_proyecto_detail' proyecto.id %}" class="btn btn-sm btn-outline-secondary" title="Ver" data-bs-toggle="tooltip">
+                    <a href="{% url 'proyectos:proyecto_detail_admin' proyecto.id %}" class="btn btn-sm btn-outline-secondary" title="Ver" data-bs-toggle="tooltip">
                         <i class="bi bi-eye"></i>
                     </a>
                     <a href="{% url 'proyectos:editar_proyecto' proyecto.id %}" class="btn btn-sm btn-warning" title="Editar" data-bs-toggle="tooltip">

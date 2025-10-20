@@ -10,6 +10,8 @@
     </style>
 {% endblock %}
 
+{% block title %}{{ page_title }}{% endblock %}
+
 {% block content %}
 <div class="container py-4">
     {% if error %}
@@ -20,7 +22,6 @@
             <img src="{{ proyecto.logo.url }}" alt="logo" style="width:150px;height:150px;object-fit:contain;border-radius:12px;background:#fff;padding:6px;" class="me-3">
         {% endif %}
         <div>
-            <h3 class="mb-0">{{ proyecto.nombre }}</h3>
             <small class="text-muted">Líder: {% if lider %}{{ lider.nombre }}{% else %}No asignado{% endif %}</small>
         </div>
         <div class="ms-auto">
@@ -75,18 +76,18 @@
                     <h5>Gráficos del Proyecto</h5>
                     <div class="row">
                         <div class="col-6">
-                            <canvas id="reqEstadoChart"></canvas>
+                            <canvas id="reqEstadoChart" data-labels='{{ req_estado_labels|safe }}' data-values='{{ req_estado_values|safe }}' data-type="doughnut" style="height:160px;"></canvas>
                         </div>
                         <div class="col-6">
-                            <canvas id="reqTipoChart"></canvas>
+                            <canvas id="reqTipoChart" data-labels='{{ req_tipo_labels|safe }}' data-values='{{ req_tipo_values|safe }}' data-type="bar" style="height:160px;"></canvas>
                         </div>
                     </div>
                     <div class="row mt-3">
                         <div class="col-6">
-                            <canvas id="casosTipoChart"></canvas>
+                            <canvas id="casosTipoChart" data-labels='{{ casos_tipo_labels|safe }}' data-values='{{ casos_tipo_values|safe }}' data-type="pie" style="height:160px;"></canvas>
                         </div>
                         <div class="col-6">
-                            <canvas id="accionesChart"></canvas>
+                            <canvas id="accionesChart" data-labels='{{ acciones_labels|safe }}' data-values='{{ acciones_values|safe }}' data-type="bar" data-horizontal="true" style="height:160px;"></canvas>
                         </div>
                     </div>
                 </div>
@@ -141,79 +142,5 @@
 
 {% block extra_js %}
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
-    <script>
-        // Datos del contexto (Django) inyectados en JS
-        const reqEstadoLabels = {{ req_estado_labels|safe }};
-        const reqEstadoValues = {{ req_estado_values|safe }};
-
-        const reqTipoLabels = {{ req_tipo_labels|safe }};
-        const reqTipoValues = {{ req_tipo_values|safe }};
-
-        const casosTipoLabels = {{ casos_tipo_labels|safe }};
-        const casosTipoValues = {{ casos_tipo_values|safe }};
-
-        const accionesLabels = {{ acciones_labels|safe }};
-        const accionesValues = {{ acciones_values|safe }};
-
-        // Helper para crear colores
-        function randomColor(alpha=0.8){
-            const r = Math.floor(Math.random()*200)+30;
-            const g = Math.floor(Math.random()*200)+30;
-            const b = Math.floor(Math.random()*200)+30;
-            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-        }
-
-        // Requimientos por estado - Doughnut
-        const ctxReqEstado = document.getElementById('reqEstadoChart');
-        if(ctxReqEstado){
-            new Chart(ctxReqEstado, {
-                type: 'doughnut',
-                data: {
-                    labels: reqEstadoLabels,
-                    datasets: [{
-                        data: reqEstadoValues,
-                        backgroundColor: reqEstadoLabels.map(()=>randomColor(0.75)),
-                    }]
-                },
-                options: { plugins: { legend: { position: 'bottom' } } }
-            });
-        }
-
-        // Requerimientos por tipo - Bar
-        const ctxReqTipo = document.getElementById('reqTipoChart');
-        if(ctxReqTipo){
-            new Chart(ctxReqTipo, {
-                type: 'bar',
-                data: {
-                    labels: reqTipoLabels,
-                    datasets: [{
-                        label: 'Cantidad',
-                        data: reqTipoValues,
-                        backgroundColor: reqTipoLabels.map(()=>randomColor(0.7)),
-                    }]
-                },
-                options: { scales: { y: { beginAtZero: true } }, plugins: { legend: { display:false } } }
-            });
-        }
-
-        // Casos por tipo de detalle - Pie
-        const ctxCasosTipo = document.getElementById('casosTipoChart');
-        if(ctxCasosTipo){
-            new Chart(ctxCasosTipo, {
-                type: 'pie',
-                data: { labels: casosTipoLabels, datasets: [{ data: casosTipoValues, backgroundColor: casosTipoLabels.map(()=>randomColor(0.75)) }] },
-                options: { plugins: { legend: { position: 'bottom' } } }
-            });
-        }
-
-        // Acciones top - Horizontal bar
-        const ctxAcciones = document.getElementById('accionesChart');
-        if(ctxAcciones){
-            new Chart(ctxAcciones, {
-                type: 'bar',
-                data: { labels: accionesLabels, datasets: [{ label: 'Acciones', data: accionesValues, backgroundColor: accionesLabels.map(()=>randomColor(0.7)) }] },
-                options: { indexAxis: 'y', scales: { x: { beginAtZero: true } }, plugins: { legend: { display:false } } }
-            });
-        }
-    </script>
+    <script src="{% static 'dashboards/js/charts.js' %}?v=3.0"></script>
 {% endblock %}

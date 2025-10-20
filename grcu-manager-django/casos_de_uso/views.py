@@ -1,9 +1,12 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from .models import CasoDeUso
+from django.urls import reverse
+from .models import CasoDeUso, DetalleCasoDeUsoTradicional, DetalleCasoDeUsoAgil
+from .forms import CasoDeUsoTradicionalForm, CasoDeUsoAgilForm
 from proyectos.models import Proyecto
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.db.models import Q
+from django.contrib import messages
 
 @login_required
 def caso_de_uso_list(request, proyecto_id=None):
@@ -29,6 +32,142 @@ def caso_de_uso_list(request, proyecto_id=None):
 def caso_de_uso_detail(request, pk):
     caso = get_object_or_404(CasoDeUso, pk=pk)
     return render(request, "casos_de_uso/caso_de_uso_detail.html", {"caso": caso})
+
+
+@login_required
+def caso_de_uso_create(request, proyecto_id=None):
+    """
+    Vista para crear casos de uso según la metodología del proyecto.
+    Puede recibir un requerimiento_id por GET para asociarlo automáticamente.
+    """
+    # Obtener el proyecto
+    if not proyecto_id:
+        messages.error(request, 'Debe especificar un proyecto para crear un caso de uso.')
+        return redirect('dashboards:lider_dashboard')
+    
+    proyecto = get_object_or_404(Proyecto, id=proyecto_id)
+    
+    # Obtener requerimiento si se pasa por parámetro GET
+    requerimiento_id = request.GET.get('requerimiento_id')
+    requerimiento = None
+    if requerimiento_id:
+        from requerimientos.models import Requerimiento
+        requerimiento = get_object_or_404(Requerimiento, id=requerimiento_id, proyecto=proyecto)
+    
+    # Validación 1: El proyecto debe tener metodología asignada
+    if proyecto.necesita_metodologia():
+        messages.error(
+            request,
+            f'El proyecto "{proyecto.nombre}" aún no tiene metodología asignada.'
+        )
+        return redirect('dashboards:lider_dashboard')
+    
+    # Validación 2: Verificar permisos (líder o participante del proyecto)
+    es_lider = request.user == proyecto.lider
+    es_participante = proyecto.participantes.filter(id=request.user.id).exists()
+    
+    if not (es_lider or es_participante):
+        messages.error(
+            request,
+            'No tienes permiso para crear casos de uso en este proyecto.'
+        )
+        return redirect('dashboards:lider_dashboard')
+    
+    # Determinar formulario según metodología
+    es_tradicional = proyecto.metodologia == 'TRADICIONAL'
+    es_agil = proyecto.metodologia == 'AGIL'
+    
+    if request.method == 'POST':
+        # Instanciar el formulario apropiado
+        if es_tradicional:
+            form = CasoDeUsoTradicionalForm(request.POST, request.FILES)
+        elif es_agil:
+            form = CasoDeUsoAgilForm(request.POST, request.FILES)
+        else:
+            messages.error(request, 'Metodología no reconocida.')
+            return redirect('dashboards:lider_dashboard')
+        
+        if form.is_valid():
+            # Crear el caso de uso base
+            caso = CasoDeUso(
+                nombre=form.cleaned_data['nombre'],
+                descripcion=form.cleaned_data.get('descripcion', ''),
+                proyecto=proyecto,
+                creado_por=request.user,
+                imagen=form.cleaned_data.get('imagen'),
+                link_externo=form.cleaned_data.get('link_externo', '')
+            )
+            caso.save()
+            
+            # Asociar con el requerimiento si se especificó
+            if requerimiento:
+                from requerimientos.models import RequerimientoCaso
+                RequerimientoCaso.objects.create(
+                    requerimiento=requerimiento,
+                    caso_de_uso=caso
+                )
+            
+            # Crear el detalle específico según la metodología
+            if es_tradicional:
+                DetalleCasoDeUsoTradicional.objects.create(
+                    caso_de_uso_padre=caso,
+                    actor_principal=form.cleaned_data.get('actor_principal', ''),
+                    precondiciones=form.cleaned_data.get('precondiciones', ''),
+                    flujo_principal=form.cleaned_data.get('flujo_principal', ''),
+                    flujo_alternativo=form.cleaned_data.get('flujo_alternativo', ''),
+                    postcondiciones=form.cleaned_data.get('postcondiciones', ''),
+                    observaciones=form.cleaned_data.get('observaciones', '')
+                )
+                if requerimiento:
+                    messages.success(request, f'✅ Caso de Uso "{caso.nombre}" creado y asociado al requerimiento "{requerimiento.nombre}".')
+                else:
+                    messages.success(request, f'✅ Caso de Uso "{caso.nombre}" creado exitosamente.')
+                
+            elif es_agil:
+                DetalleCasoDeUsoAgil.objects.create(
+                    caso_de_uso_padre=caso,
+                    historia_usuario=form.cleaned_data.get('historia_usuario', ''),
+                    criterio_aceptacion=form.cleaned_data.get('criterio_aceptacion', ''),
+                    responsable=form.cleaned_data.get('responsable', ''),
+                    estado_scrum=form.cleaned_data.get('estado_scrum', ''),
+                    observaciones=form.cleaned_data.get('observaciones', '')
+                )
+                if requerimiento:
+                    messages.success(request, f'✅ Caso de Uso "{caso.nombre}" creado y asociado al requerimiento "{requerimiento.nombre}".')
+                else:
+                    messages.success(request, f'✅ Caso de Uso "{caso.nombre}" creado exitosamente.')
+            
+            # Redirigir de vuelta a la lista de requerimientos si venimos desde allí
+            if requerimiento:
+                return redirect(f"{reverse('requerimientos:requerimiento_list')}?proyecto_id={proyecto.pk}")
+            return redirect('dashboards:lider_dashboard')
+    else:
+        # GET: Instanciar formulario vacío
+        if es_tradicional:
+            form = CasoDeUsoTradicionalForm()
+        elif es_agil:
+            form = CasoDeUsoAgilForm()
+        else:
+            messages.error(request, 'Metodología no reconocida.')
+            return redirect('dashboards:lider_dashboard')
+    
+    if requerimiento:
+        page_title = f"Crear Caso de Uso para Requerimiento: {requerimiento.nombre}"
+    else:
+        page_title = f"Crear Caso de Uso - {proyecto.nombre}"
+    
+    context = {
+        'form': form,
+        'proyecto': proyecto,
+        'requerimiento': requerimiento,
+        'es_tradicional': es_tradicional,
+        'es_agil': es_agil,
+        'metodologia_display': proyecto.get_metodologia_display(),
+        'page_title': page_title
+    }
+    
+    return render(request, 'casos_de_uso/caso_de_uso_create.html', context)
+
 
 @login_required
 def buscar_casos_de_uso_ajax(request):

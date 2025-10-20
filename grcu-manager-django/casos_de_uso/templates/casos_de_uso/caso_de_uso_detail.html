@@ -1,9 +1,112 @@
-{% extends 'base.html' %}
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}{{ caso.nombre }}{% endblock %}
+
 {% block content %}
-<h2>{{ caso.nombre }}</h2>
-<p><strong>Descripción:</strong> {{ caso.descripcion }}</p>
-<p><strong>Proyecto:</strong> {{ caso.proyecto }}</p>
-<p><strong>Creado por:</strong> {{ caso.creado_por }}</p>
-<p><strong>Fecha de creación:</strong> {{ caso.fecha_creacion }}</p>
-<a href="{% url 'casos_de_uso:caso_de_uso_list' %}">Volver a la lista</a>
+<div class="container py-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-info text-white">
+            <h2 class="mb-0">
+                <i class="bi bi-diagram-3"></i>
+                {{ caso.nombre }}
+            </h2>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong><i class="bi bi-folder"></i> Proyecto:</strong> {{ caso.proyecto }}</p>
+                    <p><strong><i class="bi bi-person"></i> Creado por:</strong> {{ caso.creado_por }}</p>
+                    <p><strong><i class="bi bi-calendar"></i> Fecha de creación:</strong> {{ caso.fecha_creacion|date:"d/m/Y H:i" }}</p>
+                </div>
+                <div class="col-md-6">
+                    {% if caso.descripcion %}
+                    <div class="mb-3">
+                        <strong><i class="bi bi-card-text"></i> Descripción:</strong>
+                        <p class="mt-2">{{ caso.descripcion|linebreaks }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Adjuntos y Recursos -->
+            {% if caso.imagen or caso.link_externo %}
+            <hr class="my-4">
+            <h4 class="mb-3">
+                <i class="bi bi-paperclip text-info"></i>
+                Adjuntos y Recursos
+            </h4>
+            <div class="row">
+                {% if caso.imagen %}
+                <div class="col-md-6 mb-3">
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <i class="bi bi-image"></i> Imagen Adjunta
+                        </div>
+                        <div class="card-body text-center">
+                            <a href="{{ caso.imagen.url }}" target="_blank">
+                                <img src="{{ caso.imagen.url }}" 
+                                     alt="Adjunto" 
+                                     class="img-fluid rounded"
+                                     style="max-height: 400px; cursor: pointer;"
+                                     title="Click para ver en tamaño completo">
+                            </a>
+                            <div class="mt-2">
+                                <a href="{{ caso.imagen.url }}" 
+                                   target="_blank" 
+                                   class="btn btn-sm btn-info">
+                                    <i class="bi bi-download"></i> Descargar
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if caso.link_externo %}
+                <div class="col-md-6 mb-3">
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <i class="bi bi-link-45deg"></i> Recurso Externo
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-2">
+                                <i class="bi bi-info-circle text-info"></i>
+                                Este caso de uso tiene un enlace a un recurso externo:
+                            </p>
+                            <div class="d-grid">
+                                <a href="{{ caso.link_externo }}" 
+                                   target="_blank" 
+                                   rel="noopener noreferrer"
+                                   class="btn btn-outline-info">
+                                    <i class="bi bi-box-arrow-up-right"></i>
+                                    Abrir Recurso Externo
+                                </a>
+                            </div>
+                            <div class="mt-2">
+                                <small class="text-muted text-break">
+                                    {{ caso.link_externo }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+        <div class="card-footer">
+            <div class="d-flex justify-content-between">
+                <a href="{% url 'casos_de_uso:caso_de_uso_list' caso.proyecto.id %}" 
+                   class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Volver a la lista
+                </a>
+                <div>
+                    <!-- Aquí se pueden agregar más acciones como editar/eliminar -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
+

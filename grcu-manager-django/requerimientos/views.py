@@ -120,9 +120,9 @@ def requerimiento_create(request, proyecto_id=None):
     if request.method == 'POST':
         # Instanciar el formulario apropiado
         if es_tradicional:
-            form = RequerimientoTradicionalForm(request.POST)
+            form = RequerimientoTradicionalForm(request.POST, request.FILES)
         elif es_agil:
-            form = RequerimientoAgilForm(request.POST)
+            form = RequerimientoAgilForm(request.POST, request.FILES)
         else:
             messages.error(request, 'Metodología no reconocida.')
             return redirect('dashboards:lider_dashboard')
@@ -135,7 +135,9 @@ def requerimiento_create(request, proyecto_id=None):
                 tipo=form.cleaned_data['tipo'],
                 estado=form.cleaned_data['estado'],
                 proyecto=proyecto,
-                creado_por=request.user
+                creado_por=request.user,
+                imagen=form.cleaned_data.get('imagen'),
+                link_externo=form.cleaned_data.get('link_externo', '')
             )
             requerimiento.save()
             
@@ -235,6 +237,7 @@ def requerimiento_priorizar(request, proyecto_id=None):
         "proyecto": proyecto,
         "requerimientos": requerimientos,
         "MOSCOW_CHOICES": MOSCOW_CHOICES,
+        "page_title": f"Priorización de Requerimientos - {proyecto.nombre}",
     }
     return render(request, "requerimientos/requerimiento_priorizar.html", context)
 

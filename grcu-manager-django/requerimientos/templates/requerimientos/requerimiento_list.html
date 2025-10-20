@@ -92,9 +92,28 @@
                 {% endwith %}
               </td>
               <td>
-                <a href="{% url 'requerimientos:requerimiento_detail' req.pk %}" class="btn btn-outline-success btn-sm btn-action-req" title="Ver Detalle">
-                  <i class="bi bi-eye"></i>
-                </a>
+                <div class="d-flex gap-1">
+                  <a href="{% url 'requerimientos:requerimiento_detail' req.pk %}" 
+                     class="btn btn-outline-success btn-sm btn-action-req" 
+                     title="Ver Detalle">
+                    <i class="bi bi-eye"></i>
+                  </a>
+                  {% with casos=req.casos_relacionados.all %}
+                    {% if casos|length == 0 %}
+                      <a href="{% url 'casos_de_uso:caso_de_uso_create' req.proyecto.pk %}?requerimiento_id={{ req.pk }}" 
+                         class="btn btn-outline-primary btn-sm btn-action-req" 
+                         title="Crear Caso de Uso">
+                        <i class="bi bi-diagram-3-fill"></i>
+                      </a>
+                    {% else %}
+                      <a href="{% url 'casos_de_uso:caso_de_uso_create' req.proyecto.pk %}?requerimiento_id={{ req.pk }}" 
+                         class="btn btn-outline-info btn-sm btn-action-req" 
+                         title="Agregar Otro Caso de Uso">
+                        <i class="bi bi-plus-circle"></i>
+                      </a>
+                    {% endif %}
+                  {% endwith %}
+                </div>
               </td>
             </tr>
           {% empty %}
@@ -116,133 +135,11 @@
 {% endblock %}
 
 {% block extra_js %}
+<!-- Pasar proyecto_id al JavaScript -->
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.getElementById('requerimientosSearchInput');
-    const filtroEstado = document.getElementById('filtroEstado');
-    const filtroTipo = document.getElementById('filtroTipo');
-    const tableBody = document.getElementById('requerimientosTableBody');
-    const proyectoId = {{ proyecto.id|default:'null' }};
-    
-    let searchTimeout;
-    let isSearching = false;
-
-    // Función para buscar requerimientos
-    const buscarRequerimientos = async () => {
-        const searchTerm = searchInput.value.trim();
-        const estado = filtroEstado.value;
-        const tipo = filtroTipo.value;
-
-        if (searchTerm === '' && estado === '' && tipo === '') {
-            // Si no hay filtros, recargar la página
-            window.location.href = window.location.pathname + (proyectoId ? '?proyecto_id=' + proyectoId : '');
-            return;
-        }
-
-        isSearching = true;
-
-        try {
-            // Construir URL con parámetros
-            let url = '/requerimientos/buscar/?';
-            if (proyectoId) url += `proyecto_id=${proyectoId}&`;
-            if (searchTerm) url += `q=${encodeURIComponent(searchTerm)}&`;
-            if (estado) url += `estado=${estado}&`;
-            if (tipo) url += `tipo=${tipo}&`;
-
-            const response = await fetch(url);
-            const data = await response.json();
-
-            // Limpiar tabla
-            tableBody.innerHTML = '';
-
-            if (data.count === 0) {
-                tableBody.innerHTML = `
-                    <tr>
-                        <td colspan="7" class="text-center alert alert-info">
-                            <i class="bi bi-info-circle"></i> No se encontraron requerimientos con los criterios especificados.
-                        </td>
-                    </tr>
-                `;
-            } else {
-                // Renderizar requerimientos
-                data.requerimientos.forEach(req => {
-                    const casosHtml = req.casos.length === 0
-                        ? '<span class="badge badge-huerfano"><i class="bi bi-exclamation-triangle me-1"></i>Huérfano</span>'
-                        : req.casos.map(caso => 
-                            `<a href="/casos-de-uso/${caso.id}/" class="badge badge-caso-uso me-1"><i class="bi bi-diagram-3 me-1"></i>${caso.nombre}</a>`
-                          ).join('');
-
-                    const row = `
-                        <tr>
-                            <td>
-                                <a href="/requerimientos/${req.id}/" class="fw-bold text-decoration-none">
-                                    ${req.nombre}
-                                </a>
-                            </td>
-                            <td>${req.tipo_display}</td>
-                            <td>${req.estado_display}</td>
-                            <td>${req.descripcion || '-'}</td>
-                            <td>${req.fecha_creacion}</td>
-                            <td>${casosHtml}</td>
-                            <td>
-                                <a href="/requerimientos/${req.id}/" class="btn btn-outline-success btn-sm btn-action-req" title="Ver Detalle">
-                                    <i class="bi bi-eye"></i>
-                                </a>
-                            </td>
-                        </tr>
-                    `;
-                    tableBody.insertAdjacentHTML('beforeend', row);
-                });
-            }
-        } catch (error) {
-            console.error('Error en búsqueda:', error);
-            tableBody.innerHTML = `
-                <tr>
-                    <td colspan="7" class="text-center alert alert-danger">
-                        <i class="bi bi-exclamation-triangle"></i> Error al buscar requerimientos. Intenta de nuevo.
-                    </td>
-                </tr>
-            `;
-        } finally {
-            isSearching = false;
-        }
-    };
-
-    // Event listener para búsqueda con debounce
-    if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            clearTimeout(searchTimeout);
-            if (isSearching) return;
-            
-            searchTimeout = setTimeout(() => {
-                buscarRequerimientos();
-            }, 300);
-        });
-
-        searchInput.addEventListener('keydown', function(event) {
-            if (event.key === 'Escape') {
-                this.value = '';
-                filtroEstado.value = '';
-                filtroTipo.value = '';
-                clearTimeout(searchTimeout);
-                window.location.href = window.location.pathname + (proyectoId ? '?proyecto_id=' + proyectoId : '');
-            }
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                clearTimeout(searchTimeout);
-                buscarRequerimientos();
-            }
-        });
-    }
-
-    // Event listeners para filtros
-    if (filtroEstado) {
-        filtroEstado.addEventListener('change', buscarRequerimientos);
-    }
-
-    if (filtroTipo) {
-        filtroTipo.addEventListener('change', buscarRequerimientos);
-    }
-});
+    document.body.dataset.proyectoId = {{ proyecto.id|default:'null' }};
 </script>
+
+<!-- JavaScript para lista de requerimientos -->
+<script src="{% static 'requerimientos/js/requerimiento_list.js' %}?v=1.0"></script>
 {% endblock %}

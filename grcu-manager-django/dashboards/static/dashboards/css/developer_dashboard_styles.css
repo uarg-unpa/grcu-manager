@@ -1,0 +1,195 @@
+/* ============================================
+   Dashboard del Desarrollador - Estilos
+   ============================================ */
+
+/* Card del proyecto */
+.developer-dashboard-card {
+    border: 1.5px solid #6366F1;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.developer-dashboard-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+}
+
+/* Logo del proyecto */
+.proyecto-logo {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    border-radius: 0.5rem;
+    border: 2px solid #b6b6b6;
+    background: #fff;
+    margin-right: 1rem;
+}
+
+/* Badge del proyecto */
+.badge-proyecto {
+    background: #6366F1;
+    color: #fff;
+    font-size: 1rem;
+    padding: 0.5em 1em;
+    border-radius: 0.5em;
+    display: inline-block;
+}
+
+/* Badge de líder */
+.badge.bg-success {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.8;
+    }
+}
+
+/* Items de la lista de huérfanos */
+.list-group-item.text-danger {
+    background: #fff0f0;
+    color: #c82333;
+    border-left: 3px solid #EF4444;
+    transition: all 0.2s ease;
+}
+
+.list-group-item.text-danger:hover {
+    background: #ffe5e5;
+    transform: translateX(3px);
+}
+
+/* Íconos en títulos de cards */
+.developer-dashboard-card .card-title i {
+    color: #6366F1;
+}
+
+/* Botones */
+.btn {
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Cards de métricas */
+.card.text-bg-light {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+    border: none;
+    transition: transform 0.2s ease;
+}
+
+.card.text-bg-light:hover {
+    transform: scale(1.02);
+}
+
+/* Header del card */
+.developer-dashboard-card .card-header {
+    background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+    color: white;
+    border: none;
+}
+
+/* Alertas */
+.alert {
+    border-left: 4px solid;
+    animation: fadeIn 0.3s ease;
+}
+
+.alert-warning {
+    border-left-color: #F59E0B;
+}
+
+.alert-info {
+    border-left-color: #3B82F6;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Canvas de gráficos */
+canvas {
+    max-width: 100%;
+    height: auto !important;
+}
+
+/* Tooltips de Bootstrap */
+.tooltip {
+    font-size: 0.875rem;
+}
+
+/* Badges de rol */
+.badge.bg-secondary {
+    background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%) !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .badge-proyecto {
+        font-size: 0.875rem;
+        padding: 0.4em 0.8em;
+    }
+    
+    .proyecto-logo {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .btn {
+        font-size: 0.875rem;
+        padding: 0.375rem 0.75rem;
+    }
+}
+
+/* Mejora visual para cards de gráficos */
+.card.text-bg-light .card-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 180px;
+}
+
+.card.text-bg-light h3 {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #6366F1;
+    margin: 0;
+}
+
+/* Estilo para listas de huérfanos vacías */
+.list-group-item:only-child {
+    background: #f8f9fa;
+    color: #6c757d;
+    font-style: italic;
+    text-align: center;
+}
+
+/* Animación de entrada para cards */
+.developer-dashboard-card {
+    animation: slideIn 0.4s ease;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

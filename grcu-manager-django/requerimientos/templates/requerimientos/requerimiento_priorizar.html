@@ -1,15 +1,15 @@
-
 {% extends "core/base.html" %}
+
 {% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'requerimientos/css/priorizar_styles.css' %}?v=1.0">
 {% endblock %}
+
 {% block content %}
 <div class="container py-4">
-    <div class="priorizar-header mb-4">
-        <i class="bi bi-funnel-fill"></i>
-        <span class="fs-4 fw-bold">Priorización de Requerimientos <span class="text-info">(MoSCoW)</span></span>
-    </div>
     {% if proyecto %}
     <div class="mb-3">
         <span class="badge-proyecto"><i class="bi bi-diagram-3 me-1"></i> Proyecto: {{ proyecto.nombre }}</span>

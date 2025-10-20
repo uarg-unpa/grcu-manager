@@ -87,81 +87,13 @@ def admin_dashboard(request):
 
 @login_required
 def admin_proyecto_detail(request, project_id):
-    from proyectos.models import Proyecto
-    from requerimientos.models import Requerimiento
-    from casos_de_uso.models import CasoDeUso
-    from usuarios.models import AccionUsuario
+    """
+    Redirige a la vista de detalle del proyecto en la app proyectos.
+    Mantiene compatibilidad con URLs antiguas.
+    """
+    from django.shortcuts import redirect
+    return redirect('proyectos:proyecto_detail_admin', proyecto_id=project_id)
 
-    proyecto = Proyecto.objects.filter(id=project_id).first()
-    if not proyecto:
-        return render(request, 'dashboards/admin_project_detail.html', {'error': 'Proyecto no encontrado'})
-
-    integrantes = list(proyecto.participantes.all())
-    lider = proyecto.lider
-    requerimientos = Requerimiento.objects.filter(proyecto=proyecto)
-    casos = CasoDeUso.objects.filter(proyecto=proyecto)
-    acciones = AccionUsuario.objects.filter(usuario__in=integrantes).order_by('-fecha')[:20]
-
-    # Huérfanos definidos como aquellos sin relación persistida en la tabla intermedia RequerimientoCaso
-    from requerimientos.models import RequerimientoCaso
-    reqs_huerfanos = requerimientos.annotate(rel_count=Count('relaciones_casos')).filter(rel_count=0)
-    casos_huerfanos = casos.annotate(rel_count=Count('relaciones_requerimientos')).filter(rel_count=0)
-    reqs_huerfanos_ids = list(reqs_huerfanos.values_list('pk', flat=True))
-    casos_huerfanos_ids = list(casos_huerfanos.values_list('pk', flat=True))
-
-    # Matriz de trazabilidad simple: relacionar requerimientos y casos por nombre parcial (heurística)
-    matriz = []
-    for req in requerimientos:
-        relacionados = [cu for cu in casos if req.nombre.split()[0].lower() in cu.nombre.lower() or req.nombre.lower() in cu.descripcion.lower()]
-        matriz.append({'req': req, 'casos': relacionados})
-
-    # Agregaciones para gráficos
-    # Requerimientos por estado
-    req_estado_qs = requerimientos.values('estado').annotate(count=Count('id'))
-    req_estado_map = {item['estado']: item['count'] for item in req_estado_qs}
-    req_estado_labels = ["PENDIENTE", "EN_PROGRESO", "COMPLETADO"]
-    req_estado_values = [req_estado_map.get(k, 0) for k in req_estado_labels]
-
-    # Requerimientos por tipo
-    req_tipo_qs = requerimientos.values('tipo').annotate(count=Count('id'))
-    req_tipo_map = {item['tipo']: item['count'] for item in req_tipo_qs}
-    req_tipo_labels = ["FUNCIONAL", "NO_FUNCIONAL"]
-    req_tipo_values = [req_tipo_map.get(k, 0) for k in req_tipo_labels]
-
-    # Casos de uso: conteo por disponibilidad de detalle (Tradicional / Ágil / Sin detalle)
-    casos_trad = casos.filter(detalle_tradicional__isnull=False).count()
-    casos_agil = casos.filter(detalle_agil__isnull=False).count()
-    casos_sin = casos.filter(detalle_agil__isnull=True, detalle_tradicional__isnull=True).count()
-    casos_tipo_labels = ["Tradicional", "Ágil", "Sin detalle"]
-    casos_tipo_values = [casos_trad, casos_agil, casos_sin]
-
-    # Acciones por usuario (top 5)
-    acciones_por_usuario_qs = AccionUsuario.objects.filter(usuario__in=integrantes).values('usuario__nombre').annotate(count=Count('id')).order_by('-count')[:5]
-    acciones_labels = [a['usuario__nombre'] for a in acciones_por_usuario_qs]
-    acciones_values = [a['count'] for a in acciones_por_usuario_qs]
-
-    return render(request, 'dashboards/admin_project_detail.html', {
-        'proyecto': proyecto,
-        'integrantes': integrantes,
-        'lider': lider,
-        'requerimientos': requerimientos,
-        'casos': casos,
-        'acciones': acciones,
-        'reqs_huerfanos': reqs_huerfanos,
-    'reqs_huerfanos_ids': reqs_huerfanos_ids,
-        'casos_huerfanos': casos_huerfanos,
-    'casos_huerfanos_ids': casos_huerfanos_ids,
-        'matriz': matriz,
-        # Datos para gráficos
-        'req_estado_labels': req_estado_labels,
-        'req_estado_values': req_estado_values,
-        'req_tipo_labels': req_tipo_labels,
-        'req_tipo_values': req_tipo_values,
-        'casos_tipo_labels': casos_tipo_labels,
-        'casos_tipo_values': casos_tipo_values,
-        'acciones_labels': acciones_labels,
-        'acciones_values': acciones_values,
-    })
 
 @login_required
 def lider_dashboard(request):
@@ -246,10 +178,85 @@ def lider_requerimientos(request):
 
 @login_required
 def lider_reportes(request):
-    # Solo mostramos el HTML simulado
-    return render(request, 'dashboards/lider_reportes.html')
+    """
+    Redirige a los reportes del primer proyecto del líder.
+    Los reportes ahora están en la app proyectos donde corresponde.
+    """
+    from django.contrib import messages
+    from proyectos.models import Proyecto
+    
+    proyectos = Proyecto.objects.filter(lider=request.user)
+    
+    proyecto_id = request.GET.get('proyecto')
+    if proyecto_id:
+        proyecto = proyectos.filter(id=proyecto_id).first()
+    else:
+        proyecto = proyectos.first()
+    
+    if not proyecto:
+        messages.error(request, 'No tienes proyectos asignados como líder.')
+        return redirect('dashboards:lider_dashboard')
+    
+    # Redirigir a los reportes del proyecto
+    return redirect('proyectos:proyecto_reportes', proyecto_id=proyecto.pk)
 
 @login_required
 def lider_priorizar(request):
     from django.urls import reverse
     return redirect(reverse('requerimientos:requerimiento_priorizar'))
+
+
+@login_required
+def developer_dashboard(request):
+    """
+    Dashboard para desarrolladores.
+    Muestra los proyectos donde el usuario participa (no necesariamente lidera).
+    Reutiliza las funcionalidades existentes de requerimientos, casos de uso, matriz y reportes.
+    """
+    from requerimientos.models import Requerimiento
+    from casos_de_uso.models import CasoDeUso
+    from proyectos.models import ParticipacionProyecto
+    
+    # Obtener proyectos donde el usuario participa
+    proyectos = Proyecto.objects.filter(participantes=request.user)
+    dashboard_data = []
+    
+    for proyecto in proyectos:
+        requerimientos = Requerimiento.objects.filter(proyecto=proyecto)
+        casos_de_uso = CasoDeUso.objects.filter(proyecto=proyecto)
+        
+        # Calcular huérfanos (igual que en el dashboard del líder)
+        reqs_huerfanos = requerimientos.annotate(rel_count=Count('relaciones_casos')).filter(rel_count=0)
+        casos_huerfanos = casos_de_uso.annotate(rel_count=Count('relaciones_requerimientos')).filter(rel_count=0)
+        
+        reqs_relacionados = requerimientos.count() - reqs_huerfanos.count()
+        casos_relacionados = casos_de_uso.count() - casos_huerfanos.count()
+        
+        # Obtener el rol del usuario en este proyecto
+        try:
+            participacion = ParticipacionProyecto.objects.get(usuario=request.user, proyecto=proyecto)
+            rol_usuario = participacion.rol.nombre
+        except ParticipacionProyecto.DoesNotExist:
+            rol_usuario = "Desarrollador"  # Por defecto
+        
+        # Verificar si es el líder del proyecto
+        es_lider = (proyecto.lider == request.user)
+        
+        dashboard_data.append({
+            "proyecto": proyecto,
+            "requerimientos": requerimientos,
+            "casos_de_uso": casos_de_uso,
+            "reqs_huerfanos": reqs_huerfanos,
+            "casos_huerfanos": casos_huerfanos,
+            "reqs_relacionados": reqs_relacionados,
+            "casos_relacionados": casos_relacionados,
+            "necesita_metodologia": proyecto.necesita_metodologia(),
+            "rol_usuario": rol_usuario,
+            "es_lider": es_lider,
+        })
+    
+    return render(request, "dashboards/developer_dashboard.html", {
+        "dashboard_data": dashboard_data,
+        "page_title": "Dashboard - Desarrollador"
+    })
+

@@ -1,8 +1,10 @@
 {% extends "core/base.html" %}
 {% load static %}
+
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'dashboards/css/lider_dashboard_styles.css' %}?v=2.1">
+    <link rel="stylesheet" href="{% static 'dashboards/css/developer_dashboard_styles.css' %}?v=1.0">
 {% endblock %}
+
 {% block extra_js %}
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script>
@@ -11,6 +13,7 @@
         tooltipTriggerList.forEach(function (tooltipTriggerEl) {
           new bootstrap.Tooltip(tooltipTriggerEl);
         });
+        
         // Renderiza los gráficos circulares para cada proyecto
         {% for data in dashboard_data %}
         // Gráfico de requerimientos: huérfanos vs relacionados
@@ -40,6 +43,7 @@
             }
           });
         }
+        
         // Gráfico de casos de uso: huérfanos vs relacionados
         var ctxCu{{ forloop.counter0 }} = document.getElementById('grafico-cu-{{ forloop.counter0 }}');
         if (ctxCu{{ forloop.counter0 }}) {
@@ -71,22 +75,29 @@
       });
     </script>
 {% endblock %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
 {% block content %}
 <div class="container py-4">
-    {% comment %} <div class="lider-dashboard-header mb-4">
-        <i class="bi bi-speedometer2"></i>
-        <span class="fs-4 fw-bold">Dashboard del Líder</span>
-    </div> {% endcomment %}
     {% if dashboard_data %}
         {% for data in dashboard_data %}
-        <div class="card mb-4 shadow-sm lider-dashboard-card">
+        <div class="card mb-4 shadow-sm developer-dashboard-card">
             <div class="card-header d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center">
                     {% if data.proyecto.logo %}
                         <img src="{{ data.proyecto.logo.url }}" alt="Logo" class="proyecto-logo me-3">
                     {% endif %}
                     <div>
-                        <span class="badge-proyecto mb-1"><i class="bi bi-diagram-3 me-1"></i> {{ data.proyecto.nombre }}</span><br>
+                        <span class="badge-proyecto mb-1">
+                            <i class="bi bi-diagram-3 me-1"></i> {{ data.proyecto.nombre }}
+                        </span>
+                        {% if data.es_lider %}
+                            <span class="badge bg-success ms-2">
+                                <i class="bi bi-star-fill me-1"></i>Líder
+                            </span>
+                        {% endif %}
+                        <br>
                         <small class="text-muted">
                             Metodología: 
                             {% if data.proyecto.metodologia %}
@@ -94,41 +105,13 @@
                             {% else %}
                                 <span class="text-danger fw-bold">(no asignada)</span>
                             {% endif %}
+                            <span class="mx-2">•</span>
+                            Tu rol: <span class="badge bg-secondary">{{ data.rol_usuario }}</span>
                         </small>
                     </div>
                 </div>
-                <div class="d-flex flex-column align-items-end gap-2">
-                    <div class="d-flex gap-2">
-                        {% comment %} Botón para asignar metodología (visible siempre si hace falta) {% endcomment %}
-                        {% if data.necesita_metodologia %}
-                        <a href="{% url 'proyectos:asignar_metodologia' data.proyecto.id %}" 
-                           class="btn btn-warning btn-sm">
-                            <i class="bi bi-exclamation-triangle-fill me-1"></i>Asignar Metodología
-                        </a>
-                        {% endif %}
-                        
-                        {% comment %} Botón para gestionar integrantes {% endcomment %}
-                        <a href="{% url 'proyectos:gestionar_integrantes' data.proyecto.id %}" 
-                           class="btn btn-info btn-sm"
-                           data-bs-toggle="tooltip"
-                           data-bs-placement="top"
-                           title="Gestionar roles de los integrantes">
-                            <i class="bi bi-people-fill me-1"></i>Gestión de Integrantes
-                        </a>
-                    </div>
-                    
-                    <div class="integrantes-list-header">
-                        <small class="text-muted">Integrantes:</small>
-                        <span>
-                            {% for integrante in data.integrantes %}
-                                <span class="badge bg-secondary me-1">{{ integrante.nombre }}</span>
-                            {% empty %}
-                                <span class="text-muted">Sin integrantes</span>
-                            {% endfor %}
-                        </span>
-                    </div>
-                </div>
             </div>
+            
             <div class="card-body">
                 {% comment %} ⚡ ALERTA INFORMATIVA: Proyecto sin metodología {% endcomment %}
                 {% if data.necesita_metodologia %}
@@ -137,8 +120,7 @@
                     <div class="flex-grow-1">
                         <strong>¡Atención!</strong> 
                         Este proyecto aún no tiene una metodología asignada. 
-                        Debes seleccionar una metodología antes de poder crear requerimientos.
-                        <em>(Usa el botón "Asignar Metodología" arriba)</em>
+                        El líder debe seleccionar una metodología antes de poder crear requerimientos.
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
@@ -169,6 +151,14 @@
                     <a href="{% url 'casos_de_uso:caso_de_uso_list' data.proyecto.id %}" 
                        class="btn btn-outline-info">
                         <i class="bi bi-diagram-3 me-2"></i>Ver Casos de Uso
+                    </a>
+                    <a href="{% url 'proyectos:matriz_trazabilidad' data.proyecto.id %}" 
+                       class="btn btn-outline-primary">
+                        <i class="bi bi-grid-3x3-gap me-2"></i>Ver Matriz de Trazabilidad
+                    </a>
+                    <a href="{% url 'proyectos:proyecto_reportes' data.proyecto.id %}" 
+                       class="btn btn-outline-success">
+                        <i class="bi bi-file-earmark-bar-graph me-2"></i>Ver Reportes
                     </a>
                 </div>
                 
@@ -205,6 +195,7 @@
                         </div>
                     </div>
                 </div>
+                
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <div class="card text-bg-light mb-3">
@@ -227,6 +218,7 @@
                         </div>
                     </div>
                 </div>
+                
                 <div class="row">
                     <div class="col-md-6">
                         <h5>Requerimientos huérfanos <span class="badge bg-danger">{{ data.reqs_huerfanos|length }}</span></h5>
@@ -263,7 +255,10 @@
         </div>
         {% endfor %}
     {% else %}
-        <div class="alert alert-info">No liderás ningún proyecto.</div>
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i>
+            No participas en ningún proyecto actualmente.
+        </div>
     {% endif %}
 </div>
 {% endblock %}

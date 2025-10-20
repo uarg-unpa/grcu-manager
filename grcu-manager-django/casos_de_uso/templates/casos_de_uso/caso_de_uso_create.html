@@ -29,6 +29,18 @@
         </div>
     </div>
 
+    {# Información del requerimiento si viene desde allí #}
+    {% if requerimiento %}
+    <div class="alert alert-info d-flex align-items-center mt-3" role="alert">
+        <i class="bi bi-info-circle-fill me-2" style="font-size: 1.5rem;"></i>
+        <div>
+            <strong>Asociando con Requerimiento:</strong> {{ requerimiento.nombre }}
+            <br>
+            <small class="text-muted">Este caso de uso se asociará automáticamente con el requerimiento seleccionado.</small>
+        </div>
+    </div>
+    {% endif %}
+
     {# Formulario #}
     <div class="card form-card shadow-sm">
         <div class="card-body">
@@ -56,22 +68,6 @@
                                 {% endif %}
                             </div>
                             
-                            <!-- Tipo -->
-                            <div class="mb-3">
-                                <label class="form-label required-field">{{ form.tipo.label }}</label>
-                                <div class="radio-group">
-                                    {% for choice in form.tipo %}
-                                        <div class="radio-option">
-                                            {{ choice.tag }}
-                                            <label for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label>
-                                        </div>
-                                    {% endfor %}
-                                </div>
-                                {% if form.tipo.errors %}
-                                    <div class="text-danger small mt-1">{{ form.tipo.errors.0 }}</div>
-                                {% endif %}
-                            </div>
-                            
                             <!-- Descripción -->
                             <div class="mb-3">
                                 <label for="{{ form.descripcion.id_for_label }}" class="form-label">
@@ -82,101 +78,86 @@
                                     <div class="text-danger small mt-1">{{ form.descripcion.errors.0 }}</div>
                                 {% endif %}
                             </div>
-                            
-                            <!-- Estado -->
-                            <div class="mb-3">
-                                <label for="{{ form.estado.id_for_label }}" class="form-label required-field">
-                                    {{ form.estado.label }}
-                                </label>
-                                {{ form.estado }}
-                                {% if form.estado.errors %}
-                                    <div class="text-danger small mt-1">{{ form.estado.errors.0 }}</div>
-                                {% endif %}
-                            </div>
                         </div>
                     </div>
 
                     <!-- Columna Derecha: Detalles Específicos -->
                     <div class="col-lg-6">
                         {% if es_tradicional %}
-                    <!-- METODOLOGÍA TRADICIONAL -->
-                    <div class="form-section form-section-tradicional">
-                        <div class="form-section-title">
-                            <i class="bi bi-list-check" style="color: #6f42c1;"></i>
-                            Detalles Tradicionales
-                        </div>
-                        
-                        <!-- Prioridad (MoSCoW) -->
-                        <div class="mb-3">
-                            <label for="{{ form.prioridad.id_for_label }}" class="form-label required-field">
-                                {{ form.prioridad.label }}
-                            </label>
-                            {{ form.prioridad }}
-                            {% if form.prioridad.help_text %}
-                                <div class="help-text">{{ form.prioridad.help_text }}</div>
-                            {% endif %}
-                            {% if form.prioridad.errors %}
-                                <div class="text-danger small mt-1">{{ form.prioridad.errors.0 }}</div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="row">
-                            <!-- Fuente -->
-                            <div class="col-md-6 mb-3">
-                                <label for="{{ form.fuente.id_for_label }}" class="form-label">
-                                    {{ form.fuente.label }}
-                                </label>
-                                {{ form.fuente }}
-                                {% if form.fuente.help_text %}
-                                    <div class="help-text">{{ form.fuente.help_text }}</div>
-                                {% endif %}
+                            <!-- METODOLOGÍA TRADICIONAL -->
+                            <div class="form-section form-section-tradicional">
+                                <div class="form-section-title">
+                                    <i class="bi bi-list-check" style="color: #6f42c1;"></i>
+                                    Detalles Tradicionales
+                                </div>
+                                
+                                <!-- Actor Principal -->
+                                <div class="mb-3">
+                                    <label for="{{ form.actor_principal.id_for_label }}" class="form-label required-field">
+                                        {{ form.actor_principal.label }}
+                                    </label>
+                                    {{ form.actor_principal }}
+                                    {% if form.actor_principal.help_text %}
+                                        <div class="help-text">{{ form.actor_principal.help_text }}</div>
+                                    {% endif %}
+                                    {% if form.actor_principal.errors %}
+                                        <div class="text-danger small mt-1">{{ form.actor_principal.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Precondiciones -->
+                                <div class="mb-3">
+                                    <label for="{{ form.precondiciones.id_for_label }}" class="form-label">
+                                        {{ form.precondiciones.label }}
+                                    </label>
+                                    {{ form.precondiciones }}
+                                </div>
+                                
+                                <!-- Flujo Principal -->
+                                <div class="mb-3">
+                                    <label for="{{ form.flujo_principal.id_for_label }}" class="form-label required-field">
+                                        {{ form.flujo_principal.label }}
+                                    </label>
+                                    {{ form.flujo_principal }}
+                                    {% if form.flujo_principal.help_text %}
+                                        <div class="help-text">{{ form.flujo_principal.help_text }}</div>
+                                    {% endif %}
+                                    {% if form.flujo_principal.errors %}
+                                        <div class="text-danger small mt-1">{{ form.flujo_principal.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Flujo Alternativo -->
+                                <div class="mb-3">
+                                    <label for="{{ form.flujo_alternativo.id_for_label }}" class="form-label">
+                                        {{ form.flujo_alternativo.label }}
+                                    </label>
+                                    {{ form.flujo_alternativo }}
+                                </div>
+                                
+                                <!-- Postcondiciones -->
+                                <div class="mb-3">
+                                    <label for="{{ form.postcondiciones.id_for_label }}" class="form-label">
+                                        {{ form.postcondiciones.label }}
+                                    </label>
+                                    {{ form.postcondiciones }}
+                                </div>
+                                
+                                <!-- Observaciones -->
+                                <div class="mb-0">
+                                    <label for="{{ form.observaciones.id_for_label }}" class="form-label">
+                                        {{ form.observaciones.label }}
+                                    </label>
+                                    {{ form.observaciones }}
+                                </div>
                             </div>
-                            
-                            <!-- Categoría -->
-                            <div class="col-md-6 mb-3">
-                                <label for="{{ form.categoria.id_for_label }}" class="form-label">
-                                    {{ form.categoria.label }}
-                                </label>
-                                {{ form.categoria }}
-                            </div>
-                        </div>
-                        
-                        <div class="row">
-                            <!-- Fecha Compromiso -->
-                            <div class="col-md-6 mb-3">
-                                <label for="{{ form.fecha_compromiso.id_for_label }}" class="form-label">
-                                    {{ form.fecha_compromiso.label }}
-                                </label>
-                                {{ form.fecha_compromiso }}
-                                {% if form.fecha_compromiso.help_text %}
-                                    <div class="help-text">{{ form.fecha_compromiso.help_text }}</div>
-                                {% endif %}
-                            </div>
-                            
-                            <!-- Estado Validación -->
-                            <div class="col-md-6 mb-3">
-                                <label for="{{ form.estado_validacion.id_for_label }}" class="form-label">
-                                    {{ form.estado_validacion.label }}
-                                </label>
-                                {{ form.estado_validacion }}
-                            </div>
-                        </div>
-                        
-                        <!-- Observaciones -->
-                        <div class="mb-0">
-                            <label for="{{ form.observaciones.id_for_label }}" class="form-label">
-                                {{ form.observaciones.label }}
-                            </label>
-                            {{ form.observaciones }}
-                        </div>
-                    </div>
                 
                         {% elif es_agil %}
                             <!-- METODOLOGÍA ÁGIL -->
                             <div class="form-section form-section-agil">
                                 <div class="form-section-title">
                                     <i class="bi bi-lightning-charge-fill" style="color: #fd7e14;"></i>
-                                    Detalles Ágiles (User Story)
+                                    Detalles Ágiles
                                 </div>
                                 
                                 <!-- Historia de Usuario -->
@@ -211,23 +192,12 @@
                                     {% endif %}
                                 </div>
                                 
-                                <!-- Story Points -->
+                                <!-- Responsable -->
                                 <div class="mb-3">
-                                    <label for="{{ form.puntos_estimados.id_for_label }}" class="form-label">
-                                        {{ form.puntos_estimados.label }}
+                                    <label for="{{ form.responsable.id_for_label }}" class="form-label">
+                                        {{ form.responsable.label }}
                                     </label>
-                                    {{ form.puntos_estimados }}
-                                    {% if form.puntos_estimados.help_text %}
-                                        <div class="help-text">{{ form.puntos_estimados.help_text }}</div>
-                                    {% endif %}
-                                </div>
-                                
-                                <!-- Sprint -->
-                                <div class="mb-3">
-                                    <label for="{{ form.sprint_asignado.id_for_label }}" class="form-label">
-                                        {{ form.sprint_asignado.label }}
-                                    </label>
-                                    {{ form.sprint_asignado }}
+                                    {{ form.responsable }}
                                 </div>
                                 
                                 <!-- Estado Scrum -->
@@ -236,14 +206,6 @@
                                         {{ form.estado_scrum.label }}
                                     </label>
                                     {{ form.estado_scrum }}
-                                </div>
-                                
-                                <!-- Responsable -->
-                                <div class="mb-3">
-                                    <label for="{{ form.responsable.id_for_label }}" class="form-label">
-                                        {{ form.responsable.label }}
-                                    </label>
-                                    {{ form.responsable }}
                                 </div>
                                 
                                 <!-- Observaciones -->
@@ -282,7 +244,7 @@
                                     {% endif %}
                                     <div class="form-text">
                                         <i class="bi bi-info-circle"></i> 
-                                        Adjunta diagramas, mockups, o cualquier imagen relacionada al requerimiento
+                                        Adjunta diagramas de secuencia, flujos, o mockups relacionados
                                     </div>
                                 </div>
                                 
@@ -300,7 +262,7 @@
                                     {% endif %}
                                     <div class="form-text">
                                         <i class="bi bi-info-circle"></i> 
-                                        Enlace a documentación externa, Figma, Miro, etc.
+                                        Enlace a diagramas UML, documentación externa, etc.
                                     </div>
                                 </div>
                             </div>
@@ -315,11 +277,7 @@
                     </a>
                     <button type="submit" class="btn btn-guardar-requerimiento">
                         <i class="bi bi-save"></i>
-                        {% if es_agil %}
-                            Guardar User Story
-                        {% else %}
-                            Guardar Requerimiento
-                        {% endif %}
+                        Guardar Caso de Uso
                     </button>
                 </div>
             </form>

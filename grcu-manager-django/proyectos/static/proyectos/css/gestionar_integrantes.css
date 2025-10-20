@@ -1,0 +1,149 @@
+/* ============================================
+   Gestión de Integrantes - Estilos
+   ============================================ */
+
+/* Avatar circular para usuarios */
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+/* Estilos para la tabla */
+.table-hover tbody tr {
+    transition: all 0.2s ease;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(13, 110, 253, 0.05);
+    transform: translateX(2px);
+}
+
+/* Estilos para los select de roles */
+.table select.form-select {
+    cursor: pointer;
+    border: 2px solid #dee2e6;
+    transition: all 0.3s ease;
+}
+
+.table select.form-select:hover:not(:disabled) {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+}
+
+.table select.form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.table select.form-select:disabled {
+    background-color: #f8f9fa;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* Badges personalizados */
+.badge {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+/* Descripción de roles */
+.role-description {
+    padding: 1rem;
+    border-left: 3px solid #dee2e6;
+    margin-bottom: 1rem;
+}
+
+.role-description h6 {
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+/* Botones */
+.btn {
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Animación de carga */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card {
+    animation: fadeIn 0.4s ease;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+
+    .avatar-circle {
+        width: 32px;
+        height: 32px;
+        font-size: 0.9rem;
+    }
+
+    .role-description {
+        margin-bottom: 1.5rem;
+    }
+}
+
+/* Iconos en headers de tabla */
+thead th i {
+    opacity: 0.7;
+}
+
+/* Efecto hover en filas */
+tbody tr {
+    cursor: default;
+}
+
+tbody tr:hover .avatar-circle {
+    transform: scale(1.1);
+    transition: transform 0.2s ease;
+}
+
+/* Alertas */
+.alert {
+    border-left: 4px solid;
+    animation: fadeIn 0.3s ease;
+}
+
+.alert-info {
+    border-left-color: #0dcaf0;
+}
+
+/* Estilos para estados */
+.text-muted {
+    color: #6c757d !important;
+}
+
+/* Cards con borde */
+.card.border-info {
+    border-width: 2px;
+}

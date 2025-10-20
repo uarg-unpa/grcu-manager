@@ -168,7 +168,7 @@ python manage.py runserver
 
 ### Metodología Tradicional
 ```bash
-./manage_seed.sh TRADICIONAL
+.scripts/manage_seed.sh TRADICIONAL
 ```
 
 o
@@ -179,7 +179,7 @@ python manage.py seed_requerimientos --metodologia TRADICIONAL
 
 ### Metodología Ágil
 ```bash
-./manage_seed.sh AGIL
+.scripts/manage_seed.sh AGIL
 ```
 
 o

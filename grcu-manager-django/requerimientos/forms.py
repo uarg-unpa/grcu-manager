@@ -126,6 +126,27 @@ class RequerimientoTradicionalForm(forms.Form):
         }),
         label='Observaciones'
     )
+    
+    # Campos para adjuntos y recursos externos
+    imagen = forms.ImageField(
+        required=False,
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': 'image/png,image/jpeg,image/jpg'
+        }),
+        label='Imagen Adjunta',
+        help_text='Formatos permitidos: PNG, JPG, JPEG (máx. 5MB)'
+    )
+    
+    link_externo = forms.URLField(
+        required=False,
+        widget=forms.URLInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'https://ejemplo.com/recurso'
+        }),
+        label='Enlace a Recurso Externo',
+        help_text='URL completa del recurso externo'
+    )
 
 
 class RequerimientoAgilForm(forms.Form):
@@ -259,4 +280,25 @@ class RequerimientoAgilForm(forms.Form):
             'placeholder': 'Notas adicionales sobre la historia...'
         }),
         label='Observaciones'
+    )
+    
+    # Campos para adjuntos y recursos externos
+    imagen = forms.ImageField(
+        required=False,
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': 'image/png,image/jpeg,image/jpg'
+        }),
+        label='Imagen Adjunta',
+        help_text='Formatos permitidos: PNG, JPG, JPEG (máx. 5MB)'
+    )
+    
+    link_externo = forms.URLField(
+        required=False,
+        widget=forms.URLInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'https://ejemplo.com/recurso'
+        }),
+        label='Enlace a Recurso Externo',
+        help_text='URL completa del recurso externo'
     )

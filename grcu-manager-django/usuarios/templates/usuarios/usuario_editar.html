@@ -1,65 +1,6 @@
 {% extends 'core/base.html' %}
-
-{% load static %}
-
-{% block title %}Editar Usuario{% endblock %}
-
-{% block extra_css %}
-    <link rel="stylesheet" href="{% static 'usuarios/css/usuario_editar.css' %}">
-{% endblock %}
-
-{% block content %}
-<div class="usuario-form-container">
-
-    {% if messages %}
-        <div class="usuario-form-messages">
-            {% for message in messages %}
-                <div class="usuario-form-message {{ message.tags }}" role="alert">
-                    {{ message }}
-                </div>
-            {% endfor %}
-        </div>
-    {% endif %}
-
-    <form method="post">
-        {% csrf_token %}
-
-        <div class="mb-3">
-            <label for="id_email">Email</label>
-            {{ form.email }}
-            {% if form.email.errors %}
-                <div class="text-danger">{{ form.email.errors.as_text }}</div>
-            {% endif %}
-        </div>
-
-        <div class="mb-3">
-            <label for="id_nombre">Nombre</label>
-            {{ form.nombre }}
-            {% if form.nombre.errors %}
-                <div class="text-danger">{{ form.nombre.errors.as_text }}</div>
-            {% endif %}
-        </div>
-
-        <div class="mb-3">
-            <label>Roles:</label>
-            <div class="roles-container">
-                {% for item in roles %}
-                    {% with rol=item.0 icon=item.1 rol_id=item.2 color=item.3 icono_url=item.4 %}
-                        <label class="roles-badge" style="background-color: {{ color }};">
-                            <input type="checkbox" name="roles" value="{{ rol_id }}" {% if rol_id in form.roles.value %}checked{% endif %} hidden>
-                            {% if icono_url %}
-                                <img src="{{ icono_url }}" class="rol-icon" alt="{{ rol }}" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';">
-                                <span class="rol-icon-fallback" style="display: none;">
-                                    {% if rol == "Admin" %}👑{% elif rol == "Desarrollador" %}💻{% else %}👤{% endif %}
-                                </span>
-                            {% else %}
-                                <span class="rol-icon">
-                                    {% if rol == "Admin" %}👑{% elif rol == "Desarrollador" %}💻{% else %}👤{% endif %}
-                                </span>
-                            {% endif %}
-                            {{ rol }}
-                        </label>
-                    {% endwith %}
+<script src="{% static 'core/js/bootstrap.bundle.min.js' %}"></script>
+<script src="{% static 'usuarios/js/usuario_form.js' %}?v=1.0"></script>
                 {% endfor %}
             </div>
         </div>

@@ -1,0 +1,334 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'proyectos/css/proyecto_reportes.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="reportes-container">
+    <!-- Información del Proyecto -->
+    <div class="proyecto-info-card">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h4 class="mb-1">{{ proyecto.nombre }}</h4>
+                <span class="badge metodologia-badge {{ proyecto.metodologia|lower }}">
+                    <i class="bi bi-diagram-3-fill me-1"></i>
+                    {{ proyecto.get_metodologia_display }}
+                </span>
+            </div>
+            <div class="report-actions">
+                <a href="{% url 'proyectos:matriz_trazabilidad' proyecto.id %}" class="btn btn-outline-primary">
+                    <i class="bi bi-diagram-3"></i> Ver Matriz
+                </a>
+                <div class="dropdown d-inline">
+                    <button class="btn btn-success dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-download"></i> Exportar
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" onclick="window.print(); return false;">
+                            <i class="bi bi-printer"></i> Imprimir
+                        </a></li>
+                        <li><a class="dropdown-item" href="{% url 'proyectos:exportar_matriz' proyecto.id 'excel' %}">
+                            <i class="bi bi-file-earmark-excel"></i> Exportar a Excel
+                        </a></li>
+                        <li><a class="dropdown-item" href="{% url 'proyectos:exportar_matriz' proyecto.id 'pdf' %}">
+                            <i class="bi bi-file-earmark-pdf"></i> Exportar a PDF
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Métricas Principales -->
+    <div class="metrics-grid">
+        <div class="metric-card metric-primary">
+            <div class="metric-icon">
+                <i class="bi bi-file-earmark-text"></i>
+            </div>
+            <div class="metric-content">
+                <h3 class="metric-value">{{ total_requerimientos }}</h3>
+                <p class="metric-label">Requerimientos</p>
+            </div>
+        </div>
+
+        <div class="metric-card metric-info">
+            <div class="metric-icon">
+                <i class="bi bi-diagram-3"></i>
+            </div>
+            <div class="metric-content">
+                <h3 class="metric-value">{{ total_casos_uso }}</h3>
+                <p class="metric-label">Casos de Uso</p>
+            </div>
+        </div>
+
+        <div class="metric-card metric-success">
+            <div class="metric-icon">
+                <i class="bi bi-check-circle"></i>
+            </div>
+            <div class="metric-content">
+                <h3 class="metric-value">{{ cobertura_reqs }}%</h3>
+                <p class="metric-label">Cobertura de Requerimientos</p>
+                <small class="metric-detail">{{ reqs_con_casos }}/{{ total_requerimientos }} cubiertos</small>
+            </div>
+        </div>
+
+        <div class="metric-card metric-warning">
+            <div class="metric-icon">
+                <i class="bi bi-exclamation-triangle"></i>
+            </div>
+            <div class="metric-content">
+                <h3 class="metric-value">{{ reqs_huerfanos }}</h3>
+                <p class="metric-label">Requerimientos Huérfanos</p>
+                <small class="metric-detail">Sin casos de uso asociados</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="charts-grid">
+        <!-- Requerimientos por Tipo -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h5><i class="bi bi-pie-chart-fill me-2"></i>Requerimientos por Tipo</h5>
+            </div>
+            <div class="chart-body">
+                <canvas id="tipoChart" width="300" height="300"></canvas>
+            </div>
+            <div class="chart-footer">
+                <div class="chart-legend">
+                    <span class="legend-item">
+                        <span class="legend-color" style="background-color: #3498db;"></span>
+                        Funcionales: {{ reqs_funcionales }}
+                    </span>
+                    <span class="legend-item">
+                        <span class="legend-color" style="background-color: #e74c3c;"></span>
+                        No Funcionales: {{ reqs_no_funcionales }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Requerimientos por Estado -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h5><i class="bi bi-bar-chart-fill me-2"></i>Requerimientos por Estado</h5>
+            </div>
+            <div class="chart-body">
+                <canvas id="estadoChart" width="300" height="300"></canvas>
+            </div>
+            <div class="chart-footer">
+                <div class="chart-legend">
+                    <span class="legend-item">
+                        <span class="legend-color" style="background-color: #f39c12;"></span>
+                        Pendiente: {{ reqs_pendientes }}
+                    </span>
+                    <span class="legend-item">
+                        <span class="legend-color" style="background-color: #3498db;"></span>
+                        En Desarrollo: {{ reqs_en_desarrollo }}
+                    </span>
+                    <span class="legend-item">
+                        <span class="legend-color" style="background-color: #27ae60;"></span>
+                        Aprobado: {{ reqs_aprobados }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trazabilidad de Requerimientos -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h5><i class="bi bi-graph-up me-2"></i>Trazabilidad de Requerimientos</h5>
+            </div>
+            <div class="chart-body">
+                <canvas id="trazabilidadReqsChart" width="300" height="300"></canvas>
+            </div>
+            <div class="chart-footer">
+                <div class="chart-legend">
+                    <span class="legend-item">
+                        <span class="legend-color" style="background-color: #27ae60;"></span>
+                        Con Casos: {{ reqs_con_casos }}
+                    </span>
+                    <span class="legend-item">
+                        <span class="legend-color" style="background-color: #e74c3c;"></span>
+                        Huérfanos: {{ reqs_huerfanos }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trazabilidad de Casos de Uso -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h5><i class="bi bi-graph-down me-2"></i>Trazabilidad de Casos de Uso</h5>
+            </div>
+            <div class="chart-body">
+                <canvas id="trazabilidadCasosChart" width="300" height="300"></canvas>
+            </div>
+            <div class="chart-footer">
+                <div class="chart-legend">
+                    <span class="legend-item">
+                        <span class="legend-color" style="background-color: #3498db;"></span>
+                        Con Requerimientos: {{ casos_con_reqs }}
+                    </span>
+                    <span class="legend-item">
+                        <span class="legend-color" style="background-color: #95a5a6;"></span>
+                        Huérfanos: {{ casos_huerfanos }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resumen Detallado -->
+    <div class="summary-card">
+        <h5 class="mb-3"><i class="bi bi-clipboard-data me-2"></i>Resumen del Proyecto</h5>
+        <div class="row">
+            <div class="col-md-6">
+                <h6 class="text-muted">Distribución de Requerimientos</h6>
+                <ul class="summary-list">
+                    <li>
+                        <span class="summary-label">Funcionales:</span>
+                        <span class="summary-value">{{ reqs_funcionales }} ({{ reqs_funcionales|floatformat:0 }}%)</span>
+                    </li>
+                    <li>
+                        <span class="summary-label">No Funcionales:</span>
+                        <span class="summary-value">{{ reqs_no_funcionales }} ({{ reqs_no_funcionales|floatformat:0 }}%)</span>
+                    </li>
+                </ul>
+                <h6 class="text-muted mt-3">Estado de Requerimientos</h6>
+                <ul class="summary-list">
+                    <li>
+                        <span class="summary-label">Pendientes:</span>
+                        <span class="summary-value text-warning">{{ reqs_pendientes }}</span>
+                    </li>
+                    <li>
+                        <span class="summary-label">En Desarrollo:</span>
+                        <span class="summary-value text-primary">{{ reqs_en_desarrollo }}</span>
+                    </li>
+                    <li>
+                        <span class="summary-label">Aprobados:</span>
+                        <span class="summary-value text-success">{{ reqs_aprobados }}</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h6 class="text-muted">Análisis de Trazabilidad</h6>
+                <ul class="summary-list">
+                    <li>
+                        <span class="summary-label">Cobertura de Requerimientos:</span>
+                        <span class="summary-value">{{ cobertura_reqs }}%</span>
+                    </li>
+                    <li>
+                        <span class="summary-label">Cobertura de Casos de Uso:</span>
+                        <span class="summary-value">{{ cobertura_casos }}%</span>
+                    </li>
+                    <li>
+                        <span class="summary-label">Requerimientos Huérfanos:</span>
+                        <span class="summary-value text-danger">{{ reqs_huerfanos }}</span>
+                    </li>
+                    <li>
+                        <span class="summary-label">Casos de Uso Huérfanos:</span>
+                        <span class="summary-value text-warning">{{ casos_huerfanos }}</span>
+                    </li>
+                </ul>
+                
+                {% if reqs_huerfanos > 0 or casos_huerfanos > 0 %}
+                <div class="alert alert-warning mt-3">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>Atención:</strong> Hay elementos sin trazabilidad completa.
+                    {% if es_lider %}
+                    <br>
+                    <a href="{% url 'proyectos:matriz_trazabilidad' proyecto.id %}" class="alert-link">
+                        Revisar matriz de trazabilidad →
+                    </a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    };
+
+    // Gráfico de Tipo
+    new Chart(document.getElementById('tipoChart'), {
+        type: 'doughnut',
+        data: {
+            labels: {{ tipo_labels_json|safe }},
+            datasets: [{
+                data: {{ tipo_values_json|safe }},
+                backgroundColor: {{ tipo_colors_json|safe }}
+            }]
+        },
+        options: chartOptions
+    });
+
+    // Gráfico de Estado
+    new Chart(document.getElementById('estadoChart'), {
+        type: 'bar',
+        data: {
+            labels: {{ estado_labels_json|safe }},
+            datasets: [{
+                data: {{ estado_values_json|safe }},
+                backgroundColor: {{ estado_colors_json|safe }}
+            }]
+        },
+        options: {
+            ...chartOptions,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+
+    // Gráfico de Trazabilidad Requerimientos
+    new Chart(document.getElementById('trazabilidadReqsChart'), {
+        type: 'doughnut',
+        data: {
+            labels: {{ trazabilidad_labels_json|safe }},
+            datasets: [{
+                data: {{ trazabilidad_reqs_values_json|safe }},
+                backgroundColor: ['#27ae60', '#e74c3c']
+            }]
+        },
+        options: chartOptions
+    });
+
+    // Gráfico de Trazabilidad Casos
+    new Chart(document.getElementById('trazabilidadCasosChart'), {
+        type: 'doughnut',
+        data: {
+            labels: {{ trazabilidad_labels_json|safe }},
+            datasets: [{
+                data: {{ trazabilidad_casos_values_json|safe }},
+                backgroundColor: ['#3498db', '#95a5a6']
+            }]
+        },
+        options: chartOptions
+    });
+});
+</script>
+{% endblock %}

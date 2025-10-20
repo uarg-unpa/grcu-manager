@@ -116,27 +116,8 @@
 
 </div>
 
-<!-- === Scripts === -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-  const renderChart = (id, labels, values, colors) => {
-    const ctx = document.getElementById(id)?.getContext('2d');
-    if (ctx) {
-      new Chart(ctx, {
-        type: 'doughnut',
-        data: { labels, datasets: [{ data: values, backgroundColor: colors }] },
-        options: { plugins: { legend: { display: false } }, responsive: false, maintainAspectRatio: false }
-      });
-    }
-  };
 
-  renderChart('usuariosRolesChart', {{ usuarios_roles_labels_json|safe }}, {{ usuarios_roles_values_json|safe }},
-              ['#007bff', '#28a745', '#ffc107', '#6c757d']);
-  renderChart('proyectosEstadoChart', {{ proyectos_estado_labels_json|safe }}, {{ proyectos_estado_values_json|safe }},
-              ['#17a2b8', '#adb5bd']);
-  renderChart('gruposEstadoChart', {{ grupos_estado_labels_json|safe }}, {{ grupos_estado_values_json|safe }},
-              ['#20c997', '#dc3545']);
-});
-</script>
+<!-- === Scripts === -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
+<script src="{% static 'dashboards/js/charts.js' %}?v=3.0"></script>
 {% endblock %}

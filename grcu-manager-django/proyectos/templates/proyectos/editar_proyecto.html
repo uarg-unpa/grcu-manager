@@ -52,9 +52,9 @@
 
         <div class="proyecto-form-group">
             <label for="id_lider">Líder del Proyecto:</label>
-            <select name="lider" id="id_lider" class="form-control" {% if not proyecto.grupo %}disabled{% endif %}>
-                <option value="">{% if proyecto.grupo %}Selecciona un líder{% else %}Sin grupo asignado{% endif %}</option>
-            </select>
+                <select name="lider" id="id_lider" class="form-control" {% if not proyecto.grupo %}disabled{% endif %} data-current-lider="{{ proyecto.lider.id|default:'' }}">
+                    <option value="">{% if proyecto.grupo %}Selecciona un líder{% else %}Sin grupo asignado{% endif %}</option>
+                </select>
             {% if form.lider.errors %}
                 <div class="text-danger">{{ form.lider.errors.as_text }}</div>
             {% endif %}
@@ -68,61 +68,8 @@
             <a href="{% url 'proyectos:lista_proyectos' %}" class="proyecto-form-btn-cancelar btn-secondary" style="margin-left:10px;" title="Cancelar" data-bs-toggle="tooltip">
                 <i class="bi bi-x-lg"></i> Cancelar
             </a>
-        </div>
-    </form>
-</div>
-{% endblock %}
-
-{% block extra_js %}
-<script src="{% static 'core/js/bootstrap.bundle.min.js' %}"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const grupoSelect = document.getElementById('id_grupo');
-    const liderSelect = document.getElementById('id_lider');
-
-    // Función para cargar integrantes del grupo seleccionado
-    function cargarIntegrantes(grupoId) {
-        if (!grupoId) {
-            liderSelect.innerHTML = '<option value="">Sin grupo asignado</option>';
-            liderSelect.disabled = true;
-            return;
-        }
-
-        // Habilitar el select de líder
-        liderSelect.disabled = false;
-
-        // Mostrar loading
-        liderSelect.innerHTML = '<option value="">Cargando...</option>';
-
-        // Hacer petición AJAX para obtener los integrantes
-        fetch(`/grupos/api/grupo/${grupoId}/integrantes/`)
-            .then(response => response.json())
-            .then(data => {
-                liderSelect.innerHTML = '<option value="">Selecciona un líder</option>';
-                data.integrantes.forEach(integrante => {
-                    const option = document.createElement('option');
-                    option.value = integrante.id;
-                    option.textContent = `${integrante.nombre} (${integrante.email})`;
-                    liderSelect.appendChild(option);
-                });
-
-                // Si hay un líder preseleccionado, seleccionarlo
-                const currentLiderId = '{{ proyecto.lider.id|default:"" }}';
-                if (currentLiderId) {
-                    liderSelect.value = currentLiderId;
-                }
-            })
-            .catch(error => {
-                console.error('Error al cargar integrantes:', error);
-                liderSelect.innerHTML = '<option value="">Error al cargar integrantes</option>';
-            });
-    }
-
-    // Event listener para cambio de grupo
-    grupoSelect.addEventListener('change', function() {
-        const grupoId = this.value;
-        cargarIntegrantes(grupoId);
-    });
+            <script src="{% static 'core/js/bootstrap.bundle.min.js' %}"></script>
+            <script src="{% static 'proyectos/js/proyecto_form.js' %}?v=1.0"></script>
 
     // Cargar integrantes del grupo actual al cargar la página
     if (grupoSelect.value) {

@@ -50,36 +50,11 @@
 
     {% include "core/componentes/footer.html" %}
 
-    <script>
-        document.addEventListener('scroll', function() {
-            const header = document.querySelector('.custom-header');
-            if (!header) return;
-            if (window.scrollY > 60) {
-                header.classList.add('shrink');
-            } else {
-                header.classList.remove('shrink');
-            }
-        });
-    </script>
+    <!-- Bootstrap JS -->
     <script src="{% static 'core/js/bootstrap.bundle.min.js' %}"></script>
-    <script>
-        // Inicializar tooltips de Bootstrap si hay elementos con data-bs-toggle="tooltip"
-        document.addEventListener('DOMContentLoaded', function () {
-            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-            tooltipTriggerList.forEach(function (tooltipTriggerEl) {
-                new bootstrap.Tooltip(tooltipTriggerEl)
-            })
-            
-            // Auto-ocultar mensajes después de 5 segundos
-            const alerts = document.querySelectorAll('.alert');
-            alerts.forEach(function(alert) {
-                setTimeout(function() {
-                    const bsAlert = new bootstrap.Alert(alert);
-                    bsAlert.close();
-                }, 5000); // 5 segundos
-            });
-        });
-    </script>
+    
+    <!-- Core Base JavaScript -->
+    <script src="{% static 'core/js/base.js' %}?v=1.0"></script>
     
     {% block extra_js %}{% endblock %}
 </body>

@@ -1,0 +1,193 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'proyectos/css/gestionar_integrantes.css' %}?v=1.0">
+{% endblock %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Botón de regreso -->
+    <div class="d-flex justify-content-end align-items-center mb-4">
+        <a href="{% url 'dashboards:lider_dashboard' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-2"></i>Volver al Dashboard
+        </a>
+    </div>
+
+    <!-- Información -->
+    <div class="alert alert-info mb-4">
+        <i class="bi bi-info-circle me-2"></i>
+        Gestiona los roles de los integrantes de tu proyecto. Puedes asignar los roles de:
+        <strong>Desarrollador</strong> (por defecto), <strong>Stakeholder</strong> (Cliente) o <strong>Visitante</strong>.
+    </div>
+
+    <!-- Formulario de gestión de roles -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">
+                <i class="bi bi-people-fill me-2"></i>
+                Integrantes del Proyecto
+                <span class="badge bg-primary">{{ usuarios_con_roles|length }}</span>
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if usuarios_con_roles %}
+                <form method="post" id="formGestionIntegrantes">
+                    {% csrf_token %}
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 5%;">
+                                        <i class="bi bi-hash"></i>
+                                    </th>
+                                    <th style="width: 35%;">
+                                        <i class="bi bi-person-fill me-1"></i>Usuario
+                                    </th>
+                                    <th style="width: 25%;">
+                                        <i class="bi bi-envelope-fill me-1"></i>Email
+                                    </th>
+                                    <th style="width: 25%;">
+                                        <i class="bi bi-shield-fill-check me-1"></i>Rol Actual
+                                    </th>
+                                    <th style="width: 10%;" class="text-center">
+                                        <i class="bi bi-gear-fill me-1"></i>Líder
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in usuarios_con_roles %}
+                                <tr>
+                                    <td class="text-muted">{{ forloop.counter }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-circle me-2">
+                                                {{ item.usuario.nombre|slice:":1"|upper }}
+                                            </div>
+                                            <strong>{{ item.usuario.nombre }}</strong>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="text-muted">{{ item.usuario.email }}</span>
+                                    </td>
+                                    <td>
+                                        {% if item.es_lider %}
+                                            <!-- El líder no puede cambiar su rol -->
+                                            <select class="form-select" disabled>
+                                                <option selected>Líder (no modificable)</option>
+                                            </select>
+                                        {% else %}
+                                            <select name="rol_{{ item.usuario.id }}" class="form-select" required>
+                                                {% for rol in roles_permitidos %}
+                                                    <option value="{{ rol.id }}" 
+                                                            {% if rol.id == item.rol_actual.id %}selected{% endif %}>
+                                                        {{ rol.nombre }}
+                                                        {% if rol.nombre == "Stakeholder" %}(Cliente){% endif %}
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if item.es_lider %}
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-star-fill"></i> Sí
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">No</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Botones de acción -->
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <a href="{% url 'dashboards:lider_dashboard' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle me-2"></i>Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save me-2"></i>Guardar Cambios
+                        </button>
+                    </div>
+                </form>
+            {% else %}
+                <div class="alert alert-info mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    No hay integrantes en este proyecto.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Información adicional -->
+    <div class="card mt-4 border-info">
+        <div class="card-body">
+            <h6 class="card-title">
+                <i class="bi bi-question-circle-fill text-info me-2"></i>
+                Descripción de Roles
+            </h6>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="role-description">
+                        <h6 class="text-primary">
+                            <i class="bi bi-code-slash me-1"></i>Desarrollador
+                        </h6>
+                        <p class="small text-muted mb-0">
+                            Rol por defecto. Puede crear, editar y gestionar requerimientos y casos de uso.
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="role-description">
+                        <h6 class="text-success">
+                            <i class="bi bi-person-badge me-1"></i>Stakeholder (Cliente)
+                        </h6>
+                        <p class="small text-muted mb-0">
+                            Representa al cliente. Puede revisar y aprobar requerimientos.
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="role-description">
+                        <h6 class="text-secondary">
+                            <i class="bi bi-eye me-1"></i>Visitante
+                        </h6>
+                        <p class="small text-muted mb-0">
+                            Solo lectura. Puede visualizar el proyecto sin realizar cambios.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Confirmar antes de enviar el formulario
+        const form = document.getElementById('formGestionIntegrantes');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const cambios = Array.from(form.querySelectorAll('select[name^="rol_"]'))
+                    .filter(select => !select.disabled)
+                    .length;
+                
+                if (cambios > 0) {
+                    const confirmar = confirm(`¿Estás seguro de que deseas actualizar los roles de los integrantes?`);
+                    if (!confirmar) {
+                        e.preventDefault();
+                    }
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

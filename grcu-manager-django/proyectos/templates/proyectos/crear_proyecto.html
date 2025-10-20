@@ -16,56 +16,8 @@
             {{ form.nombre.label_tag }}
             {{ form.nombre }}
             {% if form.nombre.errors %}
-                <div class="text-danger">{{ form.nombre.errors.as_text }}</div>
-            {% endif %}
-        </div>
-
-        <div class="proyecto-form-group">
-            {{ form.descripcion.label_tag }}
-            {{ form.descripcion }}
-            {% if form.descripcion.errors %}
-                <div class="text-danger">{{ form.descripcion.errors.as_text }}</div>
-            {% endif %}
-        </div>
-
-        <div class="proyecto-form-group">
-            {{ form.logo.label_tag }}
-            {{ form.logo }}
-            {% if form.logo.errors %}
-                <div class="text-danger">{{ form.logo.errors.as_text }}</div>
-            {% endif %}
-        </div>
-
-        <div class="proyecto-form-group">
-            {{ form.grupo.label_tag }}
-            {{ form.grupo }}
-            {% if form.grupo.errors %}
-                <div class="text-danger">{{ form.grupo.errors.as_text }}</div>
-            {% endif %}
-        </div>
-
-        <div class="proyecto-form-group">
-            <label for="id_lider">Líder del Proyecto:</label>
-            <select name="lider" id="id_lider" class="form-control" disabled>
-                <option value="">Sin grupo asignado</option>
-            </select>
-            {% if form.lider.errors %}
-                <div class="text-danger">{{ form.lider.errors.as_text }}</div>
-            {% endif %}
-            <small class="form-text text-muted">El líder será seleccionado entre los integrantes del grupo elegido (opcional si no hay grupo).</small>
-        </div>
-
-        <div class="proyecto-form-acciones">
-            <button type="submit" class="proyecto-form-btn-crear" title="Crear proyecto" data-bs-toggle="tooltip">
-                <i class="bi bi-plus-lg"></i> Crear
-            </button>
-            <a href="{% url 'proyectos:lista_proyectos' %}" class="proyecto-form-btn-cancelar btn-secondary" style="margin-left:10px;" title="Cancelar" data-bs-toggle="tooltip">
-                <i class="bi bi-x-lg"></i> Cancelar
-            </a>
-        </div>
-    </form>
-</div>
-{% endblock %}
+            <script src="{% static 'core/js/bootstrap.bundle.min.js' %}"></script>
+            <script src="{% static 'proyectos/js/proyecto_form.js' %}?v=1.0"></script>
 
 {% block extra_js %}
 <script src="{% static 'core/js/bootstrap.bundle.min.js' %}"></script>
