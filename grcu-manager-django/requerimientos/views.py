@@ -3,10 +3,12 @@ from django.urls import reverse
 from .models import Requerimiento
 from proyectos.models import Proyecto
 from django.contrib.auth.decorators import login_required
-from .forms import RequerimientoForm
+from .forms import RequerimientoForm, RequerimientoTradicionalForm, RequerimientoAgilForm
 from requerimientos.models import DetalleRequerimientoTradicional, DetalleRequerimientoAgil
 from django.utils import timezone
 from django.http import JsonResponse
+from django.contrib import messages
+from django.db.models import Q
 
 @login_required
 def requerimiento_list(request, proyecto_id=None):
@@ -77,49 +79,122 @@ def requerimiento_detail(request, pk):
 
 @login_required
 def requerimiento_create(request, proyecto_id=None):
-    proyecto = None
-    if proyecto_id:
-        proyecto = get_object_or_404(Proyecto, id=proyecto_id)
-
-    is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
-
+    """
+    Vista inteligente que crea requerimientos según la metodología del proyecto.
+    - Si es TRADICIONAL: usa RequerimientoTradicionalForm
+    - Si es ÁGIL: usa RequerimientoAgilForm
+    - Valida permisos: solo líder o developers del proyecto
+    """
+    # Obtener el proyecto
+    if not proyecto_id:
+        messages.error(request, 'Debe especificar un proyecto para crear un requerimiento.')
+        return redirect('dashboards:lider_dashboard')
+    
+    proyecto = get_object_or_404(Proyecto, id=proyecto_id)
+    
+    # Validación 1: El proyecto debe tener metodología asignada
+    if proyecto.necesita_metodologia():
+        messages.error(
+            request,
+            f'El proyecto "{proyecto.nombre}" aún no tiene metodología asignada. '
+            'El líder debe asignar una metodología antes de crear requerimientos.'
+        )
+        return redirect('dashboards:lider_dashboard')
+    
+    # Validación 2: Verificar permisos (líder o developer del proyecto)
+    es_lider = request.user == proyecto.lider
+    es_participante = proyecto.participantes.filter(id=request.user.id).exists()
+    
+    if not (es_lider or es_participante):
+        messages.error(
+            request,
+            'No tienes permiso para crear requerimientos en este proyecto. '
+            'Solo el líder y los participantes pueden hacerlo.'
+        )
+        return redirect('dashboards:lider_dashboard')
+    
+    # Determinar qué formulario usar según la metodología
+    es_tradicional = proyecto.metodologia == 'TRADICIONAL'
+    es_agil = proyecto.metodologia == 'AGIL'
+    
     if request.method == 'POST':
-        form = RequerimientoForm(request.POST)
+        # Instanciar el formulario apropiado
+        if es_tradicional:
+            form = RequerimientoTradicionalForm(request.POST)
+        elif es_agil:
+            form = RequerimientoAgilForm(request.POST)
+        else:
+            messages.error(request, 'Metodología no reconocida.')
+            return redirect('dashboards:lider_dashboard')
+        
         if form.is_valid():
-            req = form.save(commit=False)
-            req.creado_por = request.user
-            req.fecha_creacion = timezone.now()
-            req.save()
-
-            # Crear detalle según metodología del proyecto
-            metod = proyecto.metodologia if proyecto else None
-            if metod and metod.lower().startswith('trad'):
-                DetalleRequerimientoTradicional.objects.create(requerimiento_padre=req)
-            elif metod and metod.lower().startswith('agil'):
-                DetalleRequerimientoAgil.objects.create(requerimiento_padre=req)
-
-            if is_ajax:
-                # return extra display fields so the client can render the new item
-                return JsonResponse({
-                    'success': True,
-                    'pk': req.pk,
-                    'nombre': req.nombre,
-                    'tipo': req.get_tipo_display(),
-                    'estado': req.get_estado_display(),
-                })
-            # redirect back to list; include proyecto_id as query param if present
-            if proyecto:
-                return redirect(f"{reverse('requerimientos:requerimiento_list')}?proyecto_id={proyecto.pk}")
-            return redirect('requerimientos:requerimiento_list')
+            # Crear el requerimiento base
+            requerimiento = Requerimiento(
+                nombre=form.cleaned_data['nombre'],
+                descripcion=form.cleaned_data.get('descripcion', ''),
+                tipo=form.cleaned_data['tipo'],
+                estado=form.cleaned_data['estado'],
+                proyecto=proyecto,
+                creado_por=request.user
+            )
+            requerimiento.save()
+            
+            # Crear el detalle específico según la metodología
+            if es_tradicional:
+                # Crear detalle tradicional (la relación se establece automáticamente vía requerimiento_padre)
+                DetalleRequerimientoTradicional.objects.create(
+                    requerimiento_padre=requerimiento,
+                    prioridad=form.cleaned_data.get('prioridad', ''),
+                    fuente=form.cleaned_data.get('fuente', ''),
+                    categoria=form.cleaned_data.get('categoria', ''),
+                    fecha_compromiso=form.cleaned_data.get('fecha_compromiso'),
+                    estado_validacion=form.cleaned_data.get('estado_validacion', ''),
+                    observaciones=form.cleaned_data.get('observaciones', '')
+                )
+                messages.success(request, f'✅ Requerimiento "{requerimiento.nombre}" creado exitosamente.')
+                
+            elif es_agil:
+                # Crear detalle ágil (la relación se establece automáticamente vía requerimiento_padre)
+                DetalleRequerimientoAgil.objects.create(
+                    requerimiento_padre=requerimiento,
+                    historia_usuario=form.cleaned_data.get('historia_usuario', ''),
+                    criterio_aceptacion=form.cleaned_data.get('criterio_aceptacion', ''),
+                    puntos_estimados=form.cleaned_data.get('puntos_estimados'),
+                    sprint_asignado=form.cleaned_data.get('sprint_asignado', ''),
+                    responsable=form.cleaned_data.get('responsable', ''),
+                    estado_scrum=form.cleaned_data.get('estado_scrum', ''),
+                    observaciones=form.cleaned_data.get('observaciones', '')
+                )
+                messages.success(request, f'✅ User Story "{requerimiento.nombre}" creada exitosamente.')
+            
+            # Redirigir al dashboard del líder
+            return redirect('dashboards:lider_dashboard')
     else:
-        initial = {'proyecto': proyecto} if proyecto else {}
-        form = RequerimientoForm(initial=initial)
-
-    # If AJAX GET, return partial HTML for modal body
-    if is_ajax:
-        return render(request, 'requerimientos/_requerimiento_form_partial.html', {'form': form, 'proyecto': proyecto})
-
-    return render(request, 'requerimientos/requerimiento_form.html', {'form': form, 'proyecto': proyecto})
+        # GET: Instanciar formulario vacío
+        if es_tradicional:
+            form = RequerimientoTradicionalForm()
+        elif es_agil:
+            form = RequerimientoAgilForm()
+        else:
+            messages.error(request, 'Metodología no reconocida.')
+            return redirect('dashboards:lider_dashboard')
+    
+    # Determinar título de página
+    if es_agil:
+        page_title = f"Crear User Story - {proyecto.nombre}"
+    else:
+        page_title = f"Crear Requerimiento - {proyecto.nombre}"
+    
+    context = {
+        'form': form,
+        'proyecto': proyecto,
+        'es_tradicional': es_tradicional,
+        'es_agil': es_agil,
+        'metodologia_display': proyecto.get_metodologia_display(),
+        'page_title': page_title
+    }
+    
+    return render(request, 'requerimientos/requerimiento_create.html', context)
 
 @login_required
 def requerimiento_priorizar(request, proyecto_id=None):
@@ -162,3 +237,72 @@ def requerimiento_priorizar(request, proyecto_id=None):
         "MOSCOW_CHOICES": MOSCOW_CHOICES,
     }
     return render(request, "requerimientos/requerimiento_priorizar.html", context)
+
+
+@login_required
+def buscar_requerimientos_ajax(request):
+    """Endpoint AJAX para búsqueda de requerimientos"""
+    search_query = request.GET.get('q', '').strip()
+    proyecto_id = request.GET.get('proyecto_id', '').strip()
+    estado = request.GET.get('estado', '').strip()
+    tipo = request.GET.get('tipo', '').strip()
+    
+    # Construir filtros
+    filtros = Q()
+    
+    if search_query:
+        filtros &= (
+            Q(nombre__icontains=search_query) | 
+            Q(descripcion__icontains=search_query)
+        )
+    
+    if proyecto_id:
+        filtros &= Q(proyecto_id=proyecto_id)
+    
+    if estado:
+        filtros &= Q(estado=estado)
+    
+    if tipo:
+        filtros &= Q(tipo=tipo)
+    
+    # Si no hay filtros, devolver vacío
+    if not (search_query or proyecto_id or estado or tipo):
+        return JsonResponse({'requerimientos': [], 'count': 0})
+    
+    # Buscar requerimientos con prefetch_related para optimizar
+    requerimientos = Requerimiento.objects.filter(filtros).select_related(
+        'proyecto', 'creado_por'
+    ).prefetch_related('casos_relacionados').order_by('-fecha_creacion')[:100]
+    
+    # Serializar requerimientos
+    requerimientos_data = []
+    for req in requerimientos:
+        # Truncar descripción
+        descripcion = req.descripcion if req.descripcion else ''
+        if len(descripcion) > 60:
+            descripcion = descripcion[:57] + '...'
+        
+        # Obtener casos relacionados
+        casos = []
+        for caso in req.casos_relacionados.all():
+            casos.append({
+                'id': caso.pk,
+                'nombre': caso.nombre
+            })
+        
+        requerimientos_data.append({
+            'id': req.pk,
+            'nombre': req.nombre,
+            'tipo': req.tipo,
+            'tipo_display': req.get_tipo_display(),  # type: ignore[attr-defined]
+            'estado': req.estado,
+            'estado_display': req.get_estado_display(),  # type: ignore[attr-defined]
+            'descripcion': descripcion,
+            'fecha_creacion': req.fecha_creacion.strftime('%d/%m/%Y'),
+            'casos': casos
+        })
+    
+    return JsonResponse({
+        'requerimientos': requerimientos_data,
+        'count': len(requerimientos_data)
+    })

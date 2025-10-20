@@ -1,0 +1,523 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    /* ===== CONTENEDOR PRINCIPAL ===== */
+    .matriz-container {
+        padding: 2rem;
+        max-width: 100%;
+    }
+
+    /* ===== HEADER CON TÍTULO Y ACCIONES ===== */
+    .matriz-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .matriz-title h2 {
+        margin: 0;
+        color: #2c3e50;
+    }
+
+    .matriz-title p {
+        margin: 0.25rem 0 0 0;
+        color: #7f8c8d;
+        font-size: 0.9rem;
+    }
+
+    .matriz-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    /* ===== MÉTRICAS ===== */
+    .metricas-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .metrica-card {
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        text-align: center;
+        border-left: 4px solid #3498db;
+    }
+
+    .metrica-card.cobertura {
+        border-left-color: #27ae60;
+    }
+
+    .metrica-card.huerfanos {
+        border-left-color: #e74c3c;
+    }
+
+    .metrica-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #2c3e50;
+        margin: 0;
+    }
+
+    .metrica-label {
+        font-size: 0.9rem;
+        color: #7f8c8d;
+        margin: 0.5rem 0 0 0;
+    }
+
+    .metrica-subtitle {
+        font-size: 0.85rem;
+        color: #95a5a6;
+        margin: 0.25rem 0 0 0;
+    }
+
+    /* ===== FILTROS ===== */
+    .filtros-container {
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+
+    .filtros-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        align-items: end;
+    }
+
+    .filtro-group label {
+        display: block;
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+    }
+
+    .filtro-check {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+    }
+
+    /* ===== TABLA DE MATRIZ ===== */
+    .matriz-table-container {
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        overflow: auto;
+    }
+
+    .matriz-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        min-width: 800px;
+    }
+
+    /* Header fijo */
+    .matriz-table thead {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: white;
+    }
+
+    .matriz-table thead th {
+        background: #34495e;
+        color: white;
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        border: 1px solid #2c3e50;
+        position: sticky;
+        top: 0;
+    }
+
+    /* Primera columna fija */
+    .matriz-table th:first-child,
+    .matriz-table td:first-child {
+        position: sticky;
+        left: 0;
+        z-index: 5;
+        background: white;
+    }
+
+    .matriz-table thead th:first-child {
+        z-index: 11;
+        background: #34495e;
+    }
+
+    .matriz-table tbody td {
+        padding: 0.75rem 1rem;
+        border: 1px solid #ecf0f1;
+    }
+
+    .matriz-table tbody tr:hover {
+        background: #f8f9fa;
+    }
+
+    /* Columnas de casos de uso */
+    .caso-header {
+        writing-mode: vertical-rl;
+        text-align: left;
+        min-width: 50px;
+        max-width: 60px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Celdas de relación */
+    .celda-relacion {
+        text-align: center;
+        width: 60px;
+        background: #ecf0f1;
+    }
+
+    .celda-relacion.relacionado {
+        background: #d5f4e6;
+        color: #27ae60;
+        font-weight: bold;
+        font-size: 1.2rem;
+    }
+
+    .celda-relacion.no-relacionado {
+        background: #fef5f5;
+        color: #e0e0e0;
+    }
+
+    /* Badges */
+    .badge-tipo {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .badge-funcional {
+        background: #e3f2fd;
+        color: #1976d2;
+    }
+
+    .badge-no-funcional {
+        background: #fce4ec;
+        color: #c2185b;
+    }
+
+    .badge-estado {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .badge-pendiente {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .badge-en-progreso {
+        background: #cfe2ff;
+        color: #084298;
+    }
+
+    .badge-completado {
+        background: #d1e7dd;
+        color: #0f5132;
+    }
+
+    /* Requerimiento nombre */
+    .req-nombre {
+        font-weight: 500;
+        color: #2c3e50;
+    }
+
+    .req-id {
+        color: #7f8c8d;
+        font-size: 0.85rem;
+        margin-right: 0.5rem;
+    }
+
+    /* Empty state */
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #95a5a6;
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
+
+    /* Botones de acción */
+    .btn-export {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    /* Tooltip para casos */
+    .caso-tooltip {
+        position: relative;
+        cursor: help;
+    }
+
+    .caso-tooltip:hover::after {
+        content: attr(data-nombre);
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #2c3e50;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        white-space: nowrap;
+        z-index: 100;
+        font-size: 0.85rem;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .matriz-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .matriz-actions {
+            width: 100%;
+            flex-direction: column;
+        }
+        
+        .btn {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="matriz-container">
+    <!-- Header -->
+    <div class="matriz-header">
+        <div class="matriz-title">
+            <h2>
+                <i class="bi bi-diagram-3"></i>
+                Matriz de Trazabilidad
+            </h2>
+            <p>{{ proyecto.nombre }}</p>
+        </div>
+        <div class="matriz-actions">
+            <div class="dropdown">
+                <button class="btn btn-success dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="bi bi-download"></i> Exportar
+                </button>
+                <ul class="dropdown-menu">
+                    <li>
+                        <a class="dropdown-item" href="{% url 'proyectos:exportar_matriz' proyecto.id 'csv' %}">
+                            <i class="bi bi-filetype-csv"></i> Exportar a CSV
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{% url 'proyectos:exportar_matriz' proyecto.id 'excel' %}">
+                            <i class="bi bi-file-earmark-excel"></i> Exportar a Excel
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{% url 'proyectos:exportar_matriz' proyecto.id 'pdf' %}">
+                            <i class="bi bi-file-earmark-pdf"></i> Exportar a PDF
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            {% if es_lider %}
+            <a href="{% url 'requerimientos:requerimiento_list' %}" class="btn btn-primary">
+                <i class="bi bi-list-ul"></i> Gestionar Requerimientos
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Métricas -->
+    <div class="metricas-grid">
+        <div class="metrica-card">
+            <p class="metrica-value">{{ total_requerimientos }}</p>
+            <p class="metrica-label">Requerimientos</p>
+            <p class="metrica-subtitle">Total del proyecto</p>
+        </div>
+        <div class="metrica-card">
+            <p class="metrica-value">{{ total_casos }}</p>
+            <p class="metrica-label">Casos de Uso</p>
+            <p class="metrica-subtitle">Total del proyecto</p>
+        </div>
+        <div class="metrica-card cobertura">
+            <p class="metrica-value">{{ cobertura_reqs }}%</p>
+            <p class="metrica-label">Cobertura de Requerimientos</p>
+            <p class="metrica-subtitle">{{ reqs_con_casos }}/{{ total_requerimientos }} cubiertos</p>
+        </div>
+        <div class="metrica-card cobertura">
+            <p class="metrica-value">{{ cobertura_casos }}%</p>
+            <p class="metrica-label">Cobertura de Casos</p>
+            <p class="metrica-subtitle">{{ casos_con_reqs }}/{{ total_casos }} cubiertos</p>
+        </div>
+        <div class="metrica-card huerfanos">
+            <p class="metrica-value">{{ reqs_huerfanos.count }}</p>
+            <p class="metrica-label">Requerimientos Huérfanos</p>
+            <p class="metrica-subtitle">Sin casos de uso</p>
+        </div>
+        <div class="metrica-card huerfanos">
+            <p class="metrica-value">{{ casos_huerfanos.count }}</p>
+            <p class="metrica-label">Casos Huérfanos</p>
+            <p class="metrica-subtitle">Sin requerimientos</p>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filtros-container">
+        <h5 class="mb-3">
+            <i class="bi bi-funnel"></i>
+            Filtros
+        </h5>
+        <form method="get" id="filtrosForm">
+            <div class="filtros-grid">
+                <div class="filtro-group">
+                    <label for="tipo_req">Tipo de Requerimiento</label>
+                    <select name="tipo_req" id="tipo_req" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="FUNCIONAL" {% if filtro_tipo_req == 'FUNCIONAL' %}selected{% endif %}>Funcional</option>
+                        <option value="NO_FUNCIONAL" {% if filtro_tipo_req == 'NO_FUNCIONAL' %}selected{% endif %}>No Funcional</option>
+                    </select>
+                </div>
+                <div class="filtro-group">
+                    <label for="estado_req">Estado de Requerimiento</label>
+                    <select name="estado_req" id="estado_req" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="PENDIENTE" {% if filtro_estado_req == 'PENDIENTE' %}selected{% endif %}>Pendiente</option>
+                        <option value="EN_PROGRESO" {% if filtro_estado_req == 'EN_PROGRESO' %}selected{% endif %}>En Progreso</option>
+                        <option value="COMPLETADO" {% if filtro_estado_req == 'COMPLETADO' %}selected{% endif %}>Completado</option>
+                    </select>
+                </div>
+                <div class="filtro-group">
+                    <div class="filtro-check">
+                        <input type="checkbox" name="solo_huerfanos" id="solo_huerfanos" 
+                               value="true" {% if filtro_solo_huerfanos %}checked{% endif %}>
+                        <label for="solo_huerfanos" class="mb-0">Solo huérfanos</label>
+                    </div>
+                    <div class="filtro-check">
+                        <input type="checkbox" name="solo_sin_cubrir" id="solo_sin_cubrir" 
+                               value="true" {% if filtro_solo_sin_cubrir %}checked{% endif %}>
+                        <label for="solo_sin_cubrir" class="mb-0">Solo sin cubrir</label>
+                    </div>
+                </div>
+                <div class="filtro-group">
+                    <label>&nbsp;</label>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Aplicar Filtros
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Tabla de Matriz -->
+    {% if matriz and casos %}
+    <div class="matriz-table-container">
+        <table class="matriz-table">
+            <thead>
+                <tr>
+                    <th style="min-width: 300px;">Requerimiento</th>
+                    <th style="min-width: 120px;">Tipo</th>
+                    <th style="min-width: 120px;">Estado</th>
+                    {% for caso in casos %}
+                    <th class="caso-header caso-tooltip" data-nombre="{{ caso.nombre }}">
+                        CU-{{ caso.pk }}
+                    </th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for fila in matriz %}
+                <tr>
+                    <td>
+                        <span class="req-id">REQ-{{ fila.requerimiento.pk }}</span>
+                        <span class="req-nombre">{{ fila.requerimiento.nombre }}</span>
+                    </td>
+                    <td>
+                        {% if fila.requerimiento.tipo == 'FUNCIONAL' %}
+                            <span class="badge-tipo badge-funcional">Funcional</span>
+                        {% else %}
+                            <span class="badge-tipo badge-no-funcional">No Funcional</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if fila.requerimiento.estado == 'PENDIENTE' %}
+                            <span class="badge-estado badge-pendiente">Pendiente</span>
+                        {% elif fila.requerimiento.estado == 'EN_PROGRESO' %}
+                            <span class="badge-estado badge-en-progreso">En Progreso</span>
+                        {% else %}
+                            <span class="badge-estado badge-completado">Completado</span>
+                        {% endif %}
+                    </td>
+                    {% for caso in casos %}
+                    <td class="celda-relacion {% if caso.id in fila.relaciones %}relacionado{% else %}no-relacionado{% endif %}">
+                        {% if caso.id in fila.relaciones %}
+                            ✓
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-inbox"></i>
+        <h4>No hay datos para mostrar</h4>
+        <p>No se encontraron requerimientos o casos de uso con los filtros aplicados.</p>
+        {% if es_lider %}
+        <a href="{% url 'requerimientos:requerimiento_list' %}" class="btn btn-primary mt-3">
+            <i class="bi bi-plus-circle"></i> Agregar Requerimientos
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    // Auto-submit form cuando cambian los filtros
+    document.getElementById('tipo_req').addEventListener('change', function() {
+        document.getElementById('filtrosForm').submit();
+    });
+    
+    document.getElementById('estado_req').addEventListener('change', function() {
+        document.getElementById('filtrosForm').submit();
+    });
+    
+    document.getElementById('solo_huerfanos').addEventListener('change', function() {
+        document.getElementById('filtrosForm').submit();
+    });
+    
+    document.getElementById('solo_sin_cubrir').addEventListener('change', function() {
+        document.getElementById('filtrosForm').submit();
+    });
+</script>
+{% endblock %}

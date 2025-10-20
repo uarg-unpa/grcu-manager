@@ -203,6 +203,8 @@ def lider_dashboard(request):
             "total_huerfanos": total_huerfanos,
             "reqs_relacionados": reqs_relacionados,
             "casos_relacionados": casos_relacionados,
+            "necesita_metodologia": proyecto.necesita_metodologia(),  # ⚡ NUEVO
+            "puede_cambiar_metodologia": proyecto.puede_cambiar_metodologia(),  # ⚡ NUEVO
         })
 
     return render(request, "dashboards/lider_dashboard.html", {
@@ -214,8 +216,26 @@ def lider_dashboard(request):
 
 @login_required
 def lider_matriz(request):
-    # Solo mostramos el HTML simulado
-    return render(request, 'dashboards/lider_matriz.html')
+    """
+    Redirige a la matriz de trazabilidad del primer proyecto del líder.
+    La matriz ahora está en la app proyectos donde corresponde.
+    """
+    from django.contrib import messages
+    
+    proyectos = Proyecto.objects.filter(lider=request.user)
+    
+    proyecto_id = request.GET.get('proyecto')
+    if proyecto_id:
+        proyecto = proyectos.filter(id=proyecto_id).first()
+    else:
+        proyecto = proyectos.first()
+    
+    if not proyecto:
+        messages.error(request, 'No tienes proyectos asignados como líder.')
+        return redirect('dashboards:lider_dashboard')
+    
+    # Redirigir a la matriz del proyecto
+    return redirect('proyectos:matriz_trazabilidad', proyecto_id=proyecto.pk)
 
 @login_required
 def lider_requerimientos(request):

@@ -1,0 +1,282 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Editar Requerimiento - {{ requerimiento.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-0">
+                        <i class="bi bi-pencil-square"></i> Editar Requerimiento
+                    </h2>
+                    <p class="text-muted mb-0">
+                        <i class="bi bi-folder-fill"></i> Proyecto: <strong>{{ requerimiento.proyecto.nombre }}</strong>
+                        {% if requerimiento.proyecto.metodologia %}
+                            <span class="badge {% if es_tradicional %}bg-purple{% else %}bg-danger{% endif %} ms-2">
+                                {{ requerimiento.proyecto.get_metodologia_display }}
+                            </span>
+                        {% endif %}
+                    </p>
+                </div>
+                <a href="{% url 'dashboards:lider_dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Volver al Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <form method="post">
+                {% csrf_token %}
+                
+                {# Información Básica #}
+                <div class="card mb-3 border-primary">
+                    <div class="card-header bg-primary text-white">
+                        <i class="bi bi-info-circle-fill"></i> Información Básica
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="{{ form.nombre.id_for_label }}" class="form-label">
+                                Nombre del Requerimiento <span class="text-danger">*</span>
+                            </label>
+                            {{ form.nombre }}
+                            {% if form.nombre.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.nombre.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.tipo.id_for_label }}" class="form-label">
+                                Tipo de Requerimiento <span class="text-danger">*</span>
+                            </label>
+                            {{ form.tipo }}
+                            {% if form.tipo.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.tipo.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.descripcion.id_for_label }}" class="form-label">
+                                Descripción
+                            </label>
+                            {{ form.descripcion }}
+                            {% if form.descripcion.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.descripcion.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.estado.id_for_label }}" class="form-label">
+                                Estado <span class="text-danger">*</span>
+                            </label>
+                            {{ form.estado }}
+                            {% if form.estado.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.estado.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                {# Detalles Específicos según Metodología #}
+                <div class="card border-{% if es_tradicional %}purple{% else %}danger{% endif %} mb-3">
+                    <div class="card-header bg-{% if es_tradicional %}purple{% else %}danger{% endif %} text-white">
+                        <i class="bi bi-gear-fill"></i> 
+                        {% if es_tradicional %}
+                            Detalles - Metodología Tradicional
+                        {% else %}
+                            Detalles - Metodología Ágil
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        {% if es_tradicional %}
+                            {# Campos específicos de Metodología Tradicional #}
+                            <div class="mb-3">
+                                <label for="{{ form.prioridad.id_for_label }}" class="form-label">
+                                    Prioridad (MoSCoW) <span class="text-danger">*</span>
+                                </label>
+                                {{ form.prioridad }}
+                                {% if form.prioridad.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.prioridad.errors }}
+                                    </div>
+                                {% endif %}
+                                <small class="form-text text-muted">
+                                    <strong>Must have:</strong> Crítico | <strong>Should have:</strong> Importante | 
+                                    <strong>Could have:</strong> Deseable | <strong>Won't have:</strong> Fuera de alcance
+                                </small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.fuente.id_for_label }}" class="form-label">
+                                    Fuente
+                                </label>
+                                {{ form.fuente }}
+                                {% if form.fuente.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.fuente.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.categoria.id_for_label }}" class="form-label">
+                                    Categoría
+                                </label>
+                                {{ form.categoria }}
+                                {% if form.categoria.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.categoria.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.fecha_compromiso.id_for_label }}" class="form-label">
+                                    Fecha Compromiso
+                                </label>
+                                {{ form.fecha_compromiso }}
+                                {% if form.fecha_compromiso.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.fecha_compromiso.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.estado_validacion.id_for_label }}" class="form-label">
+                                    Estado de Validación
+                                </label>
+                                {{ form.estado_validacion }}
+                                {% if form.estado_validacion.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.estado_validacion.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                        {% elif es_agil %}
+                            {# Campos específicos de Metodología Ágil #}
+                            <div class="mb-3">
+                                <label for="{{ form.historia_usuario.id_for_label }}" class="form-label">
+                                    Historia de Usuario <span class="text-danger">*</span>
+                                </label>
+                                {{ form.historia_usuario }}
+                                {% if form.historia_usuario.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.historia_usuario.errors }}
+                                    </div>
+                                {% endif %}
+                                <small class="form-text text-muted">
+                                    Formato: "Como [rol], quiero [funcionalidad] para [beneficio]"
+                                </small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.criterio_aceptacion.id_for_label }}" class="form-label">
+                                    Criterios de Aceptación <span class="text-danger">*</span>
+                                </label>
+                                {{ form.criterio_aceptacion }}
+                                {% if form.criterio_aceptacion.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.criterio_aceptacion.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.puntos_estimados.id_for_label }}" class="form-label">
+                                    Story Points (Fibonacci) <span class="text-danger">*</span>
+                                </label>
+                                {{ form.puntos_estimados }}
+                                {% if form.puntos_estimados.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.puntos_estimados.errors }}
+                                    </div>
+                                {% endif %}
+                                <small class="form-text text-muted">
+                                    Estimación: 1, 2, 3, 5, 8, 13, 21
+                                </small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.sprint_asignado.id_for_label }}" class="form-label">
+                                    Sprint Asignado
+                                </label>
+                                {{ form.sprint_asignado }}
+                                {% if form.sprint_asignado.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.sprint_asignado.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.responsable.id_for_label }}" class="form-label">
+                                    Responsable
+                                </label>
+                                {{ form.responsable }}
+                                {% if form.responsable.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.responsable.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.estado_scrum.id_for_label }}" class="form-label">
+                                    Estado Scrum
+                                </label>
+                                {{ form.estado_scrum }}
+                                {% if form.estado_scrum.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.estado_scrum.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <span class="text-danger">*</span> Campos obligatorios
+                            </small>
+                            <div>
+                                <a href="{% url 'dashboards:lider_dashboard' %}" class="btn btn-secondary">
+                                    <i class="bi bi-x-circle"></i> Cancelar
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-circle"></i> Guardar Cambios
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.bg-purple {
+    background-color: #6f42c1 !important;
+}
+.border-purple {
+    border-color: #6f42c1 !important;
+}
+</style>
+{% endblock %}

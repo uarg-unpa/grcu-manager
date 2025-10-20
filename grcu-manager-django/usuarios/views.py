@@ -1,15 +1,12 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
-from accounts.models import Usuario 
-from .forms import UsuarioEditarForm, UsuarioCrearForm
-from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Q
-
-
-from usuarios.models import Usuario   # tu modelo de usuario
-from roles.models import Rol  
+from django.http import JsonResponse
+from accounts.models import Usuario
+from roles.models import Rol
+from .forms import UsuarioEditarForm, UsuarioCrearForm  
 
 # Helper para verificar si el usuario es administrador
 def is_admin(user):
@@ -26,6 +23,36 @@ def lista_usuarios(request):
     return render(request, "usuarios/usuario_list.html", {
         "usuarios": usuarios,
         "page_title": "Listado de Usuarios",
+    })
+
+@login_required
+def buscar_usuarios_ajax(request):
+    """Endpoint AJAX para búsqueda de usuarios"""
+    search_query = request.GET.get('q', '').strip()
+    
+    if not search_query:
+        return JsonResponse({'usuarios': [], 'count': 0})
+    
+    # Buscar en nombre y email con prefetch_related para optimizar
+    usuarios = Usuario.objects.filter(
+        Q(nombre__icontains=search_query) | Q(email__icontains=search_query)
+    ).prefetch_related('roles').order_by('id')[:50]  # Limitar a 50 resultados
+    
+    # Serializar usuarios
+    usuarios_data = []
+    for usuario in usuarios:
+        usuarios_data.append({
+            'id': usuario.pk,
+            'nombre': usuario.nombre,
+            'email': usuario.email,
+            'avatar': usuario.avatar if usuario.avatar else None,
+            'is_active': usuario.is_active,
+            'roles': [rol.nombre for rol in usuario.roles.all()]
+        })
+    
+    return JsonResponse({
+        'usuarios': usuarios_data,
+        'count': len(usuarios_data)
     })
 
 @login_required

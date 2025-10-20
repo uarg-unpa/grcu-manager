@@ -39,8 +39,8 @@ class UsuarioManager(BaseUserManager['Usuario']):
 class Usuario(AbstractUser):
     avatar = models.URLField(blank=True, null=True)
     username = None
-    email = models.EmailField(unique=True)
-    nombre = models.CharField(max_length=255)
+    email = models.EmailField(unique=True, db_index=True)  # Índice para búsquedas rápidas
+    nombre = models.CharField(max_length=255, db_index=True)  # Índice para búsquedas rápidas
 
     # Relación con roles (cada usuario puede tener múltiples roles)
     roles = models.ManyToManyField('roles.Rol', blank=True, related_name='usuarios')

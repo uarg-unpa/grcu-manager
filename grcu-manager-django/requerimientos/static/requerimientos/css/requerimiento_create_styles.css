@@ -1,0 +1,395 @@
+/* =================================================================
+   REQUERIMIENTOS - Formulario de Creación
+   Estilos coherentes con el sistema
+   ================================================================= */
+
+/* Contenedor principal del formulario */
+.form-card {
+    border: 1.5px solid #28A745;
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.08);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+/* Badges de metodología */
+.metodologia-badge {
+    font-size: 0.85rem;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.metodologia-tradicional {
+    background: linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%);
+    color: white;
+}
+
+.metodologia-agil {
+    background: linear-gradient(135deg, #fd7e14 0%, #e8590c 100%);
+    color: white;
+}
+
+/* Secciones del formulario */
+.form-section {
+    background: #f8f9fa;
+    border-left: 4px solid #28A745;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    min-height: 400px;
+}
+
+.form-section:hover {
+    background: #f1f3f5;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.form-section-tradicional {
+    border-left-color: #6f42c1;
+}
+
+.form-section-agil {
+    border-left-color: #fd7e14;
+}
+
+.form-section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #dee2e6;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.form-section-title i {
+    font-size: 1.2rem;
+}
+
+/* Espaciado de campos dentro de form-section */
+.form-section .mb-3 {
+    margin-bottom: 1rem !important;
+}
+
+.form-section .mb-3:last-child,
+.form-section .mb-0 {
+    margin-bottom: 0 !important;
+}
+
+/* Campos del formulario */
+.form-label {
+    font-weight: 500;
+    color: #495057;
+    margin-bottom: 0.5rem;
+    display: block;
+    width: 100%;
+}
+
+.required-field::after {
+    content: " *";
+    color: #dc3545;
+    font-weight: bold;
+}
+
+.form-control,
+.form-select {
+    border-radius: 6px;
+    border: 1px solid #ced4da;
+    transition: all 0.2s ease;
+    width: 100%;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #28A745;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.15);
+}
+
+/* Asegurar que los campos en columnas no se superpongan */
+.form-section .row {
+    margin-left: -8px;
+    margin-right: -8px;
+}
+
+.form-section .row > [class*='col-'] {
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
+/* Radio buttons personalizados */
+.radio-group {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.radio-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+}
+
+.radio-option:hover {
+    background-color: rgba(40, 167, 69, 0.05);
+}
+
+.radio-option input[type="radio"] {
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+}
+
+.radio-option label {
+    cursor: pointer;
+    margin: 0;
+    user-select: none;
+}
+
+/* Texto de ayuda */
+.help-text {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+    display: flex;
+    align-items: start;
+    gap: 0.25rem;
+}
+
+.help-text i {
+    margin-top: 2px;
+}
+
+/* Mensajes de error */
+.text-danger {
+    font-size: 0.875rem;
+}
+
+/* Información del proyecto */
+.project-info {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 20px 24px;
+    border-radius: 10px;
+    border: 1px solid #dee2e6;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.project-info-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+
+.project-info-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.project-info-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.project-info .project-name {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #28A745;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: white;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(40, 167, 69, 0.1);
+}
+
+.project-info .project-name i {
+    font-size: 1.1rem;
+}
+
+/* Botones de acción */
+.btn-guardar-requerimiento {
+    background: linear-gradient(135deg, #28A745 0%, #20C997 100%);
+    border: none;
+    color: white;
+    font-weight: 600;
+    padding: 10px 24px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    box-shadow: 0 3px 6px rgba(40, 167, 69, 0.3);
+}
+
+.btn-guardar-requerimiento:hover {
+    background: linear-gradient(135deg, #20C997 0%, #28A745 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(40, 167, 69, 0.4);
+    color: white;
+}
+
+.btn-cancelar {
+    padding: 10px 24px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.btn-cancelar:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Secciones paralelas - altura uniforme */
+.container > .row > .col-lg-6 {
+    display: flex;
+    flex-direction: column;
+}
+
+.container > .row > .col-lg-6 > .form-section {
+    width: 100%;
+    flex: 1;
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Contenido de form-section debe crecer */
+.form-section > form,
+.form-section > div:not(.form-section-title) {
+    flex: 1;
+}
+
+/* Responsivo */
+@media (max-width: 991px) {
+    /* En tablets, las secciones se apilan */
+    .row > [class*='col-'] {
+        margin-bottom: 1.5rem;
+    }
+    
+    .row > [class*='col-']:last-child {
+        margin-bottom: 0;
+    }
+    
+    .row > [class*='col-'] > .form-section {
+        margin-bottom: 0;
+        min-height: auto;
+    }
+    
+    /* Ajustar rows anidados en tablets */
+    .form-section .row {
+        margin-left: 0;
+        margin-right: 0;
+    }
+    
+    .form-section .row > [class*='col-'] {
+        padding-left: 0;
+        padding-right: 0;
+        margin-bottom: 1rem;
+    }
+    
+    .form-section .row > [class*='col-']:last-child {
+        margin-bottom: 0;
+    }
+}
+
+@media (max-width: 768px) {
+    .form-section {
+        padding: 1rem;
+        min-height: auto;
+    }
+    
+    .form-section-title {
+        font-size: 1rem;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+    }
+    
+    .radio-group {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .project-info {
+        padding: 16px;
+    }
+    
+    .project-info-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+    
+    .project-info-item {
+        width: 100%;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .project-info .project-name {
+        font-size: 1.1rem;
+    }
+    
+    /* Campos en columnas completas en mobile */
+    .form-section .row > [class*='col-'] {
+        width: 100%;
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+    
+    .btn-guardar-requerimiento,
+    .btn-cancelar {
+        width: 100%;
+        margin-top: 8px;
+    }
+}
+
+/* Animación al cargar */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.form-section {
+    animation: fadeInUp 0.4s ease;
+}
+
+.form-section:nth-child(1) {
+    animation-delay: 0.1s;
+}
+
+.form-section:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+/* Estados de validación visual */
+.form-control.is-invalid,
+.form-select.is-invalid {
+    border-color: #dc3545;
+}
+
+.form-control.is-valid,
+.form-select.is-valid {
+    border-color: #28A745;
+}

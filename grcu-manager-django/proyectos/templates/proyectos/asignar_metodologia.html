@@ -1,0 +1,266 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Asignar Metodología{% endblock %}
+
+{% block extra_css %}
+<style>
+    .metodologia-container {
+        max-width: 800px;
+        margin: 50px auto;
+        padding: 30px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    
+    .metodologia-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    
+    .metodologia-header h2 {
+        color: #2c3e50;
+        margin-bottom: 10px;
+    }
+    
+    .metodologia-header .proyecto-nombre {
+        font-size: 1.1em;
+        color: #7f8c8d;
+        font-weight: 500;
+    }
+    
+    .metodologia-cards {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin: 30px 0;
+    }
+    
+    .metodologia-card {
+        border: 3px solid #ecf0f1;
+        border-radius: 12px;
+        padding: 30px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+    
+    .metodologia-card:hover {
+        border-color: #3498db;
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(52, 152, 219, 0.2);
+    }
+    
+    .metodologia-card input[type="radio"] {
+        display: none;
+    }
+    
+    .metodologia-card input[type="radio"]:checked + .card-content {
+        color: #3498db;
+    }
+    
+    .metodologia-card input[type="radio"]:checked ~ .check-icon {
+        opacity: 1;
+    }
+    
+    .metodologia-card.selected {
+        border-color: #3498db;
+        background-color: #ebf5fb;
+    }
+    
+    .card-content i {
+        font-size: 4em;
+        margin-bottom: 15px;
+        display: block;
+    }
+    
+    .card-content h3 {
+        font-size: 1.5em;
+        margin-bottom: 10px;
+        color: #2c3e50;
+    }
+    
+    .card-content p {
+        color: #7f8c8d;
+        line-height: 1.6;
+    }
+    
+    .check-icon {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        color: #27ae60;
+        font-size: 2em;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    
+    .metodologia-tradicional i {
+        color: #e74c3c;
+    }
+    
+    .metodologia-agil i {
+        color: #3498db;
+    }
+    
+    .btn-container {
+        text-align: center;
+        margin-top: 30px;
+    }
+    
+    .btn-asignar {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 15px 40px;
+        border: none;
+        border-radius: 8px;
+        font-size: 1.1em;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-asignar:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-asignar:disabled {
+        background: #95a5a6;
+        cursor: not-allowed;
+        transform: none;
+    }
+    
+    .btn-cancelar {
+        background: #95a5a6;
+        color: white;
+        padding: 15px 40px;
+        border: none;
+        border-radius: 8px;
+        font-size: 1.1em;
+        margin-left: 15px;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-cancelar:hover {
+        background: #7f8c8d;
+        color: white;
+    }
+    
+    .alert-info-custom {
+        background-color: #d1ecf1;
+        border-left: 4px solid #0c5460;
+        padding: 15px;
+        border-radius: 6px;
+        margin-bottom: 25px;
+    }
+    
+    .alert-warning-custom {
+        background-color: #fff3cd;
+        border-left: 4px solid #856404;
+        padding: 15px;
+        border-radius: 6px;
+        margin-bottom: 25px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="metodologia-container">
+    <div class="metodologia-header">
+        <h2>{% if necesita_metodologia %}Asignar{% else %}Cambiar{% endif %} Metodología</h2>
+        <p class="proyecto-nombre">Proyecto: <strong>{{ proyecto.nombre }}</strong></p>
+    </div>
+    
+    {% if necesita_metodologia %}
+    <div class="alert-info-custom">
+        <i class="bi bi-info-circle-fill me-2"></i>
+        <strong>¡Bienvenido!</strong> Para comenzar a trabajar en este proyecto, primero debes seleccionar la metodología de gestión.
+    </div>
+    {% elif not puede_cambiar %}
+    <div class="alert-warning-custom">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <strong>Atención:</strong> No puedes cambiar la metodología porque el proyecto ya tiene requerimientos cargados.
+    </div>
+    {% endif %}
+    
+    <form method="POST" id="metodologia-form">
+        {% csrf_token %}
+        
+        <div class="metodologia-cards">
+            <!-- Metodología Tradicional -->
+            <label class="metodologia-card metodologia-tradicional" for="tradicional">
+                <input type="radio" name="metodologia" id="tradicional" value="TRADICIONAL" required>
+                <div class="card-content">
+                    <i class="bi bi-folder-fill"></i>
+                    <h3>Tradicional</h3>
+                    <p>
+                        Enfoque estructurado y secuencial.
+                        <br>
+                        <small>Ideal para proyectos con requisitos claros y estables.</small>
+                    </p>
+                </div>
+                <i class="bi bi-check-circle-fill check-icon"></i>
+            </label>
+            
+            <!-- Metodología Ágil -->
+            <label class="metodologia-card metodologia-agil" for="agil">
+                <input type="radio" name="metodologia" id="agil" value="AGIL" required>
+                <div class="card-content">
+                    <i class="bi bi-lightning-fill"></i>
+                    <h3>Ágil</h3>
+                    <p>
+                        Enfoque iterativo e incremental.
+                        <br>
+                        <small>Ideal para proyectos con requisitos cambiantes.</small>
+                    </p>
+                </div>
+                <i class="bi bi-check-circle-fill check-icon"></i>
+            </label>
+        </div>
+        
+        <div class="btn-container">
+            <button type="submit" class="btn-asignar" {% if not puede_cambiar and not necesita_metodologia %}disabled{% endif %}>
+                <i class="bi bi-check-lg me-2"></i>
+                {% if necesita_metodologia %}Asignar Metodología{% else %}Cambiar Metodología{% endif %}
+            </button>
+            <a href="{% url 'dashboards:lider_dashboard' %}" class="btn-cancelar">
+                <i class="bi bi-x-lg me-2"></i>
+                Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const radios = document.querySelectorAll('input[name="metodologia"]');
+    const cards = document.querySelectorAll('.metodologia-card');
+    
+    // Manejar selección de tarjetas
+    radios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            // Remover selección de todas las tarjetas
+            cards.forEach(card => card.classList.remove('selected'));
+            
+            // Agregar selección a la tarjeta seleccionada
+            if (this.checked) {
+                this.closest('.metodologia-card').classList.add('selected');
+            }
+        });
+    });
+    
+    // Permitir clic en toda la tarjeta
+    cards.forEach(card => {
+        card.addEventListener('click', function() {
+            const radio = this.querySelector('input[type="radio"]');
+            radio.checked = true;
+            radio.dispatchEvent(new Event('change'));
+        });
+    });
+});
+</script>
+{% endblock %}

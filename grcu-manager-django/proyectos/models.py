@@ -2,6 +2,12 @@ from django.db import models
 from django.conf import settings
 from roles.models import Rol
 from grupos.models import Grupo
+from typing import TYPE_CHECKING
+
+# Para type hints de Pylance
+if TYPE_CHECKING:
+    from django.db.models.manager import RelatedManager
+    from requerimientos.models import Requerimiento
 
 class Proyecto(models.Model):
     METODOLOGIAS = [
@@ -11,7 +17,7 @@ class Proyecto(models.Model):
 
     nombre = models.CharField(max_length=200, unique=True)
     descripcion = models.TextField(blank=True, null=True)
-    metodologia = models.CharField(max_length=20, choices=METODOLOGIAS, default="AGIL")
+    metodologia = models.CharField(max_length=20, choices=METODOLOGIAS, null=True, blank=True)  # Líder la asigna después
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     activo = models.BooleanField(default=True)
     logo = models.ImageField(upload_to="proyectos/logos/", blank=True, null=True)
@@ -40,9 +46,28 @@ class Proyecto(models.Model):
         through="ParticipacionProyecto",
         related_name="proyectos"
     )
+    
+    # Type hint para la relación inversa con Requerimiento (ayuda a Pylance)
+    if TYPE_CHECKING:
+        requerimientos: "RelatedManager[Requerimiento]"
+        # Django crea automáticamente get_<field>_display() para campos con choices
+        def get_metodologia_display(self) -> str: ...
 
     def __str__(self):
         return self.nombre
+    
+    def puede_cambiar_metodologia(self):
+        """
+        Verifica si se puede cambiar la metodología del proyecto.
+        Solo se puede cambiar si NO hay requerimientos cargados.
+        """
+        return not self.requerimientos.exists()
+    
+    def necesita_metodologia(self):
+        """
+        Verifica si el proyecto necesita que se le asigne una metodología.
+        """
+        return self.metodologia is None or self.metodologia == ''
     
     creado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL,

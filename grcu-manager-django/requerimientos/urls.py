@@ -9,4 +9,5 @@ urlpatterns = [
     path('create/', views.requerimiento_create, name='requerimiento_create'),
     path('create/<int:proyecto_id>/', views.requerimiento_create, name='requerimiento_create_proyecto'),
     path('priorizar/', views.requerimiento_priorizar, name='requerimiento_priorizar'),
+    path('buscar/', views.buscar_requerimientos_ajax, name='buscar_requerimientos_ajax'),
 ]

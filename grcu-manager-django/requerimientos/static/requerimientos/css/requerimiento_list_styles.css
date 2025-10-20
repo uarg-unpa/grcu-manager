@@ -1,23 +1,23 @@
 /* =================================================================
-   CASOS DE USO - Lista de Casos de Uso
+   REQUERIMIENTOS - Lista de Requerimientos
    Colores institucionales coherentes con el sistema
    ================================================================= */
 
 /* Card principal con borde institucional */
-.card.casos-uso-list-card {
-    border: 1.5px solid #17A2B8;
-    box-shadow: 0 2px 8px rgba(23, 162, 184, 0.08);
+.card.requerimiento-list-card {
+    border: 1.5px solid #28A745;
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.08);
     border-radius: 8px;
     overflow: hidden;
 }
 
 /* Header de la tabla */
-.casos-uso-list-card thead tr {
-    background: linear-gradient(135deg, #17A2B8 0%, #138496 100%);
+.requerimiento-list-card thead tr {
+    background: linear-gradient(135deg, #28A745 0%, #20C997 100%);
     color: #fff;
 }
 
-.casos-uso-list-card thead th {
+.requerimiento-list-card thead th {
     border: none;
     font-weight: 600;
     padding: 14px 12px;
@@ -27,50 +27,50 @@
 }
 
 /* Filas de la tabla */
-.casos-uso-list-card tbody tr {
+.requerimiento-list-card tbody tr {
     transition: all 0.2s ease;
 }
 
-.casos-uso-list-card tbody tr:hover {
-    background-color: rgba(23, 162, 184, 0.05);
+.requerimiento-list-card tbody tr:hover {
+    background-color: rgba(40, 167, 69, 0.05);
     transform: translateY(-1px);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-.casos-uso-list-card tbody td {
+.requerimiento-list-card tbody td {
     padding: 12px;
     vertical-align: middle;
 }
 
 /* Botones de acción */
-.btn-action-caso {
+.btn-action-req {
     padding: 6px 12px;
     border-radius: 6px;
     transition: all 0.2s ease;
     font-size: 0.9rem;
 }
 
-.btn-action-caso:hover {
+.btn-action-req:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
-/* Botón crear caso de uso */
-.btn-crear-caso-uso {
-    background: linear-gradient(135deg, #17A2B8 0%, #138496 100%);
+/* Botón crear requerimiento */
+.btn-crear-requerimiento {
+    background: linear-gradient(135deg, #28A745 0%, #20C997 100%);
     border: none;
     color: white;
     font-weight: 600;
     padding: 10px 24px;
     border-radius: 8px;
     transition: all 0.3s ease;
-    box-shadow: 0 3px 6px rgba(23, 162, 184, 0.3);
+    box-shadow: 0 3px 6px rgba(40, 167, 69, 0.3);
 }
 
-.btn-crear-caso-uso:hover {
-    background: linear-gradient(135deg, #138496 0%, #17A2B8 100%);
+.btn-crear-requerimiento:hover {
+    background: linear-gradient(135deg, #20C997 0%, #28A745 100%);
     transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(23, 162, 184, 0.4);
+    box-shadow: 0 6px 12px rgba(40, 167, 69, 0.4);
     color: white;
 }
 
@@ -92,40 +92,26 @@
 
 .filtros-container .form-control:focus,
 .filtros-container .form-select:focus {
-    border-color: #17A2B8;
-    box-shadow: 0 0 0 0.2rem rgba(23, 162, 184, 0.15);
+    border-color: #28A745;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.15);
 }
 
 .filtros-container .input-group-text {
     background: white;
     border: 1px solid #ced4da;
     border-right: none;
-    color: #17A2B8;
+    color: #28A745;
 }
 
 /* Botón crear dentro del contenedor de filtros */
-.filtros-container .btn-crear-caso-uso {
+.filtros-container .btn-crear-requerimiento {
     white-space: nowrap;
     flex-shrink: 0;
 }
 
-/* Card de detalles colapsable */
-.collapse .card-body {
-    background: #f8f9fa;
-    border-left: 3px solid #17A2B8;
-    padding: 16px;
-    border-radius: 6px;
-    font-size: 0.9rem;
-}
-
-.collapse .card-body b {
-    color: #17A2B8;
-    font-weight: 600;
-}
-
-/* Badges de tipo de detalle */
-.badge-tradicional {
-    background: linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%);
+/* Badges personalizados */
+.badge-huerfano {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
     color: white;
     padding: 6px 12px;
     border-radius: 6px;
@@ -133,46 +119,67 @@
     font-size: 0.85rem;
 }
 
-.badge-agil {
-    background: linear-gradient(135deg, #fd7e14 0%, #e8590c 100%);
-    color: white;
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-weight: 500;
-    font-size: 0.85rem;
-}
-
-/* Botón toggle de detalles */
-.btn-toggle-detalle {
+.badge-caso-uso {
     background: linear-gradient(135deg, #17A2B8 0%, #138496 100%);
-    border: none;
     color: white;
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 0.8rem;
+    text-decoration: none;
+    display: inline-block;
     transition: all 0.2s ease;
 }
 
-.btn-toggle-detalle:hover {
+.badge-caso-uso:hover {
     background: linear-gradient(135deg, #138496 0%, #17A2B8 100%);
-    transform: scale(1.05);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(23, 162, 184, 0.3);
+    color: white;
+}
+
+/* Estados y tipos */
+.badge-funcional {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+}
+
+.badge-no-funcional {
+    background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+    color: white;
+}
+
+.badge-pendiente {
+    background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+    color: #212529;
+}
+
+.badge-en-desarrollo {
+    background: linear-gradient(135deg, #17A2B8 0%, #138496 100%);
+    color: white;
+}
+
+.badge-aprobado {
+    background: linear-gradient(135deg, #28A745 0%, #20C997 100%);
     color: white;
 }
 
 /* Responsivo */
 @media (max-width: 768px) {
-    .casos-uso-list-card {
+    .requerimiento-list-card {
         font-size: 0.9rem;
     }
     
-    .btn-crear-caso-uso {
+    .btn-crear-requerimiento {
         padding: 8px 16px;
         font-size: 0.9rem;
     }
     
-    .collapse .card-body {
+    .filtros-container {
         padding: 12px;
-        font-size: 0.85rem;
     }
     
-    .filtros-container .btn-crear-caso-uso {
+    .filtros-container .btn-crear-requerimiento {
         width: 100%;
         margin-top: 12px;
     }
@@ -190,20 +197,20 @@
     }
 }
 
-.casos-uso-list-card tbody tr {
+.requerimiento-list-card tbody tr {
     animation: fadeIn 0.3s ease;
 }
 
 /* Empty state */
-.empty-state-caso {
+.empty-state-req {
     text-align: center;
     padding: 60px 20px;
     color: #6c757d;
 }
 
-.empty-state-caso i {
+.empty-state-req i {
     font-size: 4rem;
-    color: #17A2B8;
+    color: #28A745;
     opacity: 0.3;
     margin-bottom: 20px;
 }

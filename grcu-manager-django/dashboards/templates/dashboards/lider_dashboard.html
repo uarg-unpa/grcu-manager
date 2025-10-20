@@ -87,10 +87,27 @@
                     {% endif %}
                     <div>
                         <span class="badge-proyecto mb-1"><i class="bi bi-diagram-3 me-1"></i> {{ data.proyecto.nombre }}</span><br>
-                        <small class="text-muted">Metodología: {{ data.proyecto.get_metodologia_display }}</small>
+                        <small class="text-muted">
+                            Metodología: 
+                            {% if data.proyecto.metodologia %}
+                                {{ data.proyecto.get_metodologia_display }}
+                            {% else %}
+                                <span class="text-danger fw-bold">(no asignada)</span>
+                            {% endif %}
+                        </small>
                     </div>
                 </div>
-                <div class="d-flex flex-column align-items-end">
+                <div class="d-flex flex-column align-items-end gap-2">
+                    {% comment %} Botón para asignar metodología (visible siempre si hace falta) {% endcomment %}
+                    {% if data.necesita_metodologia %}
+                    <div>
+                        <a href="{% url 'proyectos:asignar_metodologia' data.proyecto.id %}" 
+                           class="btn btn-warning btn-sm">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i>Asignar Metodología
+                        </a>
+                    </div>
+                    {% endif %}
+                    
                     <div class="integrantes-list-header">
                         <small class="text-muted">Integrantes:</small>
                         <span>
@@ -104,6 +121,39 @@
                 </div>
             </div>
             <div class="card-body">
+                {% comment %} ⚡ ALERTA INFORMATIVA: Proyecto sin metodología {% endcomment %}
+                {% if data.necesita_metodologia %}
+                <div class="alert alert-warning alert-dismissible fade show d-flex align-items-center" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-3" style="font-size: 1.5em;"></i>
+                    <div class="flex-grow-1">
+                        <strong>¡Atención!</strong> 
+                        Este proyecto aún no tiene una metodología asignada. 
+                        Debes seleccionar una metodología antes de poder crear requerimientos.
+                        <em>(Usa el botón "Asignar Metodología" arriba)</em>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endif %}
+                
+                {% comment %} Botones de acción rápida {% endcomment %}
+                <div class="d-flex gap-2 mb-3">
+                    {% if not data.necesita_metodologia %}
+                        <a href="{% url 'requerimientos:requerimiento_create_proyecto' data.proyecto.id %}" 
+                           class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-2"></i>
+                            {% if data.proyecto.metodologia == 'AGIL' %}
+                                Crear User Story
+                            {% else %}
+                                Crear Requerimiento
+                            {% endif %}
+                        </a>
+                    {% endif %}
+                    <a href="{% url 'requerimientos:requerimiento_list' %}?proyecto_id={{ data.proyecto.id }}" 
+                       class="btn btn-outline-secondary">
+                        <i class="bi bi-list-ul me-2"></i>Ver Todos los Requerimientos
+                    </a>
+                </div>
+                
                 <div class="row mb-3">
                     <div class="col-md-4">
                         <div class="card text-bg-light mb-3">
