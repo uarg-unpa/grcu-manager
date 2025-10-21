@@ -2,6 +2,8 @@
 
 {% load static %}
 
+{% block title %}Crear Proyecto{% endblock %}
+
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'proyectos/css/crear_proyecto_styles.css' %}">
 {% endblock %}
@@ -16,8 +18,46 @@
             {{ form.nombre.label_tag }}
             {{ form.nombre }}
             {% if form.nombre.errors %}
-            <script src="{% static 'core/js/bootstrap.bundle.min.js' %}"></script>
-            <script src="{% static 'proyectos/js/proyecto_form.js' %}?v=1.0"></script>
+                <div class="text-danger">{{ form.nombre.errors.as_text }}</div>
+            {% endif %}
+        </div>
+
+        <div class="proyecto-form-group">
+            {{ form.descripcion.label_tag }}
+            {{ form.descripcion }}
+            {% if form.descripcion.errors %}
+                <div class="text-danger">{{ form.descripcion.errors.as_text }}</div>
+            {% endif %}
+        </div>
+
+        <div class="proyecto-form-group">
+            {{ form.grupo.label_tag }}
+            {{ form.grupo }}
+            {% if form.grupo.errors %}
+                <div class="text-danger">{{ form.grupo.errors.as_text }}</div>
+            {% endif %}
+        </div>
+
+        <div class="proyecto-form-group">
+            {{ form.lider.label_tag }}
+            {{ form.lider }}
+            {% if form.lider.errors %}
+                <div class="text-danger">{{ form.lider.errors.as_text }}</div>
+            {% endif %}
+        </div>
+
+        <div class="proyecto-form-group">
+            {{ form.imagen.label_tag }}
+            {{ form.imagen }}
+            {% if form.imagen.errors %}
+                <div class="text-danger">{{ form.imagen.errors.as_text }}</div>
+            {% endif %}
+        </div>
+
+        <button type="submit" class="btn btn-primary">Crear Proyecto</button>
+    </form>
+</div>
+{% endblock %}
 
 {% block extra_js %}
 <script src="{% static 'core/js/bootstrap.bundle.min.js' %}"></script>
@@ -26,10 +66,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const grupoSelect = document.getElementById('id_grupo');
     const liderSelect = document.getElementById('id_lider');
 
+    console.log('Script cargado');
+    console.log('Grupo select:', grupoSelect);
+    console.log('Lider select:', liderSelect);
+
     // Función para cargar integrantes del grupo seleccionado
     function cargarIntegrantes(grupoId) {
+        console.log('cargarIntegrantes llamado con grupoId:', grupoId);
+        
         if (!grupoId) {
-            liderSelect.innerHTML = '<option value="">Sin grupo asignado</option>';
+            liderSelect.innerHTML = '<option value="">Selecciona primero un grupo</option>';
             liderSelect.disabled = true;
             return;
         }
@@ -40,17 +86,32 @@ document.addEventListener('DOMContentLoaded', function() {
         // Mostrar loading
         liderSelect.innerHTML = '<option value="">Cargando...</option>';
 
+        const url = `/grupos/api/grupo/${grupoId}/integrantes/`;
+        console.log('Haciendo fetch a:', url);
+
         // Hacer petición AJAX para obtener los integrantes
-        fetch(`/grupos/api/grupo/${grupoId}/integrantes/`)
-            .then(response => response.json())
+        fetch(url)
+            .then(response => {
+                console.log('Response status:', response.status);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
+                console.log('Datos recibidos:', data);
                 liderSelect.innerHTML = '<option value="">Selecciona un líder</option>';
-                data.integrantes.forEach(integrante => {
-                    const option = document.createElement('option');
-                    option.value = integrante.id;
-                    option.textContent = `${integrante.nombre} (${integrante.email})`;
-                    liderSelect.appendChild(option);
-                });
+                
+                if (data.integrantes && data.integrantes.length > 0) {
+                    data.integrantes.forEach(integrante => {
+                        const option = document.createElement('option');
+                        option.value = integrante.id;
+                        option.textContent = `${integrante.nombre} (${integrante.email})`;
+                        liderSelect.appendChild(option);
+                    });
+                } else {
+                    liderSelect.innerHTML = '<option value="">No hay integrantes en este grupo</option>';
+                }
             })
             .catch(error => {
                 console.error('Error al cargar integrantes:', error);
@@ -61,11 +122,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // Event listener para cambio de grupo
     grupoSelect.addEventListener('change', function() {
         const grupoId = this.value;
+        console.log('Grupo cambiado a:', grupoId);
         cargarIntegrantes(grupoId);
     });
 
     // Si hay un grupo preseleccionado (para edición), cargar sus integrantes
     if (grupoSelect.value) {
+        console.log('Grupo preseleccionado:', grupoSelect.value);
         cargarIntegrantes(grupoSelect.value);
     }
 });

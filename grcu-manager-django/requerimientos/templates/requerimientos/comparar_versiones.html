@@ -1,0 +1,221 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Comparar Versiones - {{ requerimiento.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'dashboards:lider_dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'proyectos:proyecto_detail' proyecto.pk %}">{{ proyecto.nombre }}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'requerimientos:requerimiento_detail' requerimiento.pk %}">{{ requerimiento.nombre }}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'requerimientos:requerimiento_historial' requerimiento.pk %}">Historial</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Comparar Versiones</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-arrow-left-right"></i> 
+                        Comparar Versiones - {{ requerimiento.nombre }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Información de versiones comparadas -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card border-danger">
+                                <div class="card-header bg-danger text-white">
+                                    <h5 class="mb-0">
+                                        <i class="bi bi-clock-history"></i> 
+                                        Versión Anterior #{{ numero_v1 }}
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <p class="mb-2">
+                                        <strong>Fecha:</strong> {{ version1.history_date|date:"d/m/Y H:i:s" }}
+                                    </p>
+                                    <p class="mb-0">
+                                        <strong>Usuario:</strong> 
+                                        {% if version1.history_user %}
+                                            {{ version1.history_user.get_full_name|default:version1.history_user.username }}
+                                        {% else %}
+                                            <span class="text-muted">Sistema</span>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card border-success">
+                                <div class="card-header bg-success text-white">
+                                    <h5 class="mb-0">
+                                        <i class="bi bi-clock"></i> 
+                                        Versión Posterior #{{ numero_v2 }}
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <p class="mb-2">
+                                        <strong>Fecha:</strong> {{ version2.history_date|date:"d/m/Y H:i:s" }}
+                                    </p>
+                                    <p class="mb-0">
+                                        <strong>Usuario:</strong> 
+                                        {% if version2.history_user %}
+                                            {{ version2.history_user.get_full_name|default:version2.history_user.username }}
+                                        {% else %}
+                                            <span class="text-muted">Sistema</span>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Resumen de cambios -->
+                    <div class="alert alert-info mb-4">
+                        <h5 class="alert-heading">
+                            <i class="bi bi-info-circle"></i> Resumen de Comparación
+                        </h5>
+                        <p class="mb-0">
+                            Se encontraron <strong>{{ diferencias|length }}</strong> campo{{ diferencias|length|pluralize:"s" }} analizados,
+                            de los cuales <strong>{{ diferencias|selectattr:"cambio"|list|length }}</strong> tiene{{ diferencias|selectattr:"cambio"|list|length|pluralize:"n,n" }} cambios.
+                        </p>
+                    </div>
+
+                    <!-- Tabla de comparación detallada -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">Comparación Detallada</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th style="width: 15%;">Campo</th>
+                                            <th style="width: 40%;" class="text-danger">
+                                                <i class="bi bi-arrow-left"></i> Versión #{{ numero_v1 }} (Anterior)
+                                            </th>
+                                            <th style="width: 40%;" class="text-success">
+                                                <i class="bi bi-arrow-right"></i> Versión #{{ numero_v2 }} (Posterior)
+                                            </th>
+                                            <th style="width: 5%;" class="text-center">Estado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for diff in diferencias %}
+                                        <tr class="{% if diff.cambio %}table-warning{% endif %}">
+                                            <td class="fw-bold align-middle">
+                                                {{ diff.campo }}
+                                            </td>
+                                            <td class="{% if diff.cambio %}bg-danger bg-opacity-10{% endif %}">
+                                                {% if diff.cambio %}
+                                                    <del class="text-danger">{{ diff.version1|default:"—" }}</del>
+                                                {% else %}
+                                                    <span class="text-muted">{{ diff.version1|default:"—" }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="{% if diff.cambio %}bg-success bg-opacity-10{% endif %}">
+                                                {% if diff.cambio %}
+                                                    <strong class="text-success">{{ diff.version2|default:"—" }}</strong>
+                                                {% else %}
+                                                    <span class="text-muted">{{ diff.version2|default:"—" }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-center align-middle">
+                                                {% if diff.cambio %}
+                                                    <i class="bi bi-exclamation-circle text-warning" title="Cambio detectado"></i>
+                                                {% else %}
+                                                    <i class="bi bi-check-circle text-success" title="Sin cambios"></i>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Vista lado a lado (descripción completa) -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">Vista Lado a Lado - Descripción</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="border rounded p-3 {% if version1.descripcion != version2.descripcion %}bg-danger bg-opacity-10{% endif %}">
+                                        <h6 class="text-danger mb-3">
+                                            <i class="bi bi-arrow-left"></i> Versión #{{ numero_v1 }}
+                                        </h6>
+                                        <div style="white-space: pre-wrap; max-height: 300px; overflow-y: auto;">
+                                            {{ version1.descripcion|default:"Sin descripción" }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="border rounded p-3 {% if version1.descripcion != version2.descripcion %}bg-success bg-opacity-10{% endif %}">
+                                        <h6 class="text-success mb-3">
+                                            <i class="bi bi-arrow-right"></i> Versión #{{ numero_v2 }}
+                                        </h6>
+                                        <div style="white-space: pre-wrap; max-height: 300px; overflow-y: auto;">
+                                            {{ version2.descripcion|default:"Sin descripción" }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botones de acción -->
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'requerimientos:requerimiento_historial' requerimiento.pk %}" 
+                           class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Volver al historial
+                        </a>
+                        
+                        <a href="{% url 'requerimientos:requerimiento_version_detail' requerimiento.pk version1.history_id %}" 
+                           class="btn btn-outline-danger">
+                            <i class="bi bi-eye"></i> Ver versión #{{ numero_v1 }}
+                        </a>
+                        
+                        <a href="{% url 'requerimientos:requerimiento_version_detail' requerimiento.pk version2.history_id %}" 
+                           class="btn btn-outline-success">
+                            <i class="bi bi-eye"></i> Ver versión #{{ numero_v2 }}
+                        </a>
+                        
+                        <a href="{% url 'requerimientos:requerimiento_detail' requerimiento.pk %}" 
+                           class="btn btn-outline-secondary">
+                            <i class="bi bi-file-earmark"></i> Ver versión actual
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.table-bordered th,
+.table-bordered td {
+    vertical-align: middle;
+}
+
+del {
+    background-color: rgba(255, 0, 0, 0.1);
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+strong.text-success {
+    background-color: rgba(0, 255, 0, 0.1);
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+</style>
+{% endblock %}

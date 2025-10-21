@@ -11,6 +11,7 @@ from django.contrib import messages
 from roles.models import Rol
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
+from auditoria.utils import registrar_login, registrar_logout
 
 def setup_admin(request):
     # Si ya hay un admin, redirige al login
@@ -19,7 +20,7 @@ def setup_admin(request):
         return redirect("accounts:login")
 
     # Renderizar la plantilla de configuración del administrador
-    return render(request, "accounts/setup_admin.html")
+    return render(request, "accounts/setup_admin.html", {"page_title": "Configurar Administrador"})
 
 
 def login_view(request):
@@ -28,10 +29,12 @@ def login_view(request):
     if not Usuario.objects.exists() or not Usuario.objects.filter(roles__nombre__iexact="Admin").exists():
         return redirect("accounts:setup_admin")
     
-    return render(request, "accounts/login.html")
+    return render(request, "accounts/login.html", {"page_title": "Bienvenido a GRCU Manager"})
 
 @login_required
 def logout_view(request):
+    # Registrar logout antes de cerrar sesión
+    registrar_logout(request)
     logout(request)
     return redirect("accounts:login")
 
@@ -126,12 +129,13 @@ def google_login_callback(request):
 
     # Loguear usuario
     login(request, user)
+    
+    # Registrar login en auditoría
+    registrar_login(request)
 
     if user.roles.filter(nombre__iexact="Admin").exists():
         return redirect("dashboards:admin_dashboard")
     elif user.roles.filter(nombre__iexact="Líder").exists():
         return redirect("dashboards:lider_dashboard")
     else:
-        return redirect("dashboards:usuario_dashboard") 
-    
-    # return redirect("dashboards:admin_dashboard")
+        return redirect("dashboards:developer_dashboard")

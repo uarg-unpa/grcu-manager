@@ -22,7 +22,17 @@ def requerimiento_list(request, proyecto_id=None):
     if not proyecto_id and hasattr(request.user, 'lidera_proyectos'):
         proyectos_liderados = request.user.lidera_proyectos.all()
         if proyectos_liderados.exists():
-            proyecto_id = proyectos_liderados.first().pk
+            primer_proyecto = proyectos_liderados.first()
+            if primer_proyecto:
+                proyecto_id = primer_proyecto.pk
+
+    # Si es un developer y no se especifica proyecto, usar sus proyectos
+    if not proyecto_id and request.user.es_desarrollador():
+        proyectos_participa = Proyecto.objects.filter(participantes=request.user)
+        if proyectos_participa.exists():
+            primer_proyecto = proyectos_participa.first()
+            if primer_proyecto:
+                proyecto_id = primer_proyecto.pk
 
     if proyecto_id:
         proyecto = get_object_or_404(Proyecto, id=proyecto_id)
@@ -183,9 +193,9 @@ def requerimiento_create(request, proyecto_id=None):
     
     # Determinar título de página
     if es_agil:
-        page_title = f"Crear User Story - {proyecto.nombre}"
+        page_title = f"{proyecto.nombre} - Crear User Story"
     else:
-        page_title = f"Crear Requerimiento - {proyecto.nombre}"
+        page_title = f"{proyecto.nombre} - Crear Requerimiento"
     
     context = {
         'form': form,
@@ -215,7 +225,9 @@ def requerimiento_priorizar(request, proyecto_id=None):
     if not proyecto_id and hasattr(request.user, 'lidera_proyectos'):
         proyectos_liderados = request.user.lidera_proyectos.all()
         if proyectos_liderados.exists():
-            proyecto_id = proyectos_liderados.first().pk
+            primer_proyecto = proyectos_liderados.first()
+            if primer_proyecto:
+                proyecto_id = primer_proyecto.pk
     if not proyecto_id:
         return render(request, "requerimientos/requerimiento_priorizar.html", {"proyecto": None})
     proyecto = get_object_or_404(Proyecto, id=proyecto_id)
@@ -237,7 +249,7 @@ def requerimiento_priorizar(request, proyecto_id=None):
         "proyecto": proyecto,
         "requerimientos": requerimientos,
         "MOSCOW_CHOICES": MOSCOW_CHOICES,
-        "page_title": f"Priorización de Requerimientos - {proyecto.nombre}",
+        "page_title": f"{proyecto.nombre} - Priorización de Requerimientos",
     }
     return render(request, "requerimientos/requerimiento_priorizar.html", context)
 
@@ -309,3 +321,230 @@ def buscar_requerimientos_ajax(request):
         'requerimientos': requerimientos_data,
         'count': len(requerimientos_data)
     })
+
+
+# ============================================================================
+# VISTAS DE HISTORIAL (django-simple-history)
+# ============================================================================
+
+@login_required
+def requerimiento_historial(request, pk):
+    """
+    Muestra el historial completo de versiones de un requerimiento.
+    Solo usuarios con acceso al proyecto pueden ver el historial.
+    """
+    requerimiento = get_object_or_404(Requerimiento, pk=pk)
+    proyecto = requerimiento.proyecto
+    
+    # Verificar permisos: solo líderes o participantes del proyecto
+    es_lider = request.user == proyecto.lider
+    es_participante = proyecto.participantes.filter(pk=request.user.pk).exists()
+    
+    if not (es_lider or es_participante):
+        messages.error(request, "No tienes permiso para ver el historial de este requerimiento.")
+        return redirect('proyectos:proyecto_list')
+    
+    # Obtener historial ordenado por fecha (más reciente primero)
+    historial = requerimiento.history.all().order_by('-history_date')  # type: ignore[attr-defined]
+    
+    # Preparar datos de versiones con información del cambio
+    versiones = []
+    for idx, version in enumerate(historial):
+        # Calcular número de versión (más reciente = 1)
+        numero_version = len(historial) - idx
+        
+        # Información del usuario que hizo el cambio
+        usuario = version.history_user if version.history_user else None
+        
+        # Tipo de cambio
+        tipo_cambio = {
+            '+': 'Creación',
+            '~': 'Modificación',
+            '-': 'Eliminación'
+        }.get(version.history_type, 'Desconocido')
+        
+        versiones.append({
+            'version': version,
+            'numero': numero_version,
+            'usuario': usuario,
+            'tipo_cambio': tipo_cambio,
+            'history_id': version.history_id,
+        })
+    
+    context = {
+        'requerimiento': requerimiento,
+        'proyecto': proyecto,
+        'versiones': versiones,
+        'total_versiones': len(versiones),
+        'page_title': f'{proyecto.nombre} - Historial de {requerimiento.nombre}',
+    }
+    
+    return render(request, 'requerimientos/historial.html', context)
+
+
+@login_required
+def requerimiento_version_detail(request, pk, history_id):
+    """
+    Muestra los detalles de una versión específica del requerimiento.
+    """
+    requerimiento = get_object_or_404(Requerimiento, pk=pk)
+    proyecto = requerimiento.proyecto
+    
+    # Verificar permisos
+    es_lider = request.user == proyecto.lider
+    es_participante = proyecto.participantes.filter(pk=request.user.pk).exists()
+    
+    if not (es_lider or es_participante):
+        messages.error(request, "No tienes permiso para ver esta información.")
+        return redirect('proyectos:proyecto_list')
+    
+    # Obtener la versión histórica específica
+    version = get_object_or_404(
+        requerimiento.history.model,  # type: ignore[attr-defined]
+        history_id=history_id,
+        id=pk
+    )
+    
+    # Calcular número de versión
+    historial_completo = requerimiento.history.all().order_by('-history_date')  # type: ignore[attr-defined]
+    numero_version = None
+    for idx, v in enumerate(historial_completo):
+        if v.history_id == history_id:
+            numero_version = len(historial_completo) - idx
+            break
+    
+    # Tipo de cambio
+    tipo_cambio = {
+        '+': 'Creación',
+        '~': 'Modificación',
+        '-': 'Eliminación'
+    }.get(version.history_type, 'Desconocido')
+    
+    # Obtener versión anterior para comparar
+    version_anterior = version.prev_record
+    cambios = []
+    
+    if version_anterior:
+        # Comparar campos importantes
+        campos = [
+            ('nombre', 'Nombre'),
+            ('descripcion', 'Descripción'),
+            ('tipo', 'Tipo'),
+            ('estado', 'Estado'),
+            ('prioridad', 'Prioridad'),
+        ]
+        
+        for campo, etiqueta in campos:
+            valor_actual = getattr(version, campo, '')
+            valor_anterior = getattr(version_anterior, campo, '')
+            
+            if valor_actual != valor_anterior:
+                cambios.append({
+                    'campo': etiqueta,
+                    'anterior': valor_anterior,
+                    'actual': valor_actual,
+                })
+    
+    context = {
+        'requerimiento': requerimiento,
+        'proyecto': proyecto,
+        'version': version,
+        'numero_version': numero_version,
+        'tipo_cambio': tipo_cambio,
+        'cambios': cambios,
+        'version_anterior': version_anterior,
+        'page_title': f'{proyecto.nombre} - Versión #{numero_version} de {requerimiento.nombre}',
+    }
+    
+    return render(request, 'requerimientos/version_detail.html', context)
+
+
+@login_required
+def requerimiento_comparar_versiones(request, pk):
+    """
+    Compara dos versiones específicas del requerimiento.
+    Recibe version1_id y version2_id por GET.
+    """
+    requerimiento = get_object_or_404(Requerimiento, pk=pk)
+    proyecto = requerimiento.proyecto
+    
+    # Verificar permisos
+    es_lider = request.user == proyecto.lider
+    es_participante = proyecto.participantes.filter(pk=request.user.pk).exists()
+    
+    if not (es_lider or es_participante):
+        messages.error(request, "No tienes permiso para comparar versiones.")
+        return redirect('proyectos:proyecto_list')
+    
+    # Obtener IDs de versiones a comparar
+    history_id_1 = request.GET.get('version1_id')
+    history_id_2 = request.GET.get('version2_id')
+    
+    if not history_id_1 or not history_id_2:
+        messages.error(request, "Debes seleccionar dos versiones para comparar.")
+        return redirect('requerimientos:requerimiento_historial', pk=pk)
+    
+    # Obtener versiones
+    try:
+        version1 = requerimiento.history.get(history_id=history_id_1)  # type: ignore[attr-defined]
+        version2 = requerimiento.history.get(history_id=history_id_2)  # type: ignore[attr-defined]
+    except:
+        messages.error(request, "Una o ambas versiones no existen.")
+        return redirect('requerimientos:requerimiento_historial', pk=pk)
+    
+    # Asegurar que version1 es la más antigua
+    if version1.history_date > version2.history_date:
+        version1, version2 = version2, version1
+    
+    # Calcular números de versión
+    historial_completo = requerimiento.history.all().order_by('-history_date')  # type: ignore[attr-defined]
+    numero_v1 = None
+    numero_v2 = None
+    
+    for idx, v in enumerate(historial_completo):
+        if v.history_id == version1.history_id:
+            numero_v1 = len(historial_completo) - idx
+        if v.history_id == version2.history_id:
+            numero_v2 = len(historial_completo) - idx
+    
+    # Comparar todos los campos importantes
+    campos = [
+        ('nombre', 'Nombre'),
+        ('descripcion', 'Descripción'),
+        ('tipo', 'Tipo'),
+        ('estado', 'Estado'),
+        ('prioridad', 'Prioridad'),
+    ]
+    
+    diferencias = []
+    for campo, etiqueta in campos:
+        valor_v1 = getattr(version1, campo, '')
+        valor_v2 = getattr(version2, campo, '')
+        
+        if valor_v1 != valor_v2:
+            diferencias.append({
+                'campo': etiqueta,
+                'version1': valor_v1,
+                'version2': valor_v2,
+                'cambio': True,
+            })
+        else:
+            diferencias.append({
+                'campo': etiqueta,
+                'version1': valor_v1,
+                'version2': valor_v2,
+                'cambio': False,
+            })
+    
+    context = {
+        'requerimiento': requerimiento,
+        'proyecto': proyecto,
+        'version1': version1,
+        'version2': version2,
+        'numero_v1': numero_v1,
+        'numero_v2': numero_v2,
+        'diferencias': diferencias,
+        'page_title': f'{proyecto.nombre} - Comparar versiones de {requerimiento.nombre}',
+    }
+    
+    return render(request, 'requerimientos/comparar_versiones.html', context)

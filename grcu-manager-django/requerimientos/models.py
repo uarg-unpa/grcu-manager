@@ -1,6 +1,7 @@
 from django.db import models
 from proyectos.models import Proyecto
 from accounts.models import Usuario
+from simple_history.models import HistoricalRecords
 from typing import TYPE_CHECKING
 
 # Type hints para Pylance
@@ -40,6 +41,9 @@ class Requerimiento(models.Model):
 
     # Relación opcional con Casos de Uso (muchos a muchos) usando tabla intermedia para mantener 3FN
     casos_relacionados = models.ManyToManyField('casos_de_uso.CasoDeUso', through='RequerimientoCaso', blank=True, related_name='requerimientos_relacionados')
+
+    # ⚡ HISTORIAL DE VERSIONES
+    history = HistoricalRecords()
 
     # Type hints para Pylance (campos OneToOne inversos y métodos dinámicos)
     if TYPE_CHECKING:

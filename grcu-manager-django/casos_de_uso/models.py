@@ -1,6 +1,7 @@
 from django.db import models
 from proyectos.models import Proyecto
 from accounts.models import Usuario
+from simple_history.models import HistoricalRecords
 
 class CasoDeUso(models.Model):
     nombre = models.CharField(max_length=255)
@@ -19,6 +20,9 @@ class CasoDeUso(models.Model):
     # Relaciones a detalles específicos
     detalle_tradicional = models.OneToOneField('DetalleCasoDeUsoTradicional', on_delete=models.SET_NULL, null=True, blank=True, related_name='caso_de_uso', verbose_name="Detalle Tradicional")
     detalle_agil = models.OneToOneField('DetalleCasoDeUsoAgil', on_delete=models.SET_NULL, null=True, blank=True, related_name='caso_de_uso', verbose_name="Detalle Ágil")
+
+    # ⚡ HISTORIAL DE VERSIONES
+    history = HistoricalRecords()
 
     def __str__(self):
         return self.nombre

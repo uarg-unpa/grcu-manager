@@ -68,13 +68,11 @@
             <a href="{% url 'proyectos:lista_proyectos' %}" class="proyecto-form-btn-cancelar btn-secondary" style="margin-left:10px;" title="Cancelar" data-bs-toggle="tooltip">
                 <i class="bi bi-x-lg"></i> Cancelar
             </a>
-            <script src="{% static 'core/js/bootstrap.bundle.min.js' %}"></script>
-            <script src="{% static 'proyectos/js/proyecto_form.js' %}?v=1.0"></script>
+        </div>
+    </form>
+</div>
+{% endblock %}
 
-    // Cargar integrantes del grupo actual al cargar la página
-    if (grupoSelect.value) {
-        cargarIntegrantes(grupoSelect.value);
-    }
-});
-</script>
+{% block extra_js %}
+    <script src="{% static 'proyectos/js/editar_proyecto.js' %}?v=2"></script>
 {% endblock %}

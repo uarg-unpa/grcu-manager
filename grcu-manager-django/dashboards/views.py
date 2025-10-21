@@ -139,9 +139,13 @@ def lider_dashboard(request):
             "puede_cambiar_metodologia": proyecto.puede_cambiar_metodologia(),  # ⚡ NUEVO
         })
 
+    # Obtener el primer proyecto para el título
+    primer_proyecto = proyectos.first()
+    titulo_proyecto = primer_proyecto.nombre if primer_proyecto else "Sin Proyecto"
+    
     return render(request, "dashboards/lider_dashboard.html", {
         "dashboard_data": dashboard_data,
-        "page_title": "Dashboard - Líder"
+        "page_title": f"{titulo_proyecto} - Dashboard - Líder"
     })
 
 # simulaciones
@@ -255,8 +259,36 @@ def developer_dashboard(request):
             "es_lider": es_lider,
         })
     
+    # Obtener el primer proyecto para el título
+    primer_proyecto = proyectos.first()
+    titulo_proyecto = primer_proyecto.nombre if primer_proyecto else "Sin Proyecto"
+    
     return render(request, "dashboards/developer_dashboard.html", {
         "dashboard_data": dashboard_data,
-        "page_title": "Dashboard - Desarrollador"
+        "page_title": f"{titulo_proyecto} - Developer Dashboard",
+        "proyecto": primer_proyecto,
     })
+
+@login_required
+def developer_matriz(request):
+    """
+    Redirige a la matriz de trazabilidad del primer proyecto del desarrollador.
+    La matriz ahora está en la app proyectos donde corresponde.
+    """
+    from django.contrib import messages
+    
+    proyectos = Proyecto.objects.filter(participantes=request.user)
+    
+    proyecto_id = request.GET.get('proyecto')
+    if proyecto_id:
+        proyecto = proyectos.filter(id=proyecto_id).first()
+    else:
+        proyecto = proyectos.first()
+    
+    if not proyecto:
+        messages.error(request, 'No participas en ningún proyecto actualmente.')
+        return redirect('dashboards:developer_dashboard')
+    
+    # Redirigir a la matriz del proyecto
+    return redirect('proyectos:matriz_trazabilidad', proyecto_id=proyecto.pk)
 

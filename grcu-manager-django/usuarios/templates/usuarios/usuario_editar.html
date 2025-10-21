@@ -1,6 +1,58 @@
 {% extends 'core/base.html' %}
-<script src="{% static 'core/js/bootstrap.bundle.min.js' %}"></script>
-<script src="{% static 'usuarios/js/usuario_form.js' %}?v=1.0"></script>
+
+{% load static %}
+
+{% block title %}Editar Usuario{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'usuarios/css/usuario_editar.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="usuario-form-container">
+
+    {% if messages %}
+        <div class="usuario-form-messages">
+            {% for message in messages %}
+                <div class="usuario-form-message {{ message.tags }}" role="alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="mb-3">
+            <label for="id_email">Email</label>
+            {{ form.email }}
+            {% if form.email.errors %}
+                <div class="text-danger">{{ form.email.errors.as_text }}</div>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            <label>Roles:</label>
+            <div class="roles-container">
+                {% for item in roles %}
+                    {% with rol=item.0 icon=item.1 rol_id=item.2 %}
+                        <label class="roles-badge" style="background-color: {{ item.3 }};">
+                            <input type="checkbox" name="roles" value="{{ rol_id }}" {% if rol_id in form.roles.value %}checked{% endif %} hidden>
+                            {% if item.4 %}
+                                <img src="{{ item.4 }}" class="rol-icon" alt="{{ rol }}" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';">
+                                <span class="rol-icon-fallback" style="display: none;">
+                                    {% if rol == "Admin" %}👑{% elif rol == "Desarrollador" %}💻{% else %}👤{% endif %}
+                                </span>
+                            {% else %}
+                                <span class="rol-icon">
+                                    {% if rol == "Admin" %}👑{% elif rol == "Desarrollador" %}💻{% else %}👤{% endif %}
+                                </span>
+                            {% endif %}
+                            {{ rol }}
+                        </label>
+                    {% endwith %}
                 {% endfor %}
             </div>
         </div>
@@ -27,65 +79,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'core/js/bootstrap.bundle.min.js' %}"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const setBadgeState = (badge, isChecked) => {
-        badge.classList.toggle('active', isChecked);
-        badge.classList.toggle('inactive', !isChecked);
-        badge.setAttribute('aria-checked', isChecked);
-    };
-
-    document.querySelectorAll('.roles-badge').forEach(badge => {
-        const checkbox = badge.querySelector('input[type="checkbox"]');
-        badge.setAttribute('role', 'checkbox');
-        badge.setAttribute('tabindex', '0');
-
-        // Aplicar estado inicial basado en si el checkbox está marcado
-        setBadgeState(badge, checkbox.checked);
-
-        badge.addEventListener('click', function(event) {
-            event.preventDefault();
-            checkbox.checked = !checkbox.checked;
-            setBadgeState(badge, checkbox.checked);
-        });
-
-        badge.addEventListener('keydown', function(event) {
-            if (event.key === ' ' || event.key === 'Enter') {
-                event.preventDefault();
-                checkbox.checked = !checkbox.checked;
-                setBadgeState(badge, checkbox.checked);
-            }
-        });
-    });
-
-    // Manejar el toggle del estado activo
-    const activeToggle = document.querySelector('.active-status-toggle');
-    if (activeToggle) {
-        const checkbox = activeToggle.querySelector('input[type="checkbox"]');
-        const textElement = activeToggle.querySelector('.active-status-text');
-
-        const updateToggleText = () => {
-            textElement.textContent = checkbox.checked ? 'Sí, activo' : 'No, inactivo';
-        };
-
-        // Aplicar estado inicial
-        updateToggleText();
-
-        activeToggle.addEventListener('click', function(event) {
-            event.preventDefault();
-            checkbox.checked = !checkbox.checked;
-            updateToggleText();
-        });
-
-        activeToggle.addEventListener('keydown', function(event) {
-            if (event.key === ' ' || event.key === 'Enter') {
-                event.preventDefault();
-                checkbox.checked = !checkbox.checked;
-                updateToggleText();
-            }
-        });
-    }
-});
-</script>
+    <script src="{% static 'usuarios/js/usuario_editar.js' %}"></script>
 {% endblock %}

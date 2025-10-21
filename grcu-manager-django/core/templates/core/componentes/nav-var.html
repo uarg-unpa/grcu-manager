@@ -74,6 +74,30 @@
                     </a>
                 </li>
             {% endif %}
+
+            <!-- Enlaces para Desarrollador -->
+            {% if user.es_desarrollador %}
+                <li>
+                    <a href="{% url 'dashboards:developer_dashboard' %}">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'requerimientos:requerimiento_list' %}">
+                        <i class="bi bi-card-checklist"></i> Requerimientos
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'casos_de_uso:caso_de_uso_list' %}">
+                        <i class="bi bi-kanban"></i> Casos de Uso
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'dashboards:developer_matriz' %}">
+                        <i class="bi bi-grid-3x3-gap"></i> Matriz de Trazabilidad
+                    </a>
+                </li>
+            {% endif %}
         {% endif %}
     </ul>
 </nav>

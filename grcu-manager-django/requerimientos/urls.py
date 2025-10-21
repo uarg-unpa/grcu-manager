@@ -10,4 +10,8 @@ urlpatterns = [
     path('create/<int:proyecto_id>/', views.requerimiento_create, name='requerimiento_create_proyecto'),
     path('priorizar/', views.requerimiento_priorizar, name='requerimiento_priorizar'),
     path('buscar/', views.buscar_requerimientos_ajax, name='buscar_requerimientos_ajax'),
+    # Historial
+    path('<int:pk>/historial/', views.requerimiento_historial, name='requerimiento_historial'),
+    path('<int:pk>/version/<int:version_id>/', views.requerimiento_version_detail, name='requerimiento_version_detail'),
+    path('<int:pk>/comparar/<int:version_id1>/<int:version_id2>/', views.requerimiento_comparar_versiones, name='requerimiento_comparar_versiones'),
 ]

@@ -73,17 +73,11 @@ def crear_usuario(request):
     else:
         form = UsuarioCrearForm()
 
-    # Mostrar roles Admin y Desarrollador para que el admin pueda asignarlos
-    roles_qs = Rol.objects.filter(nombre__in=["Admin", "Desarrollador"])
+    # Mostrar solo roles Admin y Desarrollador para que el admin pueda asignarlos
+    roles_qs = Rol.objects.filter(nombre__in=["Admin", "Desarrollador"]).order_by('nombre')
     roles = []
     for rol in roles_qs:
-        if rol.nombre == "Admin":
-            icon = "admin.png"
-        elif rol.nombre == "Desarrollador":
-            icon = "developer.png"
-        else:
-            icon = "default.png"
-        roles.append((rol.nombre, icon, rol.pk, rol.color, rol.icono_url))
+        roles.append((rol.nombre, None, rol.pk, rol.color, rol.icono_url))
 
     return render(request, "usuarios/usuario_crear.html", {
         "form": form,
@@ -109,17 +103,12 @@ def editar_usuario(request, pk):
     else:
         form = UsuarioEditarForm(instance=usuario)
 
-    # Mostrar roles Admin y Desarrollador para que el admin pueda asignarlos
-    roles_qs = Rol.objects.filter(nombre__in=["Admin", "Desarrollador"])
+    # Mostrar solo roles Admin y Desarrollador para que el admin pueda asignarlos
+    roles_qs = Rol.objects.filter(nombre__in=["Admin", "Desarrollador"]).order_by('nombre')
     roles = []
     for rol in roles_qs:
-        if rol.nombre == "Admin":
-            icon = "admin.png"
-        elif rol.nombre == "Desarrollador":
-            icon = "developer.png"
-        else:
-            icon = "default.png"
-        roles.append((rol.nombre, icon, rol.pk, rol.color, rol.icono_url))
+        roles.append((rol.nombre, None, rol.pk, rol.color, rol.icono_url))
+    
     return render(request, "usuarios/usuario_editar.html", {
         "form": form,
         "usuario": usuario,

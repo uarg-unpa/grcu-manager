@@ -1,0 +1,168 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Versión #{{ numero_version }} - {{ requerimiento.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'dashboards:lider_dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'proyectos:proyecto_detail' proyecto.pk %}">{{ proyecto.nombre }}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'requerimientos:requerimiento_detail' requerimiento.pk %}">{{ requerimiento.nombre }}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'requerimientos:requerimiento_historial' requerimiento.pk %}">Historial</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Versión #{{ numero_version }}</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-file-earmark-text"></i> 
+                        Versión #{{ numero_version }} - {{ requerimiento.nombre }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Información de la versión -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5 class="card-title">Información de la Versión</h5>
+                                    <p class="mb-2">
+                                        <strong>Fecha y Hora:</strong> {{ version.history_date|date:"d/m/Y H:i:s" }}
+                                    </p>
+                                    <p class="mb-2">
+                                        <strong>Tipo de Cambio:</strong> 
+                                        <span class="badge 
+                                            {% if tipo_cambio == 'Creación' %}bg-success
+                                            {% elif tipo_cambio == 'Modificación' %}bg-primary
+                                            {% else %}bg-danger{% endif %}">
+                                            {{ tipo_cambio }}
+                                        </span>
+                                    </p>
+                                    <p class="mb-0">
+                                        <strong>Usuario:</strong> 
+                                        {% if version.history_user %}
+                                            {{ version.history_user.get_full_name|default:version.history_user.username }}
+                                        {% else %}
+                                            <span class="text-muted">Sistema</span>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5 class="card-title">Estado en esta Versión</h5>
+                                    <p class="mb-2">
+                                        <strong>Tipo:</strong> 
+                                        <span class="badge bg-secondary">{{ version.get_tipo_display }}</span>
+                                    </p>
+                                    <p class="mb-2">
+                                        <strong>Estado:</strong> 
+                                        <span class="badge bg-info">{{ version.get_estado_display }}</span>
+                                    </p>
+                                    <p class="mb-0">
+                                        <strong>Prioridad:</strong> 
+                                        <span class="badge bg-warning text-dark">{{ version.get_prioridad_display }}</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contenido de la versión -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">Contenido Completo</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Nombre:</label>
+                                <p class="form-control-plaintext">{{ version.nombre }}</p>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Descripción:</label>
+                                <div class="form-control-plaintext" style="white-space: pre-wrap;">{{ version.descripcion|default:"Sin descripción" }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cambios respecto a versión anterior -->
+                    {% if cambios %}
+                    <div class="card mb-4 border-warning">
+                        <div class="card-header bg-warning">
+                            <h5 class="mb-0">
+                                <i class="bi bi-arrow-repeat"></i> 
+                                Cambios respecto a la versión anterior
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th style="width: 20%;">Campo</th>
+                                            <th style="width: 40%;">Valor Anterior</th>
+                                            <th style="width: 40%;">Valor Nuevo</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for cambio in cambios %}
+                                        <tr>
+                                            <td class="fw-bold">{{ cambio.campo }}</td>
+                                            <td class="bg-danger bg-opacity-10">
+                                                <del class="text-danger">{{ cambio.anterior|default:"—" }}</del>
+                                            </td>
+                                            <td class="bg-success bg-opacity-10">
+                                                <strong class="text-success">{{ cambio.actual|default:"—" }}</strong>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    {% if tipo_cambio == 'Creación' %}
+                    <div class="alert alert-success">
+                        <i class="bi bi-info-circle"></i> Esta es la versión inicial del requerimiento.
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> No se detectaron cambios en los campos principales.
+                    </div>
+                    {% endif %}
+                    {% endif %}
+
+                    <!-- Botones de acción -->
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'requerimientos:requerimiento_historial' requerimiento.pk %}" 
+                           class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Volver al historial
+                        </a>
+                        
+                        {% if version_anterior %}
+                        <a href="{% url 'requerimientos:requerimiento_comparar_versiones' requerimiento.pk %}?version1_id={{ version_anterior.history_id }}&version2_id={{ version.history_id }}" 
+                           class="btn btn-outline-primary">
+                            <i class="bi bi-arrow-left-right"></i> Comparar con versión anterior
+                        </a>
+                        {% endif %}
+                        
+                        <a href="{% url 'requerimientos:requerimiento_detail' requerimiento.pk %}" 
+                           class="btn btn-outline-secondary">
+                            <i class="bi bi-file-earmark"></i> Ver versión actual
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

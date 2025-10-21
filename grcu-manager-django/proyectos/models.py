@@ -2,6 +2,7 @@ from django.db import models
 from django.conf import settings
 from roles.models import Rol
 from grupos.models import Grupo
+from simple_history.models import HistoricalRecords
 from typing import TYPE_CHECKING
 
 # Para type hints de Pylance
@@ -46,6 +47,9 @@ class Proyecto(models.Model):
         through="ParticipacionProyecto",
         related_name="proyectos"
     )
+    
+    # ⚡ HISTORIAL DE VERSIONES
+    history = HistoricalRecords()
     
     # Type hint para la relación inversa con Requerimiento (ayuda a Pylance)
     if TYPE_CHECKING:

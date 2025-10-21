@@ -435,7 +435,7 @@ def matriz_trazabilidad(request, proyecto_id):
         'reqs_huerfanos': reqs_huerfanos,
         'casos_huerfanos': casos_huerfanos,
         'es_lider': es_lider,
-        'page_title': f'Matriz de Trazabilidad - {proyecto.nombre}',
+        'page_title': f'{proyecto.nombre} - Matriz de Trazabilidad',
         # Filtros actuales
         'filtro_tipo_req': tipo_req,
         'filtro_estado_req': estado_req,
@@ -741,7 +741,7 @@ def proyecto_reportes(request, proyecto_id):
     context = {
         'proyecto': proyecto,
         'es_lider': es_lider,
-        'page_title': f'Reportes - {proyecto.nombre}',
+        'page_title': f'{proyecto.nombre} - Reportes',
         
         # Métricas
         'total_requerimientos': total_requerimientos,
@@ -853,7 +853,7 @@ def gestionar_integrantes(request, proyecto_id):
         })
     
     context = {
-        'page_title': f'Gestión de Integrantes - {proyecto.nombre}',
+        'page_title': f'{proyecto.nombre} - Gestión de Integrantes',
         'proyecto': proyecto,
         'usuarios_con_roles': usuarios_con_roles,
         'roles_permitidos': roles_permitidos,
@@ -920,7 +920,7 @@ def proyecto_detail_admin(request, proyecto_id):
     acciones_values = [a['count'] for a in acciones_por_usuario_qs]
     
     context = {
-        'page_title': f'Detalle del Proyecto - {proyecto.nombre}',
+        'page_title': f'{proyecto.nombre} - Detalle del Proyecto',
         'proyecto': proyecto,
         'integrantes': integrantes,
         'lider': lider,

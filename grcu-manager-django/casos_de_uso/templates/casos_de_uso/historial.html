@@ -1,0 +1,198 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Historial - {{ caso.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'dashboards:lider_dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'proyectos:proyecto_detail' proyecto.pk %}">{{ proyecto.nombre }}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'casos_de_uso:caso_de_uso_detail' caso.pk %}">{{ caso.nombre }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Historial</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="bi bi-clock-history"></i> Historial de Versiones
+                    </h4>
+                    <span class="badge bg-light text-dark">{{ total_versiones }} versión{{ total_versiones|pluralize:"es" }}</span>
+                </div>
+                <div class="card-body">
+                    <!-- Información del caso de uso actual -->
+                    <div class="alert alert-info mb-4">
+                        <h5 class="alert-heading">{{ caso.nombre }}</h5>
+                        <p class="mb-0"><strong>Proyecto:</strong> {{ proyecto.nombre }}</p>
+                    </div>
+
+                    {% if versiones %}
+                    <!-- Timeline de versiones -->
+                    <div class="timeline">
+                        {% for item in versiones %}
+                        <div class="timeline-item mb-4">
+                            <div class="row">
+                                <div class="col-md-2 text-end">
+                                    <div class="timeline-badge 
+                                        {% if item.tipo_cambio == 'Creación' %}bg-success
+                                        {% elif item.tipo_cambio == 'Modificación' %}bg-primary
+                                        {% else %}bg-danger{% endif %}">
+                                        <span class="fw-bold">V{{ item.numero }}</span>
+                                    </div>
+                                    <div class="text-muted small mt-2">
+                                        {{ item.version.history_date|date:"d/m/Y H:i" }}
+                                    </div>
+                                </div>
+                                <div class="col-md-10">
+                                    <div class="card mb-3">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div>
+                                                    <h5 class="card-title">
+                                                        <span class="badge 
+                                                            {% if item.tipo_cambio == 'Creación' %}bg-success
+                                                            {% elif item.tipo_cambio == 'Modificación' %}bg-primary
+                                                            {% else %}bg-danger{% endif %}">
+                                                            {{ item.tipo_cambio }}
+                                                        </span>
+                                                        Versión #{{ item.numero }}
+                                                    </h5>
+                                                    <p class="card-text mb-2">
+                                                        <strong>Usuario:</strong> 
+                                                        {% if item.usuario %}
+                                                            {{ item.usuario.get_full_name|default:item.usuario.username }}
+                                                        {% else %}
+                                                            <span class="text-muted">Sistema</span>
+                                                        {% endif %}
+                                                    </p>
+                                                    {% if item.version.descripcion %}
+                                                    <p class="card-text small text-muted">
+                                                        {{ item.version.descripcion|truncatewords:20 }}
+                                                    </p>
+                                                    {% endif %}
+                                                </div>
+                                                <div>
+                                                    <a href="{% url 'casos_de_uso:caso_de_uso_version_detail' caso.pk item.history_id %}" 
+                                                       class="btn btn-sm btn-outline-primary mb-2">
+                                                        <i class="bi bi-eye"></i> Ver detalles
+                                                    </a>
+                                                    {% if not forloop.last %}
+                                                    <button type="button" 
+                                                            class="btn btn-sm btn-outline-secondary" 
+                                                            onclick="seleccionarParaComparar('{{ item.history_id }}', '{{ item.numero }}')">
+                                                        <i class="bi bi-arrow-left-right"></i> Comparar
+                                                    </button>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i> No hay historial disponible para este caso de uso.
+                    </div>
+                    {% endif %}
+
+                    <!-- Botones de acción -->
+                    <div class="mt-4">
+                        <a href="{% url 'casos_de_uso:caso_de_uso_detail' caso.pk %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Volver al caso de uso
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para comparar versiones -->
+<div class="modal fade" id="compararModal" tabindex="-1" aria-labelledby="compararModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="compararModalLabel">Comparar Versiones</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Seleccionaste: <strong id="versionSeleccionada"></strong></p>
+                <p>¿Con qué versión deseas compararla?</p>
+                <div id="listaVersiones" class="list-group">
+                    <!-- Se llenará dinámicamente -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline-badge {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2rem;
+}
+
+.timeline-item {
+    position: relative;
+}
+
+.timeline-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: calc(16.666% + 30px);
+    top: 60px;
+    bottom: -30px;
+    width: 2px;
+    background: #dee2e6;
+}
+</style>
+
+<script>
+let versionSeleccionada = null;
+
+function seleccionarParaComparar(historyId, numeroVersion) {
+    versionSeleccionada = historyId;
+    document.getElementById('versionSeleccionada').textContent = 'Versión #' + numeroVersion;
+    
+    // Limpiar lista
+    const lista = document.getElementById('listaVersiones');
+    lista.innerHTML = '';
+    
+    // Obtener todas las versiones menos la seleccionada
+    {% for item in versiones %}
+    if ('{{ item.history_id }}' !== historyId) {
+        const btn = document.createElement('button');
+        btn.className = 'list-group-item list-group-item-action';
+        btn.innerHTML = '<strong>Versión #{{ item.numero }}</strong> - {{ item.version.history_date|date:"d/m/Y H:i" }}';
+        btn.onclick = function() {
+            compararVersiones('{{ item.history_id }}');
+        };
+        lista.appendChild(btn);
+    }
+    {% endfor %}
+    
+    // Mostrar modal
+    const modal = new bootstrap.Modal(document.getElementById('compararModal'));
+    modal.show();
+}
+
+function compararVersiones(version2Id) {
+    const url = '{% url "casos_de_uso:caso_de_uso_comparar_versiones" caso.pk %}' +
+                '?version1_id=' + versionSeleccionada + '&version2_id=' + version2Id;
+    window.location.href = url;
+}
+</script>
+{% endblock %}

@@ -102,6 +102,10 @@
                     <i class="bi bi-arrow-left"></i> Volver a la lista
                 </a>
                 <div>
+                    <a href="{% url 'casos_de_uso:caso_de_uso_historial' caso.pk %}" 
+                       class="btn btn-info text-white">
+                        <i class="bi bi-clock-history"></i> Ver Historial
+                    </a>
                     <!-- Aquí se pueden agregar más acciones como editar/eliminar -->
                 </div>
             </div>

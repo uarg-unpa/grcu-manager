@@ -19,6 +19,15 @@ def caso_de_uso_list(request, proyecto_id=None):
         if proyectos_liderados and proyectos_liderados.exists():
             proyecto = proyectos_liderados.first()
             casos = CasoDeUso.objects.filter(proyecto=proyecto)
+        # Si es un developer, mostrar el primer proyecto en el que participa
+        elif request.user.es_desarrollador():
+            proyectos_participa = Proyecto.objects.filter(participantes=request.user)
+            if proyectos_participa.exists():
+                proyecto = proyectos_participa.first()
+                casos = CasoDeUso.objects.filter(proyecto=proyecto)
+            else:
+                casos = CasoDeUso.objects.all()
+                proyecto = None
         else:
             casos = CasoDeUso.objects.all()
             proyecto = None
@@ -152,9 +161,9 @@ def caso_de_uso_create(request, proyecto_id=None):
             return redirect('dashboards:lider_dashboard')
     
     if requerimiento:
-        page_title = f"Crear Caso de Uso para Requerimiento: {requerimiento.nombre}"
+        page_title = f"{proyecto.nombre} - Crear Caso de Uso para Requerimiento: {requerimiento.nombre}"
     else:
-        page_title = f"Crear Caso de Uso - {proyecto.nombre}"
+        page_title = f"{proyecto.nombre} - Crear Caso de Uso"
     
     context = {
         'form': form,
@@ -238,3 +247,224 @@ def buscar_casos_de_uso_ajax(request):
         'casos': casos_data,
         'count': len(casos_data)
     })
+
+
+# ============================================================================
+# VISTAS DE HISTORIAL (django-simple-history)
+# ============================================================================
+
+@login_required
+def caso_de_uso_historial(request, pk):
+    """
+    Muestra el historial completo de versiones de un caso de uso.
+    Solo usuarios con acceso al proyecto pueden ver el historial.
+    """
+    caso = get_object_or_404(CasoDeUso, pk=pk)
+    proyecto = caso.proyecto
+    
+    # Verificar permisos: solo líderes o participantes del proyecto
+    es_lider = request.user == proyecto.lider
+    es_participante = proyecto.participantes.filter(pk=request.user.pk).exists()
+    
+    if not (es_lider or es_participante):
+        messages.error(request, "No tienes permiso para ver el historial de este caso de uso.")
+        return redirect('proyectos:proyecto_list')
+    
+    # Obtener historial ordenado por fecha (más reciente primero)
+    historial = caso.history.all().order_by('-history_date')  # type: ignore[attr-defined]
+    
+    # Preparar datos de versiones con información del cambio
+    versiones = []
+    for idx, version in enumerate(historial):
+        # Calcular número de versión (más reciente = 1)
+        numero_version = len(historial) - idx
+        
+        # Información del usuario que hizo el cambio
+        usuario = version.history_user if version.history_user else None
+        
+        # Tipo de cambio
+        tipo_cambio = {
+            '+': 'Creación',
+            '~': 'Modificación',
+            '-': 'Eliminación'
+        }.get(version.history_type, 'Desconocido')
+        
+        versiones.append({
+            'version': version,
+            'numero': numero_version,
+            'usuario': usuario,
+            'tipo_cambio': tipo_cambio,
+            'history_id': version.history_id,
+        })
+    
+    context = {
+        'caso': caso,
+        'proyecto': proyecto,
+        'versiones': versiones,
+        'total_versiones': len(versiones),
+        'page_title': f'{proyecto.nombre} - Historial de {caso.nombre}',
+    }
+    
+    return render(request, 'casos_de_uso/historial.html', context)
+
+
+@login_required
+def caso_de_uso_version_detail(request, pk, history_id):
+    """
+    Muestra los detalles de una versión específica del caso de uso.
+    """
+    caso = get_object_or_404(CasoDeUso, pk=pk)
+    proyecto = caso.proyecto
+    
+    # Verificar permisos
+    es_lider = request.user == proyecto.lider
+    es_participante = proyecto.participantes.filter(pk=request.user.pk).exists()
+    
+    if not (es_lider or es_participante):
+        messages.error(request, "No tienes permiso para ver esta información.")
+        return redirect('proyectos:proyecto_list')
+    
+    # Obtener la versión histórica específica
+    version = get_object_or_404(
+        caso.history.model,  # type: ignore[attr-defined]
+        history_id=history_id,
+        id=pk
+    )
+    
+    # Calcular número de versión
+    historial_completo = caso.history.all().order_by('-history_date')  # type: ignore[attr-defined]
+    numero_version = None
+    for idx, v in enumerate(historial_completo):
+        if v.history_id == history_id:
+            numero_version = len(historial_completo) - idx
+            break
+    
+    # Tipo de cambio
+    tipo_cambio = {
+        '+': 'Creación',
+        '~': 'Modificación',
+        '-': 'Eliminación'
+    }.get(version.history_type, 'Desconocido')
+    
+    # Obtener versión anterior para comparar
+    version_anterior = version.prev_record
+    cambios = []
+    
+    if version_anterior:
+        # Comparar campos importantes
+        campos = [
+            ('nombre', 'Nombre'),
+            ('descripcion', 'Descripción'),
+        ]
+        
+        for campo, etiqueta in campos:
+            valor_actual = getattr(version, campo, '')
+            valor_anterior = getattr(version_anterior, campo, '')
+            
+            if valor_actual != valor_anterior:
+                cambios.append({
+                    'campo': etiqueta,
+                    'anterior': valor_anterior,
+                    'actual': valor_actual,
+                })
+    
+    context = {
+        'caso': caso,
+        'proyecto': proyecto,
+        'version': version,
+        'numero_version': numero_version,
+        'tipo_cambio': tipo_cambio,
+        'cambios': cambios,
+        'version_anterior': version_anterior,
+        'page_title': f'{proyecto.nombre} - Versión #{numero_version} de {caso.nombre}',
+    }
+    
+    return render(request, 'casos_de_uso/version_detail.html', context)
+
+
+@login_required
+def caso_de_uso_comparar_versiones(request, pk):
+    """
+    Compara dos versiones específicas del caso de uso.
+    Recibe version1_id y version2_id por GET.
+    """
+    caso = get_object_or_404(CasoDeUso, pk=pk)
+    proyecto = caso.proyecto
+    
+    # Verificar permisos
+    es_lider = request.user == proyecto.lider
+    es_participante = proyecto.participantes.filter(pk=request.user.pk).exists()
+    
+    if not (es_lider or es_participante):
+        messages.error(request, "No tienes permiso para comparar versiones.")
+        return redirect('proyectos:proyecto_list')
+    
+    # Obtener IDs de versiones a comparar
+    history_id_1 = request.GET.get('version1_id')
+    history_id_2 = request.GET.get('version2_id')
+    
+    if not history_id_1 or not history_id_2:
+        messages.error(request, "Debes seleccionar dos versiones para comparar.")
+        return redirect('casos_de_uso:caso_de_uso_historial', pk=pk)
+    
+    # Obtener versiones
+    try:
+        version1 = caso.history.get(history_id=history_id_1)  # type: ignore[attr-defined]
+        version2 = caso.history.get(history_id=history_id_2)  # type: ignore[attr-defined]
+    except:
+        messages.error(request, "Una o ambas versiones no existen.")
+        return redirect('casos_de_uso:caso_de_uso_historial', pk=pk)
+    
+    # Asegurar que version1 es la más antigua
+    if version1.history_date > version2.history_date:
+        version1, version2 = version2, version1
+    
+    # Calcular números de versión
+    historial_completo = caso.history.all().order_by('-history_date')  # type: ignore[attr-defined]
+    numero_v1 = None
+    numero_v2 = None
+    
+    for idx, v in enumerate(historial_completo):
+        if v.history_id == version1.history_id:
+            numero_v1 = len(historial_completo) - idx
+        if v.history_id == version2.history_id:
+            numero_v2 = len(historial_completo) - idx
+    
+    # Comparar todos los campos importantes
+    campos = [
+        ('nombre', 'Nombre'),
+        ('descripcion', 'Descripción'),
+    ]
+    
+    diferencias = []
+    for campo, etiqueta in campos:
+        valor_v1 = getattr(version1, campo, '')
+        valor_v2 = getattr(version2, campo, '')
+        
+        if valor_v1 != valor_v2:
+            diferencias.append({
+                'campo': etiqueta,
+                'version1': valor_v1,
+                'version2': valor_v2,
+                'cambio': True,
+            })
+        else:
+            diferencias.append({
+                'campo': etiqueta,
+                'version1': valor_v1,
+                'version2': valor_v2,
+                'cambio': False,
+            })
+    
+    context = {
+        'caso': caso,
+        'proyecto': proyecto,
+        'version1': version1,
+        'version2': version2,
+        'numero_v1': numero_v1,
+        'numero_v2': numero_v2,
+        'diferencias': diferencias,
+        'page_title': f'{proyecto.nombre} - Comparar versiones de {caso.nombre}',
+    }
+    
+    return render(request, 'casos_de_uso/comparar_versiones.html', context)

@@ -13,4 +13,5 @@ urlpatterns = [
     path('lider/reportes/', views.lider_reportes, name='lider_reportes'),
     path('lider/priorizar/', views.lider_priorizar, name='lider_priorizar'),
     path("developer/", views.developer_dashboard, name="developer_dashboard"),
+    path("developer/matriz/", views.developer_matriz, name="developer_matriz"),
 ]

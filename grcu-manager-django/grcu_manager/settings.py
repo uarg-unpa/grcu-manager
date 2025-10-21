@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # Extensiones
     'django_extensions',
+    'simple_history',
     # Mis apps
     'accounts',
     'core',
@@ -52,6 +53,7 @@ INSTALLED_APPS = [
     'grupos',
     'requerimientos',
     'casos_de_uso',
+    'auditoria',
 ]
 
 MIDDLEWARE = [
@@ -62,6 +64,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'simple_history.middleware.HistoryRequestMiddleware',
 ]
 
 ROOT_URLCONF = 'grcu_manager.urls'
