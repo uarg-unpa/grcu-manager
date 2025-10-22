@@ -1,0 +1,384 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Auditoría del Sistema{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-1">
+                        <i class="bi bi-shield-check text-primary"></i> Auditoría del Sistema
+                    </h2>
+                    <p class="text-muted mb-0">Monitoreo y control de actividades del sistema</p>
+                </div>
+                <div class="text-end">
+                    <span class="badge bg-info fs-6">{{ total_actividades }} actividades totales</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Métricas principales -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-activity display-4 mb-2"></i>
+                    <h3 class="card-title">{{ actividades_filtradas }}</h3>
+                    <p class="card-text">Actividades encontradas</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-clock-history display-4 mb-2"></i>
+                    <h3 class="card-title">{{ actividades_24h }}</h3>
+                    <p class="card-text">Últimas 24 horas</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-graph-up display-4 mb-2"></i>
+                    <h3 class="card-title">{{ actividades_por_tipo|length }}</h3>
+                    <p class="card-text">Tipos de actividad</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-people-fill display-4 mb-2"></i>
+                    <h3 class="card-title">{{ usuarios_mas_activos|length }}</h3>
+                    <p class="card-text">Usuarios activos</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráfico de actividades por día -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-bar-chart-line"></i> Actividades por día (últimos 7 días)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="actividadesPorDiaChart" width="400" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="bi bi-funnel"></i> Filtros y Búsqueda
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="accion" class="form-label">Tipo de Acción</label>
+                            <select name="accion" id="accion" class="form-select">
+                                <option value="">Todas las acciones</option>
+                                {% for accion_code, accion_name in acciones_disponibles %}
+                                <option value="{{ accion_code }}" {% if filtro_accion == accion_code %}selected{% endif %}>
+                                    {{ accion_name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="usuario" class="form-label">Usuario</label>
+                            <select name="usuario" id="usuario" class="form-select">
+                                <option value="">Todos los usuarios</option>
+                                {% for usuario in usuarios_disponibles %}
+                                <option value="{{ usuario.id }}" {% if filtro_usuario == usuario.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ usuario.nombre }} ({{ usuario.email }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="fecha_desde" class="form-label">Desde</label>
+                            <input type="date" name="fecha_desde" id="fecha_desde" class="form-control"
+                                   value="{{ filtro_fecha_desde }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="fecha_hasta" class="form-label">Hasta</label>
+                            <input type="date" name="fecha_hasta" id="fecha_hasta" class="form-control"
+                                   value="{{ filtro_fecha_hasta }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="grupo" class="form-label">Grupo</label>
+                            <select name="grupo" id="grupo" class="form-select">
+                                <option value="">Todos los grupos</option>
+                                {% for grupo in grupos_disponibles %}
+                                <option value="{{ grupo.id }}" {% if filtro_grupo == grupo.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ grupo.nombre }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="proyecto" class="form-label">Proyecto</label>
+                            <select name="proyecto" id="proyecto" class="form-select">
+                                <option value="">Todos los proyectos</option>
+                                {% for proyecto in proyectos_disponibles %}
+                                <option value="{{ proyecto.id }}" {% if filtro_proyecto == proyecto.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ proyecto.nombre }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </form>
+
+                    <!-- Búsqueda adicional -->
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <form method="GET" class="d-flex">
+                                <input type="hidden" name="accion" value="{{ filtro_accion }}">
+                                <input type="hidden" name="usuario" value="{{ filtro_usuario }}">
+                                <input type="hidden" name="fecha_desde" value="{{ filtro_fecha_desde }}">
+                                <input type="hidden" name="fecha_hasta" value="{{ filtro_fecha_hasta }}">
+                                <input type="text" name="q" class="form-control me-2" placeholder="Buscar en descripciones..."
+                                       value="{{ busqueda }}">
+                                <button type="submit" class="btn btn-outline-primary">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de actividades -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-list-ul"></i> Registro de Actividades
+                    </h5>
+                    <span class="badge bg-secondary">{{ page_obj.paginator.count }} actividades</span>
+                </div>
+                <div class="card-body">
+                    {% if page_obj %}
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Fecha/Hora</th>
+                                    <th>Usuario</th>
+                                    <th>Grupo</th>
+                                    <th>Rol</th>
+                                    <th>Acción</th>
+                                    <th>Descripción</th>
+                                    <th>IP</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for actividad in page_obj %}
+                                <tr>
+                                    <td>
+                                        <div class="small text-muted">{{ actividad.fecha|date:"d/m/Y" }}</div>
+                                        <div class="fw-bold">{{ actividad.fecha|date:"H:i:s" }}</div>
+                                    </td>
+                                    <td>
+                                        {% if actividad.usuario %}
+                                            <div>{{ actividad.usuario.nombre }}</div>
+                                            <div class="small text-muted">{{ actividad.usuario.email }}</div>
+                                        {% else %}
+                                            <span class="text-muted">Sistema</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if actividad.usuario %}
+                                            {% if actividad.usuario.grupos.all %}
+                                                {% for grupo in actividad.usuario.grupos.all %}
+                                                    <span class="badge bg-secondary me-1">{{ grupo.nombre }}</span>
+                                                {% endfor %}
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if actividad.usuario %}
+                                            {% if actividad.usuario.roles.all %}
+                                                {% for rol in actividad.usuario.roles.all %}
+                                                    <span class="badge bg-info me-1">{{ rol.nombre }}</span>
+                                                {% endfor %}
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge
+                                            {% if actividad.accion == 'LOGIN' %}bg-success
+                                            {% elif actividad.accion == 'LOGOUT' %}bg-secondary
+                                            {% elif actividad.accion == 'CREATE_USER' %}bg-primary
+                                            {% elif actividad.accion == 'DELETE_USER' %}bg-danger
+                                            {% else %}bg-info{% endif %}">
+                                            {{ actividad.get_accion_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="text-truncate" style="max-width: 300px;" title="{{ actividad.descripcion }}">
+                                            {{ actividad.descripcion|truncatewords:10 }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <code class="small">{{ actividad.ip_address|default:"-" }}</code>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'auditoria:actividad_detalle' actividad.id %}"
+                                           class="btn btn-sm btn-outline-primary" title="Ver detalles">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Paginación -->
+                    {% if page_obj.has_other_pages %}
+                    <nav aria-label="Paginación de actividades" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if filtro_accion %}&accion={{ filtro_accion }}{% endif %}{% if filtro_usuario %}&usuario={{ filtro_usuario }}{% endif %}{% if filtro_fecha_desde %}&fecha_desde={{ filtro_fecha_desde }}{% endif %}{% if filtro_fecha_hasta %}&fecha_hasta={{ filtro_fecha_hasta }}{% endif %}{% if busqueda %}&q={{ busqueda }}{% endif %}">
+                                    <i class="bi bi-chevron-left"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+
+                            {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if filtro_accion %}&accion={{ filtro_accion }}{% endif %}{% if filtro_usuario %}&usuario={{ filtro_usuario }}{% endif %}{% if filtro_fecha_desde %}&fecha_desde={{ filtro_fecha_desde }}{% endif %}{% if filtro_fecha_hasta %}&fecha_hasta={{ filtro_fecha_hasta }}{% endif %}{% if busqueda %}&q={{ busqueda }}{% endif %}">{{ num }}</a>
+                            </li>
+                            {% endif %}
+                            {% endfor %}
+
+                            {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if filtro_accion %}&accion={{ filtro_accion }}{% endif %}{% if filtro_usuario %}&usuario={{ filtro_usuario }}{% endif %}{% if filtro_fecha_desde %}&fecha_desde={{ filtro_fecha_desde }}{% endif %}{% if filtro_fecha_hasta %}&fecha_hasta={{ filtro_fecha_hasta }}{% endif %}{% if busqueda %}&q={{ busqueda }}{% endif %}">
+                                    <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> No se encontraron actividades con los filtros aplicados.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel lateral con estadísticas -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-bar-chart"></i> Actividades por Tipo (30 días)
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if actividades_por_tipo %}
+                    <div class="list-group list-group-flush">
+                        {% for tipo in actividades_por_tipo %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span class="badge
+                                {% if tipo.accion == 'LOGIN' %}bg-success
+                                {% elif tipo.accion == 'LOGOUT' %}bg-secondary
+                                {% elif tipo.accion == 'CREATE_USER' %}bg-primary
+                                {% else %}bg-info{% endif %}">
+                                {% for code, name in acciones_disponibles %}
+                                {% if code == tipo.accion %}{{ name }}{% endif %}
+                                {% endfor %}
+                            </span>
+                            <span class="badge bg-light text-dark">{{ tipo.count }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-0">No hay datos disponibles</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-person-lines-fill"></i> Usuarios Más Activos (30 días)
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if usuarios_mas_activos %}
+                    <div class="list-group list-group-flush">
+                        {% for usuario in usuarios_mas_activos %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-bold">{{ usuario.usuario__nombre }}</div>
+                                <div class="small text-muted">{{ usuario.usuario__email }}</div>
+                            </div>
+                            <span class="badge bg-primary">{{ usuario.count }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-0">No hay datos disponibles</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
+<script>
+    // Pasar datos del gráfico desde Django a JavaScript
+    window.auditoriaChartData = {{ auditoria_chart_data|safe }};
+</script>
+<script src="{% static 'auditoria/js/auditoria_dashboard.js' %}?v=1.0"></script>
+
+{% endblock %}

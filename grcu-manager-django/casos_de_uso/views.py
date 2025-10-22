@@ -14,12 +14,12 @@ def caso_de_uso_list(request, proyecto_id=None):
         proyecto = get_object_or_404(Proyecto, id=proyecto_id)
         casos = CasoDeUso.objects.filter(proyecto=proyecto)
     else:
-        # Si el usuario es líder, mostrar solo el primer proyecto que lidera
+        # Si el usuario es líder, mostrar solo el proyecto que lidera
         proyectos_liderados = getattr(request.user, 'lidera_proyectos', None)
         if proyectos_liderados and proyectos_liderados.exists():
             proyecto = proyectos_liderados.first()
             casos = CasoDeUso.objects.filter(proyecto=proyecto)
-        # Si es un developer, mostrar el primer proyecto en el que participa
+        # Si es un developer, mostrar el proyecto en el que participa
         elif request.user.es_desarrollador():
             proyectos_participa = Proyecto.objects.filter(participantes=request.user)
             if proyectos_participa.exists():
@@ -247,7 +247,6 @@ def buscar_casos_de_uso_ajax(request):
         'casos': casos_data,
         'count': len(casos_data)
     })
-
 
 # ============================================================================
 # VISTAS DE HISTORIAL (django-simple-history)

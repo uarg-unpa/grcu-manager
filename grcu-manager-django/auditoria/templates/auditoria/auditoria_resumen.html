@@ -1,0 +1,142 @@
+{% load static %}
+
+<!-- Resumen de Auditoría -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">
+                    <i class="bi bi-shield-check text-primary"></i> Actividad Reciente del Sistema
+                </h6>
+                <a href="{% url 'auditoria:admin_dashboard' %}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-graph-up"></i> Ver Dashboard Completo
+                </a>
+            </div>
+            <div class="card-body p-0">
+                {% if actividades_recientes %}
+                <div class="list-group list-group-flush">
+                    {% for actividad in actividades_recientes %}
+                    <div class="list-group-item px-3 py-2">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center mb-1">
+                                    <span class="badge me-2
+                                        {% if actividad.accion == 'LOGIN' %}bg-success
+                                        {% elif actividad.accion == 'LOGOUT' %}bg-secondary
+                                        {% elif actividad.accion == 'CREATE_USER' %}bg-primary
+                                        {% elif actividad.accion == 'DELETE_USER' %}bg-danger
+                                        {% else %}bg-info{% endif %}">
+                                        {% for code, name in actividad.ACCION_CHOICES %}
+                                        {% if code == actividad.accion %}{{ name }}{% endif %}
+                                        {% endfor %}
+                                    </span>
+                                    <small class="text-muted">{{ actividad.fecha|date:"d/m H:i" }}</small>
+                                </div>
+                                <div class="small text-truncate" style="max-width: 400px;">
+                                    {{ actividad.descripcion }}
+                                </div>
+                                {% if actividad.usuario %}
+                                <div class="small text-muted">
+                                    <i class="bi bi-person"></i> {{ actividad.usuario.nombre }}
+                                    {% if actividad.ip_address %}
+                                    <span class="ms-2">
+                                        <i class="bi bi-globe"></i> {{ actividad.ip_address }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                {% else %}
+                                <div class="small text-muted">
+                                    <i class="bi bi-robot"></i> Sistema
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="text-end">
+                                <a href="{% url 'auditoria:actividad_detalle' actividad.id %}"
+                                   class="btn btn-sm btn-outline-secondary" title="Ver detalles">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="p-4 text-center text-muted">
+                    <i class="bi bi-info-circle display-4 mb-2"></i>
+                    <p class="mb-0">No hay actividades registradas aún</p>
+                </div>
+                {% endif %}
+            </div>
+            {% if actividades_recientes %}
+            <div class="card-footer bg-light text-center">
+                <small class="text-muted">
+                    Mostrando las {{ actividades_recientes|length }} actividades más recientes
+                </small>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Métricas de Grupos y Proyectos Más Activos -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h6 class="mb-0">
+                    <i class="bi bi-people text-success"></i> Grupos Más Activos (30 días)
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if grupos_mas_activos %}
+                <div class="list-group list-group-flush">
+                    {% for grupo in grupos_mas_activos %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <div>
+                            <div class="fw-bold">{{ grupo.grupo__nombre }}</div>
+                            <div class="small text-muted">{{ grupo.count }} actividades</div>
+                        </div>
+                        <div class="progress" style="width: 60px; height: 6px;">
+                            <div class="progress-bar bg-success" role="progressbar"
+                                 style="width: {{ grupo.porcentaje }}%"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">No hay datos disponibles</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h6 class="mb-0">
+                    <i class="bi bi-folder text-primary"></i> Proyectos Más Activos (30 días)
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if proyectos_mas_activos %}
+                <div class="list-group list-group-flush">
+                    {% for proyecto in proyectos_mas_activos %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <div>
+                            <div class="fw-bold">{{ proyecto.proyecto__nombre }}</div>
+                            <div class="small text-muted">{{ proyecto.count }} actividades</div>
+                        </div>
+                        <div class="progress" style="width: 60px; height: 6px;">
+                            <div class="progress-bar bg-primary" role="progressbar"
+                                 style="width: {{ proyecto.porcentaje }}%"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">No hay datos disponibles</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>

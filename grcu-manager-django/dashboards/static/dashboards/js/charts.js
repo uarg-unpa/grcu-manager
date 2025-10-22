@@ -1,35 +1,30 @@
+// Gráficos del dashboard - versión simplificada
 document.addEventListener('DOMContentLoaded', function() {
-    // Esperar a que Chart.js esté disponible
-    if (typeof Chart === 'undefined') {
-        console.error('Chart.js no está disponible');
-        return;
-    }
+    // Esperar un poco para asegurar que todo esté cargado
+    setTimeout(function() {
+        initializeCharts();
+    }, 100);
+});
 
-    // Helper para crear colores aleatorios consistentes
-    function randomColor(alpha=0.8){
-        const r = Math.floor(Math.random()*200)+30;
-        const g = Math.floor(Math.random()*200)+30;
-        const b = Math.floor(Math.random()*200)+30;
-        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-    }
-
+function initializeCharts() {
     // Procesar todos los canvas que tengan atributos data-labels y data-values
-    document.querySelectorAll('canvas[data-labels][data-values]').forEach(canvas => {
+    const canvases = document.querySelectorAll('canvas[data-labels][data-values]');
+
+    canvases.forEach(function(canvas) {
         // Verificar si ya se creó un chart para este canvas
         if (canvas.dataset.chartCreated === 'true') {
-            console.log('Chart ya creado para', canvas.id);
             return;
         }
 
         const labelsRaw = canvas.dataset.labels || '[]';
         const valuesRaw = canvas.dataset.values || '[]';
+
         let labels, values;
         try {
             labels = JSON.parse(labelsRaw);
             values = JSON.parse(valuesRaw);
         } catch (e) {
-            console.error('Error parseando datos para chart en', canvas.id, e);
-            return;
+            return; // Silenciar errores para evitar loops
         }
 
         const type = canvas.dataset.type || 'doughnut';
@@ -39,36 +34,40 @@ document.addEventListener('DOMContentLoaded', function() {
             try { colors = JSON.parse(colorsRaw); } catch(e) { colors = null; }
         }
         if (!colors || colors.length !== labels.length) {
-            colors = labels.map(()=>randomColor(0.75));
+            colors = ['#007bff', '#28a745', '#ffc107', '#6c757d', '#17a2b8', '#20c997'];
         }
 
         const ctx = canvas.getContext('2d');
-        if (!ctx) return;
+        if (!ctx) {
+            return;
+        }
 
+        // Configuración simple sin opciones problemáticas
         const config = {
             type: type,
             data: {
                 labels: labels,
-                datasets: [{ data: values, backgroundColor: colors }]
+                datasets: [{
+                    data: values,
+                    backgroundColor: colors,
+                    borderWidth: 1
+                }]
             },
-            options: { responsive: true, maintainAspectRatio: false }
+            options: {
+                responsive: false,  // Desactivar responsive para evitar loops
+                plugins: {
+                    legend: {
+                        display: false  // Ocultar leyenda para ahorrar espacio
+                    }
+                }
+            }
         };
 
-        // Customize some chart types
-        if (type === 'bar' && canvas.dataset.horizontal === 'true') {
-            config.options.indexAxis = 'y';
-            config.options.scales = { x: { beginAtZero: true } };
-        } else if (type === 'bar') {
-            config.options.scales = { y: { beginAtZero: true } };
-        }
-
-        // Try to create chart
         try {
             new Chart(ctx, config);
-            // Marcar el canvas como procesado
             canvas.dataset.chartCreated = 'true';
         } catch (e) {
-            console.error('Chart.js error for', canvas.id, e);
+            // Silenciar errores
         }
     });
-});
+}

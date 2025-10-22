@@ -6,10 +6,9 @@ from .models import Usuario
 class UsuarioAdmin(UserAdmin):
     model = Usuario
 
-    # Usá email como campo principal
     ordering = ['email']
-    list_display = ['email', 'nombre']  # agregá otros campos existentes si querés
-    list_filter = ['roles']  # o lo que tenga sentido según tu modelo
+    list_display = ['email', 'nombre']
+    list_filter = ['roles'] 
 
     fieldsets = (
         (None, {'fields': ('email', 'nombre', 'password', 'roles')}),

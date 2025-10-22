@@ -83,13 +83,6 @@ def google_login_callback(request):
         messages.error(request, f"Token inválido: {e}")
         print("Error de validación del token:", e)
         return redirect("accounts:login")
-    # try:
-    #     idinfo = id_token.verify_oauth2_token(
-    #         id_token_str, grequests.Request(), settings.GOOGLE_CLIENT_ID
-    #     )
-    # except ValueError as e:
-    #     messages.error(request, f"Token inválido: {e}")
-    #     return redirect("accounts:login")
 
     email = idinfo.get("email")
     full_name = idinfo.get("name", "")

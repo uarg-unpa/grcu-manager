@@ -1,0 +1,202 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Detalle de Actividad{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-1">
+                        <i class="bi bi-eye text-primary"></i> Detalle de Actividad
+                    </h2>
+                    <p class="text-muted mb-0">ID: {{ actividad.id }}</p>
+                </div>
+                <div>
+                    <a href="{% url 'auditoria:admin_dashboard' %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Volver al Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Información principal -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="bi bi-info-circle"></i> Información de la Actividad
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="border rounded p-3">
+                                <h6 class="text-muted mb-2">
+                                    <i class="bi bi-calendar-event"></i> Fecha y Hora
+                                </h6>
+                                <div class="h5 mb-0">{{ actividad.fecha|date:"d/m/Y H:i:s" }}</div>
+                                <small class="text-muted">{{ actividad.fecha|timesince }} atrás</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3">
+                                <h6 class="text-muted mb-2">
+                                    <i class="bi bi-tag"></i> Tipo de Acción
+                                </h6>
+                                <span class="badge fs-6
+                                    {% if actividad.accion == 'LOGIN' %}bg-success
+                                    {% elif actividad.accion == 'LOGOUT' %}bg-secondary
+                                    {% elif actividad.accion == 'CREATE_USER' %}bg-primary
+                                    {% elif actividad.accion == 'DELETE_USER' %}bg-danger
+                                    {% else %}bg-info{% endif %}">
+                                    {{ actividad.get_accion_display }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3">
+                                <h6 class="text-muted mb-2">
+                                    <i class="bi bi-person"></i> Usuario
+                                </h6>
+                                {% if actividad.usuario %}
+                                    <div class="h6 mb-1">{{ actividad.usuario.nombre }}</div>
+                                    <div class="small text-muted">{{ actividad.usuario.email }}</div>
+                                    <div class="small text-muted">ID: {{ actividad.usuario.id }}</div>
+                                {% else %}
+                                    <span class="text-muted">Sistema (sin usuario)</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3">
+                                <h6 class="text-muted mb-2">
+                                    <i class="bi bi-globe"></i> Información de Red
+                                </h6>
+                                <div class="mb-1">
+                                    <strong>IP:</strong> <code>{{ actividad.ip_address|default:"No disponible" }}</code>
+                                </div>
+                                {% if actividad.user_agent %}
+                                <div>
+                                    <strong>User-Agent:</strong>
+                                    <div class="small text-muted text-truncate" style="max-width: 200px;" title="{{ actividad.user_agent }}">
+                                        {{ actividad.user_agent }}
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                        <i class="bi bi-clock-history"></i> Historial Relacionado
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if actividades_relacionadas %}
+                    <div class="list-group list-group-flush">
+                        {% for act in actividades_relacionadas|slice:":5" %}
+                        <a href="{% url 'auditoria:actividad_detalle' act.id %}"
+                           class="list-group-item list-group-item-action d-flex justify-content-between align-items-center {% if act.id == actividad.id %}active{% endif %}">
+                            <div>
+                                <div class="small text-muted">{{ act.fecha|date:"d/m H:i" }}</div>
+                                <div class="fw-bold small">{{ act.get_accion_display }}</div>
+                            </div>
+                            {% if act.id == actividad.id %}
+                            <i class="bi bi-check-circle text-success"></i>
+                            {% else %}
+                            <i class="bi bi-chevron-right"></i>
+                            {% endif %}
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-0">No hay actividades relacionadas</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Descripción detallada -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="bi bi-file-text"></i> Descripción de la Actividad
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="bg-light p-3 rounded">
+                        <p class="mb-0">{{ actividad.descripcion }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detalles adicionales (JSON) -->
+    {% if actividad.detalles %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-code-square"></i> Detalles Técnicos
+                    </h5>
+                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#detallesJson">
+                        <i class="bi bi-chevron-down"></i> Mostrar/Ocultar JSON
+                    </button>
+                </div>
+                <div class="card-body collapse" id="detallesJson">
+                    <pre class="bg-dark text-light p-3 rounded"><code>{{ actividad.detalles|safe }}</code></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Acciones -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="bi bi-gear"></i> Acciones Disponibles
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="btn-group" role="group">
+                        <a href="{% url 'auditoria:admin_dashboard' %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Volver al Dashboard
+                        </a>
+                        {% if actividades_relacionadas %}
+                        <a href="{% url 'auditoria:actividad_detalle' actividades_relacionadas.0.id %}" class="btn btn-outline-primary">
+                            <i class="bi bi-chevron-left"></i> Anterior
+                        </a>
+                        <a href="{% url 'auditoria:actividad_detalle' actividades_relacionadas.1.id %}" class="btn btn-outline-primary">
+                            Siguiente <i class="bi bi-chevron-right"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

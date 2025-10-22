@@ -21,7 +21,7 @@ class CasoDeUso(models.Model):
     detalle_tradicional = models.OneToOneField('DetalleCasoDeUsoTradicional', on_delete=models.SET_NULL, null=True, blank=True, related_name='caso_de_uso', verbose_name="Detalle Tradicional")
     detalle_agil = models.OneToOneField('DetalleCasoDeUsoAgil', on_delete=models.SET_NULL, null=True, blank=True, related_name='caso_de_uso', verbose_name="Detalle Ágil")
 
-    # ⚡ HISTORIAL DE VERSIONES
+    # HISTORIAL DE VERSIONES
     history = HistoricalRecords()
 
     def __str__(self):

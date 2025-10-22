@@ -6,7 +6,6 @@ class CasoDeUsoForm(forms.ModelForm):
         model = CasoDeUso
         fields = ['nombre', 'descripcion', 'proyecto']
 
-
 # ============================================================================
 # FORMULARIOS ESPECÍFICOS POR METODOLOGÍA
 # ============================================================================

@@ -1,0 +1,702 @@
+CASOS DE PRUEBA - SISTEMA GRCU MANAGER
+========================================
+
+INFORMACION GENERAL
+-------------------
+
+Proyecto: GRCU Manager
+Version: 1.0.0
+Fecha de Creacion: 22 de octubre de 2025
+Lider del Proyecto: Cristian Carranza
+Desarrollador Principal: Nicolas Butterfield
+Equipo de Testing: Martina Gagna, Abril Alvarez
+Objetivo: Validar las funcionalidades criticas del sistema de gestion de proyectos
+
+EQUIPO DEL PROYECTO:
+- Lider del Proyecto: Cristian Carranza
+- Desarrollador Principal: Nicolas Butterfield
+- Testers: Martina Gagna, Abril Alvarez
+
+FUNCIONALIDADES A PROBAR
+------------------------
+
+1. Inicio de Sesion de Usuario Administrador
+2. Autenticacion de Usuario (Login)
+3. Creacion de Requerimientos
+4. Carga de Casos de Uso
+5. Visualizacion de Matriz de Trazabilidad
+
+--------------------------------------------------------------------------------
+
+CASOS DE PRUEBA
+===============
+
+CP-001: INICIO DE SESION ADMINISTRADOR EXITOSO
+==============================================
+
+Prioridad: Alta
+Tipo: Funcional
+Modulo: Autenticacion
+
+Descripcion:
+Verificar que un usuario con rol de administrador pueda iniciar sesion correctamente en el sistema.
+
+Precondiciones:
+- Usuario administrador existe en el sistema
+- Usuario tiene credenciales validas
+- Sistema esta operativo
+
+Pasos:
+1. Navegar a la pagina de login del sistema
+2. Ingresar email del usuario administrador
+3. Ingresar contrasena correcta
+4. Hacer clic en "Iniciar Sesion"
+
+Resultado Esperado:
+- Usuario es redirigido al dashboard de administrador
+- Se muestra mensaje de bienvenida
+- Menu de navegacion muestra opciones de administrador
+
+Resultado Actual:
+PENDIENTE
+
+Estado:
+NO EJECUTADO
+
+--------------------------------------------------------------------------------
+
+CP-002: INICIO DE SESION ADMINISTRADOR - CONTRASENA INCORRECTA
+=============================================================
+
+Prioridad: Alta
+Tipo: Funcional / Negativo
+Modulo: Autenticacion
+
+Descripcion:
+Verificar que el sistema rechaza el inicio de sesion cuando se ingresa una contrasena incorrecta.
+
+Precondiciones:
+- Usuario administrador existe en el sistema
+- Sistema esta operativo
+
+Pasos:
+1. Navegar a la pagina de login
+2. Ingresar email valido de administrador
+3. Ingresar contrasena incorrecta
+4. Hacer clic en "Iniciar Sesion"
+
+Resultado Esperado:
+- Se muestra mensaje de error "Credenciales incorrectas"
+- Usuario permanece en pagina de login
+- No se permite acceso al sistema
+
+Resultado Actual:
+PENDIENTE
+
+Estado:
+NO EJECUTADO
+
+--------------------------------------------------------------------------------
+
+CP-003: INICIO DE SESION ADMINISTRADOR - USUARIO INEXISTENTE
+==========================================================
+
+Prioridad: Alta
+Tipo: Funcional / Negativo
+Modulo: Autenticacion
+
+Descripcion:
+Verificar que el sistema maneja correctamente intentos de login con usuarios inexistentes.
+
+Precondiciones:
+- Sistema esta operativo
+
+Pasos:
+1. Navegar a la pagina de login
+2. Ingresar email que no existe en el sistema
+3. Ingresar cualquier contrasena
+4. Hacer clic en "Iniciar Sesion"
+
+Resultado Esperado:
+- Se muestra mensaje de error "Usuario no encontrado"
+- Usuario permanece en pagina de login
+
+Resultado Actual:
+PENDIENTE
+
+Estado:
+NO EJECUTADO
+
+--------------------------------------------------------------------------------
+
+CP-004: INICIO DE SESION ADMINISTRADOR - USUARIO INACTIVO
+========================================================
+
+Prioridad: Media
+Tipo: Funcional / Negativo
+Modulo: Autenticacion
+
+Descripcion:
+Verificar que usuarios inactivos no puedan iniciar sesion.
+
+Precondiciones:
+- Usuario administrador existe pero esta marcado como inactivo
+- Sistema esta operativo
+
+Pasos:
+1. Navegar a la pagina de login
+2. Ingresar credenciales de usuario inactivo
+3. Hacer clic en "Iniciar Sesion"
+
+Resultado Esperado:
+- Se muestra mensaje "Cuenta desactivada"
+- Usuario permanece en pagina de login
+
+Resultado Actual:
+PENDIENTE
+
+Estado:
+NO EJECUTADO
+
+--------------------------------------------------------------------------------
+
+CP-005: LOGIN USUARIO REGULAR EXITOSO
+====================================
+
+Prioridad: Alta
+Tipo: Funcional
+Modulo: Autenticacion
+
+Descripcion:
+Verificar que un usuario regular pueda iniciar sesion correctamente.
+
+Precondiciones:
+- Usuario regular existe y esta activo
+- Usuario tiene credenciales validas
+
+Pasos:
+1. Navegar a la pagina de login
+2. Ingresar email de usuario regular
+3. Ingresar contrasena correcta
+4. Hacer clic en "Iniciar Sesion"
+
+Resultado Esperado:
+- Usuario es redirigido a su dashboard correspondiente
+- Se muestran opciones segun su rol (desarrollador, lider, etc.)
+
+Resultado Actual:
+PENDIENTE
+
+Estado:
+NO EJECUTADO
+
+--------------------------------------------------------------------------------
+
+CP-006: LOGIN USUARIO - MULTIPLES ROLES
+======================================
+
+Prioridad: Media
+Tipo: Funcional
+Modulo: Autenticacion
+
+Descripcion:
+Verificar que usuarios con multiples roles puedan acceder al sistema.
+
+Precondiciones:
+- Usuario tiene asignados multiples roles (ej: desarrollador y lider)
+- Usuario esta activo
+
+Pasos:
+1. Iniciar sesion con usuario multi-rol
+2. Verificar dashboard mostrado
+3. Verificar opciones de menu disponibles
+
+Resultado Esperado:
+- Usuario accede correctamente
+- Dashboard muestra opciones combinadas de sus roles
+
+Resultado Actual:
+PENDIENTE
+
+Estado:
+NO EJECUTADO
+
+--------------------------------------------------------------------------------
+
+CP-007: CREACION DE REQUERIMIENTO - CAMPOS OBLIGATORIOS
+======================================================
+
+Prioridad: Alta
+Tipo: Funcional
+Modulo: Requerimientos
+
+Descripcion:
+Verificar la creacion exitosa de un requerimiento con todos los campos obligatorios.
+
+Precondiciones:
+- Usuario autenticado con permisos para crear requerimientos
+- Proyecto existe y esta activo
+
+Pasos:
+1. Navegar a la seccion de requerimientos
+2. Hacer clic en "Crear Requerimiento"
+3. Completar todos los campos obligatorios:
+   - Nombre del requerimiento
+   - Descripcion
+   - Proyecto asociado
+   - Tipo de requerimiento
+4. Hacer clic en "Guardar"
+
+Resultado Esperado:
+- Requerimiento se crea exitosamente
+- Se muestra mensaje de confirmacion
+- Requerimiento aparece en la lista de requerimientos del proyecto
+
+Resultado Actual:
+PENDIENTE
+
+Estado:
+NO EJECUTADO
+
+--------------------------------------------------------------------------------
+
+CP-008: CREACION DE REQUERIMIENTO - CAMPOS OPCIONALES
+===================================================
+
+Prioridad: Media
+Tipo: Funcional
+Modulo: Requerimientos
+
+Descripcion:
+Verificar la creacion de requerimiento incluyendo campos opcionales.
+
+Precondiciones:
+- Usuario con permisos de creacion
+- Proyecto activo disponible
+
+Pasos:
+1. Acceder al formulario de creacion de requerimientos
+2. Completar campos obligatorios
+3. Agregar informacion en campos opcionales:
+   - Prioridad
+   - Fecha limite
+   - Comentarios adicionales
+4. Guardar el requerimiento
+
+Resultado Esperado:
+- Requerimiento se guarda con toda la informacion
+- Campos opcionales se muestran correctamente en la vista de detalle
+
+Resultado Actual:
+PENDIENTE
+
+Estado:
+NO EJECUTADO
+
+--------------------------------------------------------------------------------
+
+CP-009: CREACION DE REQUERIMIENTO - VALIDACION DE CAMPOS
+======================================================
+
+Prioridad: Alta
+Tipo: Validacion
+Modulo: Requerimientos
+
+Descripcion:
+Verificar que el sistema valida correctamente los campos del requerimiento.
+
+Precondiciones:
+- Usuario autenticado
+
+Pasos:
+1. Intentar crear requerimiento sin nombre
+2. Intentar crear requerimiento sin descripcion
+3. Intentar crear requerimiento sin proyecto asociado
+4. Intentar guardar con campos invalidos
+
+Resultado Esperado:
+- Sistema muestra mensajes de error especificos
+- No permite guardar requerimiento incompleto
+- Campos requeridos estan marcados claramente
+
+Resultado Actual:
+PENDIENTE
+
+Estado:
+NO EJECUTADO
+
+--------------------------------------------------------------------------------
+
+CP-010: CREACION DE REQUERIMIENTO - SIN PERMISOS
+===============================================
+
+Prioridad: Media
+Tipo: Seguridad
+Modulo: Requerimientos
+
+Descripcion:
+Verificar que usuarios sin permisos no puedan crear requerimientos.
+
+Precondiciones:
+- Usuario sin permisos de creacion de requerimientos
+
+Pasos:
+1. Intentar acceder al formulario de creacion de requerimientos
+2. Intentar crear un requerimiento
+
+Resultado Esperado:
+- Sistema deniega acceso
+- Se muestra mensaje de "Permisos insuficientes"
+- Usuario es redirigido o se bloquea la accion
+
+Resultado Actual:
+PENDIENTE
+
+Estado:
+NO EJECUTADO
+
+--------------------------------------------------------------------------------
+
+CP-011: CARGA DE CASO DE USO - ARCHIVO VALIDO
+============================================
+
+Prioridad: Alta
+Tipo: Funcional
+Modulo: Casos de Uso
+
+Descripcion:
+Verificar la carga exitosa de un caso de uso con archivo valido.
+
+Precondiciones:
+- Usuario con permisos para cargar casos de uso
+- Proyecto activo disponible
+- Archivo de caso de uso en formato correcto
+
+Pasos:
+1. Navegar a la seccion de casos de uso
+2. Hacer clic en "Cargar Caso de Uso"
+3. Seleccionar proyecto
+4. Subir archivo valido (formato permitido)
+5. Agregar descripcion opcional
+6. Hacer clic en "Cargar"
+
+Resultado Esperado:
+- Archivo se carga exitosamente
+- Caso de uso se registra en el sistema
+- Se muestra confirmacion de carga exitosa
+
+Resultado Actual:
+PENDIENTE
+
+Estado:
+NO EJECUTADO
+
+--------------------------------------------------------------------------------
+
+CP-012: CARGA DE CASO DE USO - ARCHIVO INVALIDO
+==============================================
+
+Prioridad: Alta
+Tipo: Validacion
+Modulo: Casos de Uso
+
+Descripcion:
+Verificar que el sistema rechaza archivos con formato invalido.
+
+Precondiciones:
+- Usuario con permisos de carga
+
+Pasos:
+1. Intentar cargar archivo con extension no permitida
+2. Intentar cargar archivo corrupto
+3. Intentar cargar archivo demasiado grande
+
+Resultado Esperado:
+- Sistema rechaza el archivo
+- Muestra mensaje de error especifico
+- No permite la carga del archivo invalido
+
+Resultado Actual:
+PENDIENTE
+
+Estado:
+NO EJECUTADO
+
+--------------------------------------------------------------------------------
+
+CP-013: CARGA DE CASO DE USO - SIN PROYECTO ASOCIADO
+===================================================
+
+Prioridad: Media
+Tipo: Validacion
+Modulo: Casos de Uso
+
+Descripcion:
+Verificar validacion cuando no se selecciona proyecto.
+
+Precondiciones:
+- Usuario con permisos
+
+Pasos:
+1. Intentar cargar caso de uso sin seleccionar proyecto
+2. Completar otros campos
+3. Intentar guardar
+
+Resultado Esperado:
+- Sistema requiere seleccion de proyecto
+- Muestra mensaje de validacion
+
+Resultado Actual:
+PENDIENTE
+
+Estado:
+NO EJECUTADO
+
+--------------------------------------------------------------------------------
+
+CP-014: VER MATRIZ DE TRAZABILIDAD - VISTA COMPLETA
+==================================================
+
+Prioridad: Alta
+Tipo: Funcional
+Modulo: Trazabilidad
+
+Descripcion:
+Verificar que la matriz de trazabilidad se muestra correctamente.
+
+Precondiciones:
+- Usuario con permisos para ver trazabilidad
+- Existen requerimientos y casos de uso relacionados
+
+Pasos:
+1. Navegar a la seccion de trazabilidad
+2. Seleccionar proyecto
+3. Hacer clic en "Ver Matriz de Trazabilidad"
+
+Resultado Esperado:
+- Se muestra matriz completa
+- Requerimientos en filas, casos de uso en columnas
+- Indicadores visuales de relaciones (colores, simbolos)
+
+Resultado Actual:
+PENDIENTE
+
+Estado:
+NO EJECUTADO
+
+--------------------------------------------------------------------------------
+
+CP-015: VER MATRIZ DE TRAZABILIDAD - FILTROS
+===========================================
+
+Prioridad: Media
+Tipo: Funcional
+Modulo: Trazabilidad
+
+Descripcion:
+Verificar funcionamiento de filtros en la matriz de trazabilidad.
+
+Precondiciones:
+- Matriz de trazabilidad disponible
+
+Pasos:
+1. Acceder a la matriz de trazabilidad
+2. Aplicar filtro por tipo de requerimiento
+3. Aplicar filtro por estado de caso de uso
+4. Verificar que la matriz se actualiza correctamente
+
+Resultado Esperado:
+- Filtros se aplican correctamente
+- Matriz se actualiza dinamicamente
+- Informacion filtrada es precisa
+
+Resultado Actual:
+PENDIENTE
+
+Estado:
+NO EJECUTADO
+
+--------------------------------------------------------------------------------
+
+CP-016: VER MATRIZ DE TRAZABILIDAD - SIN DATOS
+=============================================
+
+Prioridad: Media
+Tipo: Funcional
+Modulo: Trazabilidad
+
+Descripcion:
+Verificar comportamiento cuando no hay datos para mostrar.
+
+Precondiciones:
+- Proyecto sin requerimientos o casos de uso
+
+Pasos:
+1. Intentar ver matriz de trazabilidad de proyecto vacio
+
+Resultado Esperado:
+- Se muestra mensaje informativo
+- No se produce error del sistema
+- Se ofrecen opciones para agregar datos
+
+Resultado Actual:
+PENDIENTE
+
+Estado:
+NO EJECUTADO
+
+--------------------------------------------------------------------------------
+
+CP-017: VER MATRIZ DE TRAZABILIDAD - EXPORTACION
+===============================================
+
+Prioridad: Baja
+Tipo: Funcional
+Modulo: Trazabilidad
+
+Descripcion:
+Verificar funcionalidad de exportacion de la matriz.
+
+Precondiciones:
+- Matriz con datos disponibles
+
+Pasos:
+1. Acceder a la matriz de trazabilidad
+2. Hacer clic en "Exportar"
+3. Seleccionar formato (PDF, Excel, etc.)
+4. Descargar archivo
+
+Resultado Esperado:
+- Archivo se descarga correctamente
+- Contenido del archivo coincide con la vista en pantalla
+- Formato es legible y bien estructurado
+
+Resultado Actual:
+PENDIENTE
+
+Estado:
+NO EJECUTADO
+
+--------------------------------------------------------------------------------
+
+CP-018: VER MATRIZ DE TRAZABILIDAD - PERMISOS INSUFICIENTES
+==========================================================
+
+Prioridad: Media
+Tipo: Seguridad
+Modulo: Trazabilidad
+
+Descripcion:
+Verificar que usuarios sin permisos no puedan ver la matriz.
+
+Precondiciones:
+- Usuario sin permisos de trazabilidad
+
+Pasos:
+1. Intentar acceder a la matriz de trazabilidad
+
+Resultado Esperado:
+- Acceso denegado
+- Mensaje de permisos insuficientes
+- Redireccion apropiada
+
+Resultado Actual:
+PENDIENTE
+
+Estado:
+NO EJECUTADO
+
+--------------------------------------------------------------------------------
+
+CP-019: NAVEGACION ENTRE MODULOS - USUARIO ADMINISTRADOR
+======================================================
+
+Prioridad: Media
+Tipo: Integracion
+Modulo: Navegacion
+
+Descripcion:
+Verificar navegacion fluida entre modulos para administrador.
+
+Precondiciones:
+- Usuario administrador autenticado
+
+Pasos:
+1. Desde dashboard administrador, navegar a requerimientos
+2. Desde requerimientos, navegar a casos de uso
+3. Desde casos de uso, navegar a trazabilidad
+4. Verificar breadcrumbs y navegacion
+
+Resultado Esperado:
+- Navegacion fluida entre modulos
+- Breadcrumbs actualizados correctamente
+- No se pierden filtros o contexto
+
+Resultado Actual:
+PENDIENTE
+
+Estado:
+NO EJECUTADO
+
+--------------------------------------------------------------------------------
+
+CP-020: NAVEGACION ENTRE MODULOS - USUARIO REGULAR
+=================================================
+
+Prioridad: Media
+Tipo: Integracion
+Modulo: Navegacion
+
+Descripcion:
+Verificar navegacion para usuarios con permisos limitados.
+
+Precondiciones:
+- Usuario regular autenticado
+
+Pasos:
+1. Verificar opciones de menu disponibles
+2. Intentar acceder a modulos restringidos
+3. Verificar navegacion dentro de modulos permitidos
+
+Resultado Esperado:
+- Solo modulos permitidos son visibles/accesibles
+- Acceso a modulos restringidos es bloqueado
+- Navegacion dentro de modulos permitidos funciona correctamente
+
+Resultado Actual:
+PENDIENTE
+
+Estado:
+NO EJECUTADO
+
+--------------------------------------------------------------------------------
+
+RESUMEN DE EJECUCION
+===================
+
+Estado          Cantidad    Porcentaje
+--------        --------    ----------
+PASSED          0           0%
+FAILED          0           0%
+NO EJECUTADO    20          100%
+
+NOTAS ADICIONALES
+=================
+
+- Los casos de prueba deben ejecutarse en orden de prioridad (Alta -> Media -> Baja)
+- Se recomienda ejecutar casos positivos antes que negativos
+- Para casos de seguridad, verificar tambien desde el lado del servidor
+- Mantener registro de versiones del sistema durante las pruebas
+- Documentar cualquier comportamiento inesperado encontrado
+
+RESPONSABLES DE EJECUCION
+=========================
+
+- Tester Principal: Martina Gagna
+- Tester Secundario: Abril Alvarez
+- Desarrollador: Nicolas Butterfield
+- Lider del Proyecto: Cristian Carranza
+- Revisor: Cristian Carranza
+
+--------------------------------------------------------------------------------
+Documento generado automaticamente - Revisar y actualizar resultados despues de cada ejecucion
