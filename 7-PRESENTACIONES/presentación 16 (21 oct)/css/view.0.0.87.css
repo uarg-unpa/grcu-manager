@@ -1,0 +1,131 @@
+@charset "UTF-8";
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+html,
+body {
+  height: 100%;
+  max-height: 100%;
+}
+
+@media only screen and (orientation: landscape) {
+  body.is-ios {
+    min-height: 101vh;
+    min-height: 100dvh;
+  }
+}
+.iframe-container {
+  margin: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  max-height: 100%;
+  position: absolute;
+}
+.iframe-container .genially-embed,
+.iframe-container .genially-lightbox-modal {
+  max-height: 100vh;
+  max-height: 100dvh;
+  height: 100% !important;
+}
+
+.genially-social {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  flex-flow: column;
+}
+.genially-social .genially-social-container-genially {
+  z-index: 1;
+}
+
+.genially-social-container-genially.genially-horizontal.genially-exclusive, .genially-social-container-genially.genially-square.genially-exclusive {
+  height: 100vh;
+  height: 100dvh;
+}
+.genially-social-container-genially.genially-horizontal, .genially-social-container-genially.genially-square {
+  height: calc(100vh - 4.125rem);
+  width: auto;
+}
+.genially-social-container-genially.genially-horizontal .container-wrapper-genially, .genially-social-container-genially.genially-square .container-wrapper-genially {
+  margin: 0 auto;
+  height: 100%;
+}
+.genially-social-container-genially.genially-horizontal .container-wrapper-genially .genially-embed,
+.genially-social-container-genially.genially-horizontal .container-wrapper-genially .genially-lightbox-modal, .genially-social-container-genially.genially-square .container-wrapper-genially .genially-embed,
+.genially-social-container-genially.genially-square .container-wrapper-genially .genially-lightbox-modal {
+  max-height: 100%;
+  min-height: 100%;
+}
+.genially-social-container-genially.genially-horizontal.genially-exclusive .container-wrapper-genially, .genially-social-container-genially.genially-square.genially-exclusive .container-wrapper-genially {
+  min-height: -webkit-fill-available !important;
+}
+.genially-social-container-genially.genially-vertical .container-wrapper-genially {
+  min-height: 101vh;
+  min-height: 100dvh;
+  margin: 0 auto;
+}
+.genially-social-container-genially.genially-vertical.isFullScreen .container-wrapper-genially {
+  max-width: 100%;
+}
+.genially-social-container-genially.genially-vertical .container-wrapper-genially.is-zoomed {
+  max-width: 100% !important;
+}
+
+@media (min-width: 750px) and (max-width: 960px) {
+  .genially-social-container-genially.genially-horizontal.genially-exclusive, .genially-social-container-genially.genially-square.genially-exclusive {
+    height: 100vh !important;
+    height: 100dvh !important;
+  }
+}
+@media (max-width: 600px) {
+  .genially-social-container-genially.genially-mobile-layout.genially-horizontal, .genially-social-container-genially.genially-mobile-layout.genially-square {
+    height: calc(100vh - 4rem) !important;
+    height: calc(100dvh - 4rem) !important;
+  }
+
+  /* Nueva posición */
+  .genially-social-container-genially.genially-horizontal, .genially-social-container-genially.genially-square {
+    height: 100vw !important;
+  }
+  .genially-social-container-genially.genially-horizontal.genially-exclusive, .genially-social-container-genially.genially-square.genially-exclusive {
+    height: 100vh !important;
+    height: 100dvh !important;
+  }
+}
+/* Portrait */
+@media screen and (orientation: portrait) {
+  /* Portrait styles here */
+  .genially-social-container-genially.genially-horizontal {
+    height: 80vh;
+  }
+}
+@font-face {
+  font-family: DM;
+  font-style: normal;
+  font-weight: 400;
+  src: local(DMSans_18pt-Regular), url("../assets/fonts/DmSans/DMSans_18pt-Regular.ttf") format("truetype");
+}
+@font-face {
+  font-family: DM;
+  font-style: normal;
+  font-weight: 700;
+  src: local(DMSans_18pt-SemiBold), url("../assets/fonts/DmSans/DMSans_18pt-SemiBold.ttf") format("truetype");
+}
+#onetrust-pc-sdk {
+  font-family: "DM";
+}
+
+#onetrust-consent-sdk {
+  font-family: "DM";
+}
