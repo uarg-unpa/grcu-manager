@@ -1,0 +1,329 @@
+Prompt para Generar Diagrama de Base de Datos - Sistema GRCU Manager
+
+INFORMACION DEL PROYECTO
+Nombre: GRCU Manager
+Tipo: Sistema de Gestion de Proyectos
+Framework: Django 5.2.6
+Base de Datos: PostgreSQL
+Arquitectura: MVC con aplicaciones modulares
+
+ESTRUCTURA REAL DE LA BASE DE DATOS
+
+========================================
+TABLAS PRINCIPALES Y SUS CAMPOS
+========================================
+
+1. accounts_usuario (Usuario - hereda de AbstractUser)
+- id: BIGINT (PK, Auto-incremento)
+- password: VARCHAR(128) - Hash de contraseña para admin/superusers
+- last_login: TIMESTAMP (NULL) - Último inicio de sesión
+- is_superuser: BOOLEAN - Indica si es superusuario
+- first_name: VARCHAR(150) - Nombre (campo Django)
+- last_name: VARCHAR(150) - Apellido (campo Django)
+- is_staff: BOOLEAN - Puede acceder al admin de Django
+- is_active: BOOLEAN - Usuario activo en el sistema
+- date_joined: TIMESTAMP - Fecha de registro
+- email: VARCHAR(254) (UNIQUE, INDEX) - Email para autenticación OAuth2
+- nombre: VARCHAR(255) (INDEX) - Nombre completo del usuario
+- avatar: VARCHAR(200) (NULL) - URL del avatar de Google OAuth2
+- username: VARCHAR(150) (NULL) - No usado, autenticación por email
+
+2. roles_rol (Rol)
+- id: BIGINT (PK, Auto-incremento)
+- nombre: VARCHAR(50) (UNIQUE) - Nombre del rol (Admin, Líder, Desarrollador, etc.)
+- color: VARCHAR(7) - DEFAULT: #444c8a - Color hexadecimal para UI
+- icono_url: VARCHAR(200) (NULL) - URL del icono del rol
+
+3. permisos_permiso (Permiso)
+- id: BIGINT (PK, Auto-incremento)
+- nombre: VARCHAR(100) (UNIQUE) - Nombre del permiso
+
+4. grupos_grupo (Grupo)
+- id: BIGINT (PK, Auto-incremento)
+- nombre: VARCHAR(255) (UNIQUE) - Nombre del grupo
+- logo: VARCHAR(100) (NULL) - ImageField - Ruta: grupos/logos/
+- fecha_creacion: TIMESTAMP (auto_now_add=True) - Fecha de creación
+- creado_por_id: BIGINT (FK -> accounts_usuario.id) (NULL, on_delete=SET_NULL) - Usuario creador
+- activo: BOOLEAN - DEFAULT: True - Estado del grupo
+- lider_id: BIGINT (FK -> accounts_usuario.id) (NULL, on_delete=SET_NULL) - Usuario líder del grupo
+
+5. proyectos_proyecto (Proyecto)
+- id: BIGINT (PK, Auto-incremento)
+- nombre: VARCHAR(200) (UNIQUE) - Nombre del proyecto
+- descripcion: TEXT (NULL) - Descripción del proyecto
+- metodologia: VARCHAR(20) (NULL) - CHOICES: "TRADICIONAL" o "AGIL"
+- fecha_creacion: TIMESTAMP (auto_now_add=True) - Fecha de creación
+- activo: BOOLEAN - DEFAULT: True - Estado del proyecto
+- logo: VARCHAR(100) (NULL) - ImageField - Ruta: proyectos/logos/
+- grupo_id: BIGINT (FK -> grupos_grupo.id) (NULL, on_delete=SET_NULL) - Grupo asignado
+- lider_id: BIGINT (FK -> accounts_usuario.id) (NULL, on_delete=SET_NULL) - Usuario líder
+- creado_por_id: BIGINT (FK -> accounts_usuario.id) (NULL, on_delete=SET_NULL) - Usuario creador
+
+6. proyectos_participacionproyecto (ParticipacionProyecto - Tabla intermedia)
+- id: BIGINT (PK, Auto-incremento)
+- usuario_id: BIGINT (FK -> accounts_usuario.id, on_delete=CASCADE) - Usuario participante
+- proyecto_id: BIGINT (FK -> proyectos_proyecto.id, on_delete=CASCADE) - Proyecto
+- rol_id: BIGINT (FK -> roles_rol.id, on_delete=PROTECT) - Rol del usuario en el proyecto
+- fecha_asignacion: TIMESTAMP (auto_now_add=True) - Fecha de asignación
+- CONSTRAINT: UNIQUE(usuario_id, proyecto_id) - Un usuario solo tiene un rol por proyecto
+
+7. proyectos_historicalproyecto (Historical - django-simple-history)
+- id: BIGINT (PK) - ID del snapshot histórico
+- nombre: VARCHAR(200) - Snapshot del nombre
+- descripcion: TEXT (NULL) - Snapshot de descripción
+- metodologia: VARCHAR(20) (NULL) - Snapshot de metodología
+- fecha_creacion: TIMESTAMP - Snapshot
+- activo: BOOLEAN - Snapshot
+- logo: VARCHAR(100) (NULL) - Snapshot
+- grupo_id: BIGINT (NULL) - Snapshot FK
+- lider_id: BIGINT (NULL) - Snapshot FK
+- creado_por_id: BIGINT (NULL) - Snapshot FK
+- history_type: VARCHAR(1) - Tipo de cambio: "+" (creación), "-" (eliminación), "~" (modificación)
+- history_date: TIMESTAMP - Fecha del cambio histórico
+- history_user_id: BIGINT (NULL) - Usuario que realizó el cambio
+
+8. requerimientos_requerimiento (Requerimiento)
+- id: BIGINT (PK, Auto-incremento)
+- nombre: VARCHAR(255) - Nombre del requerimiento
+- descripcion: TEXT - Descripción del requerimiento
+- tipo: VARCHAR(20) - CHOICES: "FUNCIONAL" o "NO_FUNCIONAL"
+- estado: VARCHAR(20) - DEFAULT: "PENDIENTE" - CHOICES: PENDIENTE/EN_PROGRESO/COMPLETADO
+- proyecto_id: BIGINT (FK -> proyectos_proyecto.id, on_delete=CASCADE) - Proyecto asociado
+- creado_por_id: BIGINT (FK -> accounts_usuario.id) (NULL, on_delete=SET_NULL) - Usuario creador
+- fecha_creacion: TIMESTAMP (auto_now_add=True) - Fecha de creación
+- fecha_actualizacion: TIMESTAMP (auto_now=True) - Fecha de última actualización
+- imagen: VARCHAR(100) (NULL) - ImageField - Ruta: requerimientos/imagenes/
+- link_externo: VARCHAR(500) - URL a recurso externo
+- detalle_tradicional_id: BIGINT (FK -> requerimientos_detallerequerimientotradicional.id) (NULL, OneToOne, on_delete=SET_NULL)
+- detalle_agil_id: BIGINT (FK -> requerimientos_detallerequerimientoagil.id) (NULL, OneToOne, on_delete=SET_NULL)
+
+9. requerimientos_detallerequerimientotradicional (DetalleRequerimientoTradicional)
+- id: BIGINT (PK, Auto-incremento)
+- requerimiento_padre_id: BIGINT (FK -> requerimientos_requerimiento.id) (UNIQUE, OneToOne, on_delete=CASCADE)
+- prioridad: VARCHAR(50) - Prioridad del requerimiento
+- fuente: VARCHAR(255) - Fuente del requerimiento
+- categoria: VARCHAR(100) - Categoría
+- fecha_compromiso: DATE (NULL) - Fecha de compromiso
+- estado_validacion: VARCHAR(100) - Estado de validación
+- observaciones: TEXT - Observaciones adicionales
+
+10. requerimientos_detallerequerimientoagil (DetalleRequerimientoAgil)
+- id: BIGINT (PK, Auto-incremento)
+- requerimiento_padre_id: BIGINT (FK -> requerimientos_requerimiento.id) (UNIQUE, OneToOne, on_delete=CASCADE)
+- historia_usuario: TEXT - Historia de usuario
+- criterio_aceptacion: TEXT - Criterios de aceptación
+- puntos_estimados: INTEGER (NULL, PositiveIntegerField) - Story points
+- sprint_asignado: VARCHAR(100) - Sprint asignado
+- responsable: VARCHAR(100) - Responsable del requerimiento
+- estado_scrum: VARCHAR(100) - Estado en SCRUM
+- observaciones: TEXT - Observaciones adicionales
+
+11. requerimientos_requerimientocaso (RequerimientoCaso - Tabla intermedia)
+- id: BIGINT (PK, Auto-incremento)
+- requerimiento_id: BIGINT (FK -> requerimientos_requerimiento.id, on_delete=CASCADE)
+- caso_de_uso_id: BIGINT (FK -> casos_de_uso_casodeuso.id, on_delete=CASCADE)
+- fecha_vinculacion: TIMESTAMP (auto_now_add=True) - Fecha de vinculación
+- nota: VARCHAR(255) - Nota sobre la vinculación
+- CONSTRAINT: UNIQUE(requerimiento_id, caso_de_uso_id)
+
+12. requerimientos_historicalrequerimiento (Historical - django-simple-history)
+- id: BIGINT (PK) - ID del snapshot histórico
+- nombre: VARCHAR(255) - Snapshot
+- descripcion: TEXT - Snapshot
+- tipo: VARCHAR(20) - Snapshot
+- estado: VARCHAR(20) - Snapshot
+- proyecto_id: BIGINT - Snapshot FK
+- creado_por_id: BIGINT (NULL) - Snapshot FK
+- fecha_creacion: TIMESTAMP - Snapshot
+- fecha_actualizacion: TIMESTAMP - Snapshot
+- imagen: VARCHAR(100) (NULL) - Snapshot
+- link_externo: VARCHAR(500) - Snapshot
+- detalle_tradicional_id: BIGINT (NULL) - Snapshot FK
+- detalle_agil_id: BIGINT (NULL) - Snapshot FK
+- history_type: VARCHAR(1) - "+/-/~"
+- history_date: TIMESTAMP - Fecha del cambio
+- history_user_id: BIGINT (NULL) - Usuario del cambio
+
+13. casos_de_uso_casodeuso (CasoDeUso)
+- id: BIGINT (PK, Auto-incremento)
+- nombre: VARCHAR(255) - Nombre del caso de uso
+- descripcion: TEXT - Descripción
+- proyecto_id: BIGINT (FK -> proyectos_proyecto.id, on_delete=CASCADE) - Proyecto asociado
+- creado_por_id: BIGINT (FK -> accounts_usuario.id) (NULL, on_delete=SET_NULL) - Usuario creador
+- fecha_creacion: TIMESTAMP (auto_now_add=True) - Fecha de creación
+- fecha_actualizacion: TIMESTAMP (auto_now=True) - Fecha de última actualización
+- imagen: VARCHAR(100) (NULL) - ImageField - Ruta: casos_de_uso/imagenes/
+- link_externo: VARCHAR(500) - URL a recurso externo
+- detalle_tradicional_id: BIGINT (FK -> casos_de_uso_detallecasodeusotradicional.id) (NULL, OneToOne, on_delete=SET_NULL)
+- detalle_agil_id: BIGINT (FK -> casos_de_uso_detallecasodeusoagil.id) (NULL, OneToOne, on_delete=SET_NULL)
+
+14. casos_de_uso_detallecasodeusotradicional (DetalleCasoDeUsoTradicional)
+- id: BIGINT (PK, Auto-incremento)
+- caso_de_uso_padre_id: BIGINT (FK -> casos_de_uso_casodeuso.id) (UNIQUE, OneToOne, on_delete=CASCADE)
+- actor_principal: VARCHAR(255) - Actor principal
+- precondiciones: TEXT - Precondiciones
+- flujo_principal: TEXT - Flujo principal
+- flujo_alternativo: TEXT - Flujo alternativo
+- postcondiciones: TEXT - Postcondiciones
+- observaciones: TEXT - Observaciones
+
+15. casos_de_uso_detallecasodeusoagil (DetalleCasoDeUsoAgil)
+- id: BIGINT (PK, Auto-incremento)
+- caso_de_uso_padre_id: BIGINT (FK -> casos_de_uso_casodeuso.id) (UNIQUE, OneToOne, on_delete=CASCADE)
+- historia_usuario: TEXT - Historia de usuario
+- criterio_aceptacion: TEXT - Criterios de aceptación
+- responsable: VARCHAR(100) - Responsable
+- estado_scrum: VARCHAR(100) - Estado SCRUM
+- observaciones: TEXT - Observaciones
+
+16. casos_de_uso_historicalcasodeuso (Historical - django-simple-history)
+- id: BIGINT (PK) - ID del snapshot histórico
+- nombre: VARCHAR(255) - Snapshot
+- descripcion: TEXT - Snapshot
+- proyecto_id: BIGINT - Snapshot FK
+- creado_por_id: BIGINT (NULL) - Snapshot FK
+- fecha_creacion: TIMESTAMP - Snapshot
+- fecha_actualizacion: TIMESTAMP - Snapshot
+- imagen: VARCHAR(100) (NULL) - Snapshot
+- link_externo: VARCHAR(500) - Snapshot
+- detalle_tradicional_id: BIGINT (NULL) - Snapshot FK
+- detalle_agil_id: BIGINT (NULL) - Snapshot FK
+- history_type: VARCHAR(1) - "+/-/~"
+- history_date: TIMESTAMP - Fecha del cambio
+- history_user_id: BIGINT (NULL) - Usuario del cambio
+
+17. auditoria_registroactividad (RegistroActividad)
+- id: BIGINT (PK, Auto-incremento)
+- usuario_id: BIGINT (FK -> accounts_usuario.id) (NULL, on_delete=SET_NULL) - Usuario que realizó la acción
+- accion: VARCHAR(20) - CHOICES: LOGIN/LOGOUT/CREATE_USER/UPDATE_USER/DELETE_USER/CHANGE_ROLE/CREATE_PROJECT/DELETE_PROJECT/CREATE_GROUP/DELETE_GROUP/ADMIN_ACTION
+- descripcion: TEXT - Descripción de la actividad
+- detalles: JSON (NULL) - Detalles adicionales en formato JSON
+- ip_address: INET (NULL, GenericIPAddressField) - Dirección IP del usuario
+- user_agent: TEXT - User agent del navegador
+- fecha: TIMESTAMP (auto_now_add=True) - Fecha de la actividad
+- INDEXES: 
+  * INDEX(fecha DESC)
+  * INDEX(usuario_id, fecha DESC)
+  * INDEX(accion)
+
+========================================
+TABLAS INTERMEDIAS MANY-TO-MANY
+========================================
+
+18. accounts_usuario_roles (Usuario <-> Rol)
+- id: BIGINT (PK, Auto-incremento)
+- usuario_id: BIGINT (FK -> accounts_usuario.id)
+- rol_id: BIGINT (FK -> roles_rol.id)
+
+19. grupos_grupo_integrantes (Grupo <-> Usuario - Integrantes)
+- id: BIGINT (PK, Auto-incremento)
+- grupo_id: BIGINT (FK -> grupos_grupo.id)
+- usuario_id: BIGINT (FK -> accounts_usuario.id)
+
+20. roles_rol_permisos (Rol <-> Permiso)
+- id: BIGINT (PK, Auto-incremento)
+- rol_id: BIGINT (FK -> roles_rol.id)
+- permiso_id: BIGINT (FK -> permisos_permiso.id)
+
+21. requerimientos_requerimiento_casos_relacionados (Requerimiento <-> CasoDeUso)
+- id: BIGINT (PK, Auto-incremento)
+- requerimiento_id: BIGINT (FK -> requerimientos_requerimiento.id)
+- casodeuso_id: BIGINT (FK -> casos_de_uso_casodeuso.id)
+
+INSTRUCCIONES PARA GENERAR EL DIAGRAMA
+
+Formato Preferido
+Utiliza Mermaid.js para generar el diagrama ERD (Entity Relationship Diagram).
+
+Estructura del Diagrama
+1. Entidades Principales (rectángulos azules):
+   - accounts_usuario, roles_rol, permisos_permiso, grupos_grupo, proyectos_proyecto, requerimientos_requerimiento, casos_de_uso_casodeuso, auditoria_registroactividad
+
+2. Entidades de Detalle (rectángulos verdes):
+   - requerimientos_detallerequerimientotradicional, requerimientos_detallerequerimientoagil
+   - casos_de_uso_detallecasodeusotradicional, casos_de_uso_detallecasodeusoagil
+   - proyectos_participacionproyecto, requerimientos_requerimientocaso
+
+3. Relaciones:
+   - One-to-One: Línea continua con |o--||o
+   - One-to-Many: Línea continua con ||--o{
+   - Many-to-Many: Línea discontinua con }o--o{
+
+Campos a Mostrar
+- **Campos PK**: En negrita con *
+- **Campos FK**: Con sufijo `_id`
+- **Campos únicos**: Con subrayado
+- **Campos opcionales**: Con `(NULL)` al final
+
+Agrupación Lógica
+- **Grupo de Autenticación**: accounts_usuario, roles_rol, permisos_permiso
+- **Grupo de Organización**: grupos_grupo, proyectos_proyecto, proyectos_participacionproyecto
+- **Grupo de Requerimientos**: requerimientos_requerimiento, requerimientos_detallerequerimientotradicional, requerimientos_detallerequerimientoagil, requerimientos_requerimientocaso
+- **Grupo de Casos de Uso**: casos_de_uso_casodeuso, casos_de_uso_detallecasodeusotradicional, casos_de_uso_detallecasodeusoagil
+- **Grupo de Auditoría**: auditoria_registroactividad
+
+Colores y Estilos
+- **Entidades principales**: `fill:#e1f5fe`
+- **Entidades de detalle**: `fill:#f3e5f5`
+- **Relaciones One-to-One**: `stroke:#4caf50,stroke-width:2px`
+- **Relaciones One-to-Many**: `stroke:#2196f3,stroke-width:2px`
+- **Relaciones Many-to-Many**: `stroke:#ff9800,stroke-width:2px,stroke-dasharray:5`
+
+Output Esperado
+1. **Código Mermaid completo** para el diagrama
+2. **Descripción textual** de las relaciones principales
+3. **Notas sobre integridad referencial** y constraints importantes
+4. **Recomendaciones de optimización** si las hay
+
+========================================
+CONSIDERACIONES ESPECIALES DEL SISTEMA
+========================================
+
+**Autenticación y Seguridad:**
+- Usuario hereda de AbstractUser de Django (incluye campos password, is_staff, is_superuser, etc.)
+- Autenticación principal vía Google OAuth2 (campo avatar almacena URL de foto)
+- Campo password usado solo para superusers que acceden al admin de Django
+- Campo username=NULL, autenticación por email únicamente
+
+**Metodología de Desarrollo:**
+- Proyectos pueden ser TRADICIONAL o AGIL
+- Requerimientos y Casos de Uso tienen detalles específicos según metodología
+- Relación OneToOne entre entidad principal y sus detalles (detalle_tradicional_id / detalle_agil_id)
+
+**Gestión de Archivos:**
+- ImageField usado para logos (grupos/proyectos) y adjuntos (requerimientos/casos de uso)
+- Rutas de almacenamiento: grupos/logos/, proyectos/logos/, requerimientos/imagenes/, casos_de_uso/imagenes/
+
+**Tracking de Cambios:**
+- django-simple-history implementado en Proyecto, Requerimiento y CasoDeUso
+- Tablas Historical almacenan snapshots de cada cambio con history_type (+/-/~)
+- history_user_id registra quién hizo el cambio
+- history_date registra cuándo se hizo
+
+**Constraints y Validaciones:**
+- UNIQUE en ParticipacionProyecto (usuario, proyecto) - Un usuario un rol por proyecto
+- UNIQUE en RequerimientoCaso (requerimiento, caso_de_uso) - Evita duplicados
+- PROTECT en rol_id de ParticipacionProyecto - No se puede borrar rol si está en uso
+- CASCADE en relaciones Proyecto -> Requerimiento/CasoDeUso - Borrado en cascada
+- SET_NULL en relaciones Usuario -> Entidades - Preserva datos si se borra usuario
+
+**Auditoría del Sistema:**
+- RegistroActividad con campo JSON para detalles flexibles
+- Múltiples índices para consultas eficientes (fecha DESC, usuario+fecha, acción)
+- Campo INET para almacenar direcciones IP
+- Acciones predefinidas: LOGIN, LOGOUT, CREATE_USER, UPDATE_USER, DELETE_USER, CHANGE_ROLE, etc.
+
+**Soft Deletes:**
+- Campo 'activo' en Grupo y Proyecto para eliminación lógica
+- No se implementan hard deletes, se desactivan las entidades
+
+**Relaciones Many-to-Many:**
+- Usuario <-> Rol (tabla accounts_usuario_roles)
+- Grupo <-> Usuario integrantes (tabla grupos_grupo_integrantes)
+- Rol <-> Permiso (tabla roles_rol_permisos)
+- Requerimiento <-> CasoDeUso (dos tablas: requerimientos_requerimiento_casos_relacionados y requerimientos_requerimientocaso)
+- Proyecto <-> Usuario participantes (through model proyectos_participacionproyecto con constraint UNIQUE)
+
+IMPORTANTE: Usa los NOMBRES REALES de tabla de Django (accounts_usuario, roles_rol, etc.) como nombres de entidad en el diagrama, NO nombres simplificados como "Usuario", "Rol", etc.
+
+Genera el diagrama completo con todas las entidades, relaciones y campos especificados.

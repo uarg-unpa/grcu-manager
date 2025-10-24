@@ -1,9 +1,9 @@
 import pytest
 from accounts.models import Usuario
-from usuarios.models import AccionUsuario
+from auditoria.models import RegistroActividad
 
 @pytest.mark.django_db
-def test_accion_usuario_creation():
+def test_registro_actividad_creation():
     # Crear usuario base
     user = Usuario.objects.create_user(email='usuario@demo.com', nombre='Usuario Demo', password='demopass123')
     assert user.email == 'usuario@demo.com'
@@ -11,8 +11,12 @@ def test_accion_usuario_creation():
     assert user.check_password('demopass123')
     assert user.is_active
 
-    # Crear acción asociada
-    accion = AccionUsuario.objects.create(usuario=user, accion='login')
-    assert accion.usuario == user
-    assert accion.accion == 'login'
-    assert accion.fecha is not None
+    # Crear registro de actividad asociado (reemplaza AccionUsuario)
+    registro = RegistroActividad.objects.create(
+        usuario=user, 
+        accion='LOGIN', 
+        descripcion='Usuario inició sesión'
+    )
+    assert registro.usuario == user
+    assert registro.accion == 'LOGIN'
+    assert registro.fecha is not None

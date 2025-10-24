@@ -15,7 +15,7 @@ from auditoria.utils import registrar_login, registrar_logout
 
 def setup_admin(request):
     # Si ya hay un admin, redirige al login
-    if Usuario.objects.filter(roles__nombre__iexact="Admin").exists():
+    if Usuario.objects.filter(roles__nombre=Rol.ADMIN).exists():
         messages.info(request, "Ya existe un administrador. Por favor, iniciá sesión.")
         return redirect("accounts:login")
 
@@ -26,7 +26,7 @@ def setup_admin(request):
 def login_view(request):
     # Verificar si hay usuarios en la base de datos
     # y si hay al menos un usuario con rol Admin
-    if not Usuario.objects.exists() or not Usuario.objects.filter(roles__nombre__iexact="Admin").exists():
+    if not Usuario.objects.exists() or not Usuario.objects.filter(roles__nombre=Rol.ADMIN).exists():
         return redirect("accounts:setup_admin")
     
     return render(request, "accounts/login.html", {"page_title": "Bienvenido a GRCU Manager"})
@@ -89,7 +89,7 @@ def google_login_callback(request):
     avatar_url = idinfo.get("picture", "")
 
     # Verificar si es el primer usuario (setup admin)
-    if not Usuario.objects.filter(roles__nombre__iexact="Admin").exists():
+    if not Usuario.objects.filter(roles__nombre=Rol.ADMIN).exists():
         # Crear el usuario como administrador
         user, created = Usuario.objects.get_or_create(
             email=email,
@@ -101,7 +101,7 @@ def google_login_callback(request):
         )
         if created:
             # Asignar rol de administrador
-            rol_admin, _ = Rol.objects.get_or_create(nombre="Admin")
+            rol_admin, _ = Rol.objects.get_or_create(nombre=Rol.ADMIN)
             user.roles.add(rol_admin)
             user.save()
             messages.success(request, "Administrador configurado exitosamente.")
@@ -126,9 +126,9 @@ def google_login_callback(request):
     # Registrar login en auditoría
     registrar_login(request)
 
-    if user.roles.filter(nombre__iexact="Admin").exists():
+    if user.roles.filter(nombre=Rol.ADMIN).exists():
         return redirect("dashboards:admin_dashboard")
-    elif user.roles.filter(nombre__iexact="Líder").exists():
+    elif user.roles.filter(nombre=Rol.LIDER).exists():
         return redirect("dashboards:lider_dashboard")
     else:
         return redirect("dashboards:developer_dashboard")

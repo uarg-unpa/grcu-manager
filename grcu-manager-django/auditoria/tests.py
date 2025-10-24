@@ -16,8 +16,8 @@ class AuditoriaViewsTestCase(TestCase):
         """Configurar datos de prueba"""
         self.client = Client()
 
-        # Crear rol de admin
-        self.rol_admin = Rol.objects.create(nombre="Admin")
+        # Obtener o crear rol de admin
+        self.rol_admin, _ = Rol.objects.get_or_create(nombre=Rol.ADMIN)
 
         # Crear usuario admin
         self.admin_user = Usuario.objects.create_user(

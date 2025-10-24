@@ -10,8 +10,8 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         # Obtener o crear el rol Desarrollador
         desarrollador_role, created = Rol.objects.get_or_create(
-            nombre='Desarrollador',
-            defaults={'color': '#28a745'}  # Color verde para desarrollador
+            nombre=Rol.DESARROLLADOR,
+            defaults={"color": "#3498db", "icono_url": "/static/roles/icons/developer.png"}
         )
 
         if created:

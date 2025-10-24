@@ -46,6 +46,6 @@ class RegistroActividad(models.Model):
         ]
     
     def __str__(self):
-        usuario_str = self.usuario.email if self.usuario else "Sistema"
-        return f"{usuario_str} - {self.get_accion_display()} - {self.fecha.strftime('%d/%m/%Y %H:%M')}"  # type: ignore[attr-defined]
+        usuario_str = self.usuario.nombre if self.usuario else "Sistema"
+        return f"{self.accion} - {usuario_str} - {self.fecha.strftime('%Y-%m-%d %H:%M:%S')}"
 

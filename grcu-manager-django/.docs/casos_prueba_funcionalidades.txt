@@ -5,12 +5,20 @@ INFORMACION GENERAL
 -------------------
 
 Proyecto: GRCU Manager
-Version: 1.0.0
+Version: 1.1.0
 Fecha de Creacion: 22 de octubre de 2025
+Fecha de Actualizacion: 23 de octubre de 2025
 Lider del Proyecto: Cristian Carranza
 Desarrollador Principal: Nicolas Butterfield
 Equipo de Testing: Martina Gagna, Abril Alvarez
 Objetivo: Validar las funcionalidades criticas del sistema de gestion de proyectos
+
+CAMBIOS RECIENTES (v1.1.0):
+- Migracion de sistema de auditoria consolidado (RegistroActividad)
+- Actualizacion de autenticacion OAuth2 con Google
+- Eliminacion de tablas obsoletas (usuarios_accionusuario)
+- Base de datos optimizada a 29 tablas
+- Mejoras en sistema de trazabilidad
 
 EQUIPO DEL PROYECTO:
 - Lider del Proyecto: Cristian Carranza
@@ -31,7 +39,7 @@ FUNCIONALIDADES A PROBAR
 CASOS DE PRUEBA
 ===============
 
-CP-001: INICIO DE SESION ADMINISTRADOR EXITOSO
+CP-001: LOGIN CON GOOGLE OAUTH2 - USUARIO NUEVO
 ==============================================
 
 Prioridad: Alta
@@ -39,23 +47,25 @@ Tipo: Funcional
 Modulo: Autenticacion
 
 Descripcion:
-Verificar que un usuario con rol de administrador pueda iniciar sesion correctamente en el sistema.
+Verificar que un usuario nuevo pueda registrarse e iniciar sesion usando Google OAuth2.
 
 Precondiciones:
-- Usuario administrador existe en el sistema
-- Usuario tiene credenciales validas
 - Sistema esta operativo
+- Usuario tiene cuenta de Gmail valida
+- OAuth2 configurado correctamente
 
 Pasos:
 1. Navegar a la pagina de login del sistema
-2. Ingresar email del usuario administrador
-3. Ingresar contrasena correcta
-4. Hacer clic en "Iniciar Sesion"
+2. Hacer clic en "Iniciar sesion con Google"
+3. Seleccionar cuenta de Gmail en el popup de Google
+4. Autorizar acceso a la aplicacion
 
 Resultado Esperado:
-- Usuario es redirigido al dashboard de administrador
-- Se muestra mensaje de bienvenida
-- Menu de navegacion muestra opciones de administrador
+- Usuario es creado automaticamente en el sistema
+- Email, nombre y avatar se obtienen de Google
+- Usuario es redirigido al dashboard correspondiente
+- Se registra actividad de LOGIN en auditoria_registroactividad
+- Avatar URL se almacena en campo accounts_usuario.avatar
 
 Resultado Actual:
 PENDIENTE
@@ -65,124 +75,35 @@ NO EJECUTADO
 
 --------------------------------------------------------------------------------
 
-CP-002: INICIO DE SESION ADMINISTRADOR - CONTRASENA INCORRECTA
-=============================================================
-
-Prioridad: Alta
-Tipo: Funcional / Negativo
-Modulo: Autenticacion
-
-Descripcion:
-Verificar que el sistema rechaza el inicio de sesion cuando se ingresa una contrasena incorrecta.
-
-Precondiciones:
-- Usuario administrador existe en el sistema
-- Sistema esta operativo
-
-Pasos:
-1. Navegar a la pagina de login
-2. Ingresar email valido de administrador
-3. Ingresar contrasena incorrecta
-4. Hacer clic en "Iniciar Sesion"
-
-Resultado Esperado:
-- Se muestra mensaje de error "Credenciales incorrectas"
-- Usuario permanece en pagina de login
-- No se permite acceso al sistema
-
-Resultado Actual:
-PENDIENTE
-
-Estado:
-NO EJECUTADO
-
---------------------------------------------------------------------------------
-
-CP-003: INICIO DE SESION ADMINISTRADOR - USUARIO INEXISTENTE
-==========================================================
-
-Prioridad: Alta
-Tipo: Funcional / Negativo
-Modulo: Autenticacion
-
-Descripcion:
-Verificar que el sistema maneja correctamente intentos de login con usuarios inexistentes.
-
-Precondiciones:
-- Sistema esta operativo
-
-Pasos:
-1. Navegar a la pagina de login
-2. Ingresar email que no existe en el sistema
-3. Ingresar cualquier contrasena
-4. Hacer clic en "Iniciar Sesion"
-
-Resultado Esperado:
-- Se muestra mensaje de error "Usuario no encontrado"
-- Usuario permanece en pagina de login
-
-Resultado Actual:
-PENDIENTE
-
-Estado:
-NO EJECUTADO
-
---------------------------------------------------------------------------------
-
-CP-004: INICIO DE SESION ADMINISTRADOR - USUARIO INACTIVO
-========================================================
-
-Prioridad: Media
-Tipo: Funcional / Negativo
-Modulo: Autenticacion
-
-Descripcion:
-Verificar que usuarios inactivos no puedan iniciar sesion.
-
-Precondiciones:
-- Usuario administrador existe pero esta marcado como inactivo
-- Sistema esta operativo
-
-Pasos:
-1. Navegar a la pagina de login
-2. Ingresar credenciales de usuario inactivo
-3. Hacer clic en "Iniciar Sesion"
-
-Resultado Esperado:
-- Se muestra mensaje "Cuenta desactivada"
-- Usuario permanece en pagina de login
-
-Resultado Actual:
-PENDIENTE
-
-Estado:
-NO EJECUTADO
-
---------------------------------------------------------------------------------
-
-CP-005: LOGIN USUARIO REGULAR EXITOSO
-====================================
+CP-002: LOGIN CON GOOGLE OAUTH2 - USUARIO EXISTENTE
+==================================================
 
 Prioridad: Alta
 Tipo: Funcional
 Modulo: Autenticacion
 
 Descripcion:
-Verificar que un usuario regular pueda iniciar sesion correctamente.
+Verificar que usuario existente pueda iniciar sesion y actualizar su informacion.
 
 Precondiciones:
-- Usuario regular existe y esta activo
-- Usuario tiene credenciales validas
+- Usuario ya existe en el sistema
+- Usuario tiene cuenta de Gmail asociada
+- Sistema esta operativo
 
 Pasos:
 1. Navegar a la pagina de login
-2. Ingresar email de usuario regular
-3. Ingresar contrasena correcta
-4. Hacer clic en "Iniciar Sesion"
+2. Hacer clic en "Iniciar sesion con Google"
+3. Seleccionar cuenta de Gmail previamente usada
+4. Autorizar acceso
 
 Resultado Esperado:
-- Usuario es redirigido a su dashboard correspondiente
-- Se muestran opciones segun su rol (desarrollador, lider, etc.)
+- Usuario inicia sesion exitosamente
+- Nombre y avatar se actualizan si cambiaron en Google
+- Se registra actividad LOGIN en auditoria_registroactividad con:
+  * IP address del usuario
+  * User agent del navegador
+  * Timestamp preciso
+- Usuario ve su avatar de Google en la interfaz
 
 Resultado Actual:
 PENDIENTE
@@ -192,28 +113,148 @@ NO EJECUTADO
 
 --------------------------------------------------------------------------------
 
-CP-006: LOGIN USUARIO - MULTIPLES ROLES
-======================================
+CP-003: ACCESO DENEGADO - SIN PERMISOS OAUTH2
+============================================
+
+Prioridad: Alta
+Tipo: Funcional / Negativo
+Modulo: Autenticacion / Permisos
+
+Descripcion:
+Verificar que usuario sin rol asignado no pueda acceder a funcionalidades restringidas.
+
+Precondiciones:
+- Usuario ha iniciado sesion exitosamente via OAuth2
+- Usuario NO tiene ningun rol asignado
+- Sistema esta operativo
+
+Pasos:
+1. Iniciar sesion con Google OAuth2
+2. Intentar acceder a pagina de gestion de proyectos
+3. Intentar acceder a pagina de gestion de usuarios
+
+Resultado Esperado:
+- Se redirige a pagina de "Permiso Denegado"
+- Se muestra mensaje explicativo
+- Se registra intento de acceso en auditoria_registroactividad con accion ACCESO_DENEGADO
+- Usuario solo puede ver su perfil y dashboards basicos
+
+Resultado Actual:
+PENDIENTE
+
+Estado:
+NO EJECUTADO
+
+--------------------------------------------------------------------------------
+
+CP-004: GESTION DE ROLES - ASIGNACION CON AUDITORIA
+==================================================
+
+Prioridad: Alta
+Tipo: Funcional
+Modulo: Gestion de Usuarios / Roles / Auditoria
+
+Descripcion:
+Verificar que administrador puede asignar roles y se registra en auditoria.
+
+Precondiciones:
+- Usuario administrador autenticado via OAuth2
+- Usuario objetivo ya existe en accounts_usuario
+- Rol existe en roles_rol (ej: ANALISTA, JEFE_PROYECTO)
+
+Pasos:
+1. Navegar a gestion de usuarios
+2. Seleccionar usuario sin rol
+3. Seleccionar rol "ANALISTA"
+4. Guardar cambios
+5. Verificar registro de auditoria
+
+Resultado Esperado:
+- Rol se asigna correctamente en usuarios_usuario_roles (M2M)
+- Se registra actividad MODIFICACION_USUARIO en auditoria_registroactividad con:
+  * JSON en campo 'detalles' mostrando cambio de roles
+  * usuario = administrador que hizo el cambio
+  * ip_address y user_agent capturados
+- Usuario aparece con nuevo rol en la lista
+- Mensaje de confirmacion "Rol asignado exitosamente"
+
+Resultado Actual:
+PENDIENTE
+
+Estado:
+NO EJECUTADO
+
+--------------------------------------------------------------------------------
+
+CP-005: ACCESO BASADO EN ROL - ANALISTA
+========================================
+
+Prioridad: Alta
+Tipo: Funcional
+Modulo: Autenticacion / Permisos
+
+Descripcion:
+Verificar que usuario ANALISTA ve solo funcionalidades permitidas.
+
+Precondiciones:
+- Usuario con rol ANALISTA autenticado via OAuth2
+- Existen proyectos en el sistema
+- Sistema esta operativo
+
+Pasos:
+1. Iniciar sesion con Google OAuth2
+2. Verificar menu principal
+3. Intentar acceder a gestion de proyectos
+4. Intentar acceder a gestion de usuarios
+5. Intentar crear nuevo requerimiento
+
+Resultado Esperado:
+- Usuario ve dashboard principal
+- Menu NO muestra "Gestion de Usuarios"
+- Puede ver proyectos asignados (solo lectura)
+- NO puede crear/editar proyectos
+- PUEDE crear/editar requerimientos en proyectos asignados
+- Cada accion genera registro en auditoria_registroactividad
+- Avatar de Google se muestra en navbar
+
+Resultado Actual:
+PENDIENTE
+
+Estado:
+NO EJECUTADO
+
+--------------------------------------------------------------------------------
+
+CP-006: ACCESO MULTIPLES ROLES - PERMISOS ACUMULADOS
+====================================================
 
 Prioridad: Media
 Tipo: Funcional
-Modulo: Autenticacion
+Modulo: Autenticacion / Permisos
 
 Descripcion:
-Verificar que usuarios con multiples roles puedan acceder al sistema.
+Verificar que usuario con multiples roles tiene permisos acumulados.
 
 Precondiciones:
-- Usuario tiene asignados multiples roles (ej: desarrollador y lider)
-- Usuario esta activo
+- Usuario tiene roles ANALISTA + JEFE_PROYECTO via usuarios_usuario_roles (M2M)
+- Usuario autenticado via OAuth2
+- Sistema esta operativo
 
 Pasos:
-1. Iniciar sesion con usuario multi-rol
-2. Verificar dashboard mostrado
-3. Verificar opciones de menu disponibles
+1. Iniciar sesion con Google OAuth2
+2. Verificar menu principal
+3. Acceder a gestion de proyectos
+4. Intentar crear nuevo proyecto
+5. Acceder a requerimientos
+6. Intentar crear requerimiento
 
 Resultado Esperado:
-- Usuario accede correctamente
-- Dashboard muestra opciones combinadas de sus roles
+- Menu muestra opciones combinadas de ambos roles:
+  * ANALISTA: Ver proyectos, crear/editar requerimientos
+  * JEFE_PROYECTO: Crear/editar proyectos, asignar miembros
+- Usuario puede ejercer TODOS los permisos de ambos roles
+- Dashboard muestra metricas para ambos roles
+- Se registra en auditoria_registroactividad indicando roles activos en campo 'detalles' (JSON)
 
 Resultado Actual:
 PENDIENTE
@@ -223,34 +264,43 @@ NO EJECUTADO
 
 --------------------------------------------------------------------------------
 
-CP-007: CREACION DE REQUERIMIENTO - CAMPOS OBLIGATORIOS
+CP-007: CREACION REQUERIMIENTO - CON AUDITORIA COMPLETA
 ======================================================
 
 Prioridad: Alta
 Tipo: Funcional
-Modulo: Requerimientos
+Modulo: Requerimientos / Auditoria
 
 Descripcion:
-Verificar la creacion exitosa de un requerimiento con todos los campos obligatorios.
+Verificar creacion de requerimiento con registro de auditoria y historial.
 
 Precondiciones:
-- Usuario autenticado con permisos para crear requerimientos
-- Proyecto existe y esta activo
+- Usuario ANALISTA autenticado via OAuth2
+- Existe proyecto activo en proyectos_proyecto
+- Usuario es miembro del proyecto
 
 Pasos:
-1. Navegar a la seccion de requerimientos
-2. Hacer clic en "Crear Requerimiento"
-3. Completar todos los campos obligatorios:
-   - Nombre del requerimiento
-   - Descripcion
-   - Proyecto asociado
-   - Tipo de requerimiento
-4. Hacer clic en "Guardar"
+1. Navegar a seccion Requerimientos
+2. Hacer clic en "Nuevo Requerimiento"
+3. Completar campos:
+   - Codigo: REQ-001
+   - Nombre: "Login con Google"
+   - Descripcion: "Permitir autenticacion OAuth2"
+   - Tipo: FUNCIONAL
+   - Prioridad: ALTA
+   - Proyecto: [proyecto existente]
+4. Guardar requerimiento
 
 Resultado Esperado:
-- Requerimiento se crea exitosamente
-- Se muestra mensaje de confirmacion
-- Requerimiento aparece en la lista de requerimientos del proyecto
+- Requerimiento se crea en requerimientos_requerimiento
+- Se genera registro en auditoria_registroactividad:
+  * accion = CREACION_REQUERIMIENTO
+  * usuario = usuario autenticado
+  * detalles (JSON) = {requerimiento_id, codigo, nombre, proyecto}
+  * ip_address y user_agent capturados
+- Se crea entrada inicial en requerimientos_historicalrequerimiento (django-simple-history)
+- Mensaje "Requerimiento REQ-001 creado exitosamente"
+- Requerimiento aparece en lista de proyecto
 
 Resultado Actual:
 PENDIENTE
@@ -260,32 +310,42 @@ NO EJECUTADO
 
 --------------------------------------------------------------------------------
 
-CP-008: CREACION DE REQUERIMIENTO - CAMPOS OPCIONALES
+CP-008: EDICION REQUERIMIENTO - HISTORIAL DE CAMBIOS
 ===================================================
 
 Prioridad: Media
 Tipo: Funcional
-Modulo: Requerimientos
+Modulo: Requerimientos / Auditoria / Historial
 
 Descripcion:
-Verificar la creacion de requerimiento incluyendo campos opcionales.
+Verificar que edicion de requerimiento genera historial completo.
 
 Precondiciones:
-- Usuario con permisos de creacion
-- Proyecto activo disponible
+- Requerimiento REQ-001 existe en sistema
+- Usuario JEFE_PROYECTO autenticado via OAuth2
+- django-simple-history configurado
 
 Pasos:
-1. Acceder al formulario de creacion de requerimientos
-2. Completar campos obligatorios
-3. Agregar informacion en campos opcionales:
-   - Prioridad
-   - Fecha limite
-   - Comentarios adicionales
-4. Guardar el requerimiento
+1. Navegar a detalle de requerimiento REQ-001
+2. Hacer clic en "Editar"
+3. Modificar campos:
+   - Prioridad: ALTA → MEDIA
+   - Descripcion: agregar texto adicional
+   - Estado: PENDIENTE → EN_PROGRESO
+4. Guardar cambios
 
 Resultado Esperado:
-- Requerimiento se guarda con toda la informacion
-- Campos opcionales se muestran correctamente en la vista de detalle
+- Cambios se guardan en requerimientos_requerimiento
+- Se crea nueva entrada en requerimientos_historicalrequerimiento con:
+  * Snapshot completo del estado
+  * history_user = usuario que edito
+  * history_date = timestamp del cambio
+  * history_change_reason (opcional)
+- Se registra en auditoria_registroactividad:
+  * accion = MODIFICACION_REQUERIMIENTO
+  * detalles (JSON) = diff de cambios (campo_anterior → campo_nuevo)
+- Vista de historial muestra timeline de cambios
+- Mensaje "Requerimiento actualizado exitosamente"
 
 Resultado Actual:
 PENDIENTE
@@ -295,59 +355,40 @@ NO EJECUTADO
 
 --------------------------------------------------------------------------------
 
-CP-009: CREACION DE REQUERIMIENTO - VALIDACION DE CAMPOS
-======================================================
-
-Prioridad: Alta
-Tipo: Validacion
-Modulo: Requerimientos
-
-Descripcion:
-Verificar que el sistema valida correctamente los campos del requerimiento.
-
-Precondiciones:
-- Usuario autenticado
-
-Pasos:
-1. Intentar crear requerimiento sin nombre
-2. Intentar crear requerimiento sin descripcion
-3. Intentar crear requerimiento sin proyecto asociado
-4. Intentar guardar con campos invalidos
-
-Resultado Esperado:
-- Sistema muestra mensajes de error especificos
-- No permite guardar requerimiento incompleto
-- Campos requeridos estan marcados claramente
-
-Resultado Actual:
-PENDIENTE
-
-Estado:
-NO EJECUTADO
-
---------------------------------------------------------------------------------
-
-CP-010: CREACION DE REQUERIMIENTO - SIN PERMISOS
-===============================================
+CP-009: VALIDACION REQUERIMIENTO - CAMPOS OBLIGATORIOS
+=====================================================
 
 Prioridad: Media
-Tipo: Seguridad
+Tipo: Negativo / Validacion
 Modulo: Requerimientos
 
 Descripcion:
-Verificar que usuarios sin permisos no puedan crear requerimientos.
+Verificar validacion de formulario y registro de intentos fallidos.
 
 Precondiciones:
-- Usuario sin permisos de creacion de requerimientos
+- Usuario ANALISTA autenticado via OAuth2
+- Formulario de creacion de requerimientos abierto
 
 Pasos:
-1. Intentar acceder al formulario de creacion de requerimientos
-2. Intentar crear un requerimiento
+1. Dejar campo "Nombre" vacio
+2. Intentar guardar
+3. Completar nombre, dejar "Descripcion" vacia
+4. Intentar guardar
+5. Completar descripcion, no seleccionar proyecto
+6. Intentar guardar
 
 Resultado Esperado:
-- Sistema deniega acceso
-- Se muestra mensaje de "Permisos insuficientes"
-- Usuario es redirigido o se bloquea la accion
+- Sistema NO permite guardar sin nombre:
+  * Mensaje "El campo Nombre es obligatorio"
+  * Formulario permanece abierto
+- Sistema NO permite guardar sin descripcion:
+  * Mensaje "El campo Descripcion es obligatorio"
+- Sistema NO permite guardar sin proyecto:
+  * Mensaje "Debe seleccionar un proyecto"
+- Cada intento fallido genera registro en auditoria_registroactividad:
+  * accion = INTENTO_CREACION_FALLIDO
+  * detalles (JSON) = {campo_faltante, error_mensaje}
+- Campos requeridos estan marcados con asterisco (*)
 
 Resultado Actual:
 PENDIENTE
@@ -357,33 +398,82 @@ NO EJECUTADO
 
 --------------------------------------------------------------------------------
 
-CP-011: CARGA DE CASO DE USO - ARCHIVO VALIDO
-============================================
+CP-010: CONTROL ACCESO - USUARIO SIN ROL
+=========================================
+
+Prioridad: Alta
+Tipo: Seguridad / Negativo
+Modulo: Requerimientos / Permisos
+
+Descripcion:
+Verificar que usuario sin rol no pueda crear requerimientos.
+
+Precondiciones:
+- Usuario autenticado via OAuth2
+- Usuario NO tiene ningun rol asignado en usuarios_usuario_roles
+- Sistema esta operativo
+
+Pasos:
+1. Iniciar sesion con Google OAuth2 (usuario sin roles)
+2. Intentar navegar a /requerimientos/crear/ via URL directa
+3. Verificar respuesta del sistema
+
+Resultado Esperado:
+- Sistema intercepta peticion en backend
+- HTTP 403 Forbidden o redireccion a pagina "Permiso Denegado"
+- Se muestra mensaje "No tienes permisos para realizar esta accion"
+- Se registra en auditoria_registroactividad:
+  * accion = ACCESO_DENEGADO
+  * usuario = usuario que intento acceder
+  * detalles (JSON) = {url_intentada, razon: "sin_rol"}
+  * ip_address y user_agent capturados
+- Usuario NO ve boton "Crear Requerimiento" en UI (control frontend)
+
+Resultado Actual:
+PENDIENTE
+
+Estado:
+NO EJECUTADO
+
+--------------------------------------------------------------------------------
+
+CP-011: CREACION CASO DE USO - CON AUDITORIA Y MEDIA
+===================================================
 
 Prioridad: Alta
 Tipo: Funcional
-Modulo: Casos de Uso
+Modulo: Casos de Uso / Auditoria
 
 Descripcion:
-Verificar la carga exitosa de un caso de uso con archivo valido.
+Verificar creacion de caso de uso con archivo y registro completo.
 
 Precondiciones:
-- Usuario con permisos para cargar casos de uso
-- Proyecto activo disponible
-- Archivo de caso de uso en formato correcto
+- Usuario ANALISTA autenticado via OAuth2
+- Proyecto PRJ-001 existe en proyectos_proyecto
+- Archivo PlantUML valido disponible (CU-001_Login.puml)
 
 Pasos:
-1. Navegar a la seccion de casos de uso
-2. Hacer clic en "Cargar Caso de Uso"
-3. Seleccionar proyecto
-4. Subir archivo valido (formato permitido)
-5. Agregar descripcion opcional
-6. Hacer clic en "Cargar"
+1. Navegar a seccion "Casos de Uso" del proyecto
+2. Hacer clic en "Nuevo Caso de Uso"
+3. Completar formulario:
+   - Codigo: CU-001
+   - Nombre: "Login OAuth2"
+   - Descripcion: "Autenticacion con Google"
+   - Actor Principal: "Usuario"
+   - Proyecto: PRJ-001
+4. Subir archivo PlantUML (CU-001_Login.puml)
+5. Guardar caso de uso
 
 Resultado Esperado:
-- Archivo se carga exitosamente
-- Caso de uso se registra en el sistema
-- Se muestra confirmacion de carga exitosa
+- Caso de uso se crea en casos_de_uso_casodeuso
+- Archivo se guarda en media/casos_uso/ con nombre unico
+- Se registra en auditoria_registroactividad:
+  * accion = CREACION_CASO_USO
+  * detalles (JSON) = {caso_id, codigo, nombre, archivo_subido}
+  * ip_address y user_agent capturados
+- Se crea entrada en casos_de_uso_historicalcasodeuso
+- Mensaje "Caso de uso CU-001 creado exitosamente"
+- Vista detalle muestra link de descarga del archivo
 
 Resultado Actual:
 PENDIENTE

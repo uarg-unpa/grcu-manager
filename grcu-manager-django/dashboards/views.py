@@ -99,7 +99,7 @@ def admin_proyecto_detail(request, project_id):
 def lider_dashboard(request):
     from requerimientos.models import Requerimiento
     from casos_de_uso.models import CasoDeUso
-    from usuarios.models import AccionUsuario
+    from auditoria.models import RegistroActividad
 
     proyectos = Proyecto.objects.filter(lider=request.user)
     dashboard_data = []
@@ -110,7 +110,7 @@ def lider_dashboard(request):
         casos_de_uso = CasoDeUso.objects.filter(proyecto=proyecto)
 
         # Acciones recientes de los integrantes del proyecto
-        acciones = AccionUsuario.objects.filter(usuario__in=integrantes).order_by('-fecha')[:20]
+        acciones = RegistroActividad.objects.filter(usuario__in=integrantes).order_by('-fecha')[:20]
 
         # Huérfanos definidos por ausencia de relación en la tabla intermedia RequerimientoCaso
         reqs_huerfanos = requerimientos.annotate(rel_count=Count('relaciones_casos')).filter(rel_count=0)

@@ -1,0 +1,391 @@
+erDiagram
+    %% ========================================
+    %% GRUPO DE AUTENTICACION Y PERMISOS
+    %% ========================================
+    
+    accounts_usuario {
+        BIGINT id PK "Auto-incremento"
+        VARCHAR(128) password "Hash contraseña"
+        TIMESTAMP last_login "NULL - Último login"
+        BOOLEAN is_superuser "Superusuario"
+        VARCHAR(150) first_name "Nombre"
+        VARCHAR(150) last_name "Apellido"
+        BOOLEAN is_staff "Acceso admin"
+        BOOLEAN is_active "Usuario activo"
+        TIMESTAMP date_joined "Fecha registro"
+        VARCHAR(254) email UK "UNIQUE, INDEX - Email"
+        VARCHAR(255) nombre "INDEX - Nombre completo"
+        VARCHAR(200) avatar "NULL - URL avatar OAuth2"
+        VARCHAR(150) username "NULL - No usado"
+    }
+
+    roles_rol {
+        BIGINT id PK "Auto-incremento"
+        VARCHAR(50) nombre UK "UNIQUE - Nombre rol"
+        VARCHAR(7) color "DEFAULT #444c8a"
+        VARCHAR(200) icono_url "NULL - URL icono"
+    }
+
+    permisos_permiso {
+        BIGINT id PK "Auto-incremento"
+        VARCHAR(100) nombre UK "UNIQUE - Nombre"
+    }
+
+    %% ========================================
+    %% GRUPO DE ORGANIZACION
+    %% ========================================
+    
+    grupos_grupo {
+        BIGINT id PK "Auto-incremento"
+        VARCHAR(255) nombre UK "UNIQUE - Nombre"
+        VARCHAR(100) logo "NULL - ImageField"
+        TIMESTAMP fecha_creacion "Auto now add"
+        BIGINT creado_por_id FK "NULL - SET_NULL"
+        BOOLEAN activo "DEFAULT True"
+        BIGINT lider_id FK "NULL - SET_NULL"
+    }
+
+    proyectos_proyecto {
+        BIGINT id PK "Auto-incremento"
+        VARCHAR(200) nombre UK "UNIQUE - Nombre"
+        TEXT descripcion "NULL - Descripción"
+        VARCHAR(20) metodologia "NULL - TRADICIONAL/AGIL"
+        TIMESTAMP fecha_creacion "Auto now add"
+        BOOLEAN activo "DEFAULT True"
+        VARCHAR(100) logo "NULL - ImageField"
+        BIGINT grupo_id FK "NULL - SET_NULL"
+        BIGINT lider_id FK "NULL - SET_NULL"
+        BIGINT creado_por_id FK "NULL - SET_NULL"
+    }
+
+    proyectos_participacionproyecto {
+        BIGINT id PK "Auto-incremento"
+        BIGINT usuario_id FK "CASCADE"
+        BIGINT proyecto_id FK "CASCADE"
+        BIGINT rol_id FK "PROTECT"
+        TIMESTAMP fecha_asignacion "Auto now add"
+    }
+
+    proyectos_historicalproyecto {
+        BIGINT id PK "Snapshot history"
+        VARCHAR(200) nombre "Snapshot"
+        TEXT descripcion "NULL - Snapshot"
+        VARCHAR(20) metodologia "NULL - Snapshot"
+        TIMESTAMP fecha_creacion "Snapshot"
+        BOOLEAN activo "Snapshot"
+        VARCHAR(100) logo "NULL - Snapshot"
+        BIGINT grupo_id "NULL - Snapshot FK"
+        BIGINT lider_id "NULL - Snapshot FK"
+        BIGINT creado_por_id "NULL - Snapshot FK"
+        VARCHAR(1) history_type "+/-/~"
+        TIMESTAMP history_date "Fecha cambio"
+        BIGINT history_user_id "NULL - Usuario"
+    }
+
+    %% ========================================
+    %% GRUPO DE REQUERIMIENTOS
+    %% ========================================
+    
+    requerimientos_requerimiento {
+        BIGINT id PK "Auto-incremento"
+        VARCHAR(255) nombre "Nombre"
+        TEXT descripcion "Descripción"
+        VARCHAR(20) tipo "FUNCIONAL/NO_FUNCIONAL"
+        VARCHAR(20) estado "DEFAULT PENDIENTE"
+        BIGINT proyecto_id FK "CASCADE"
+        BIGINT creado_por_id FK "NULL - SET_NULL"
+        TIMESTAMP fecha_creacion "Auto now add"
+        TIMESTAMP fecha_actualizacion "Auto now"
+        VARCHAR(100) imagen "NULL - ImageField"
+        VARCHAR(500) link_externo "URL externa"
+        BIGINT detalle_tradicional_id FK "NULL - OneToOne"
+        BIGINT detalle_agil_id FK "NULL - OneToOne"
+    }
+
+    requerimientos_detallerequerimientotradicional {
+        BIGINT id PK "Auto-incremento"
+        BIGINT requerimiento_padre_id FK "UNIQUE OneToOne CASCADE"
+        VARCHAR(50) prioridad "Prioridad"
+        VARCHAR(255) fuente "Fuente"
+        VARCHAR(100) categoria "Categoría"
+        DATE fecha_compromiso "NULL - Fecha"
+        VARCHAR(100) estado_validacion "Estado"
+        TEXT observaciones "Notas"
+    }
+
+    requerimientos_detallerequerimientoagil {
+        BIGINT id PK "Auto-incremento"
+        BIGINT requerimiento_padre_id FK "UNIQUE OneToOne CASCADE"
+        TEXT historia_usuario "User Story"
+        TEXT criterio_aceptacion "Acceptance Criteria"
+        INTEGER puntos_estimados "NULL POSITIVE - Points"
+        VARCHAR(100) sprint_asignado "Sprint"
+        VARCHAR(100) responsable "Owner"
+        VARCHAR(100) estado_scrum "SCRUM State"
+        TEXT observaciones "Notas"
+    }
+
+    requerimientos_requerimientocaso {
+        BIGINT id PK "Auto-incremento"
+        BIGINT requerimiento_id FK "CASCADE"
+        BIGINT caso_de_uso_id FK "CASCADE"
+        TIMESTAMP fecha_vinculacion "Auto now add"
+        VARCHAR(255) nota "Nota"
+    }
+
+    requerimientos_historicalrequerimiento {
+        BIGINT id PK "Snapshot history"
+        VARCHAR(255) nombre "Snapshot"
+        TEXT descripcion "Snapshot"
+        VARCHAR(20) tipo "Snapshot"
+        VARCHAR(20) estado "Snapshot"
+        BIGINT proyecto_id "Snapshot FK"
+        BIGINT creado_por_id "NULL - Snapshot FK"
+        TIMESTAMP fecha_creacion "Snapshot"
+        TIMESTAMP fecha_actualizacion "Snapshot"
+        VARCHAR(100) imagen "NULL - Snapshot"
+        VARCHAR(500) link_externo "Snapshot"
+        BIGINT detalle_tradicional_id "NULL - Snapshot FK"
+        BIGINT detalle_agil_id "NULL - Snapshot FK"
+        VARCHAR(1) history_type "+/-/~"
+        TIMESTAMP history_date "Fecha cambio"
+        BIGINT history_user_id "NULL - Usuario"
+    }
+
+    %% ========================================
+    %% GRUPO DE CASOS DE USO
+    %% ========================================
+    
+    casos_de_uso_casodeuso {
+        BIGINT id PK "Auto-incremento"
+        VARCHAR(255) nombre "Nombre"
+        TEXT descripcion "Descripción"
+        BIGINT proyecto_id FK "CASCADE"
+        BIGINT creado_por_id FK "NULL - SET_NULL"
+        TIMESTAMP fecha_creacion "Auto now add"
+        TIMESTAMP fecha_actualizacion "Auto now"
+        VARCHAR(100) imagen "NULL - ImageField"
+        VARCHAR(500) link_externo "URL externa"
+        BIGINT detalle_tradicional_id FK "NULL - OneToOne"
+        BIGINT detalle_agil_id FK "NULL - OneToOne"
+    }
+
+    casos_de_uso_detallecasodeusotradicional {
+        BIGINT id PK "Auto-incremento"
+        BIGINT caso_de_uso_padre_id FK "UNIQUE OneToOne CASCADE"
+        VARCHAR(255) actor_principal "Actor"
+        TEXT precondiciones "Pre-conditions"
+        TEXT flujo_principal "Main Flow"
+        TEXT flujo_alternativo "Alt Flow"
+        TEXT postcondiciones "Post-conditions"
+        TEXT observaciones "Notas"
+    }
+
+    casos_de_uso_detallecasodeusoagil {
+        BIGINT id PK "Auto-incremento"
+        BIGINT caso_de_uso_padre_id FK "UNIQUE OneToOne CASCADE"
+        TEXT historia_usuario "User Story"
+        TEXT criterio_aceptacion "Acceptance Criteria"
+        VARCHAR(100) responsable "Owner"
+        VARCHAR(100) estado_scrum "SCRUM State"
+        TEXT observaciones "Notas"
+    }
+
+    casos_de_uso_historicalcasodeuso {
+        BIGINT id PK "Snapshot history"
+        VARCHAR(255) nombre "Snapshot"
+        TEXT descripcion "Snapshot"
+        BIGINT proyecto_id "Snapshot FK"
+        BIGINT creado_por_id "NULL - Snapshot FK"
+        TIMESTAMP fecha_creacion "Snapshot"
+        TIMESTAMP fecha_actualizacion "Snapshot"
+        VARCHAR(100) imagen "NULL - Snapshot"
+        VARCHAR(500) link_externo "Snapshot"
+        BIGINT detalle_tradicional_id "NULL - Snapshot FK"
+        BIGINT detalle_agil_id "NULL - Snapshot FK"
+        VARCHAR(1) history_type "+/-/~"
+        TIMESTAMP history_date "Fecha cambio"
+        BIGINT history_user_id "NULL - Usuario"
+    }
+
+    %% ========================================
+    %% GRUPO DE AUDITORIA
+    %% ========================================
+    
+    auditoria_registroactividad {
+        BIGINT id PK "Auto-incremento"
+        BIGINT usuario_id FK "NULL - SET_NULL"
+        VARCHAR(20) accion "CHOICES LOGIN/LOGOUT/etc"
+        TEXT descripcion "Descripción"
+        JSON detalles "NULL - JSON details"
+        INET ip_address "NULL - IP"
+        TEXT user_agent "Browser UA"
+        TIMESTAMP fecha "Auto now add - INDEX"
+    }
+
+    %% ========================================
+    %% TABLAS DEL SISTEMA DJANGO
+    %% ========================================
+    
+    auth_group {
+        BIGINT id PK "Auto-incremento"
+        VARCHAR(150) name UK "UNIQUE - Nombre grupo"
+    }
+
+    auth_permission {
+        BIGINT id PK "Auto-incremento"
+        VARCHAR(255) name "Nombre permiso"
+        BIGINT content_type_id FK "CASCADE"
+        VARCHAR(100) codename UK "UNIQUE con content_type"
+    }
+
+    auth_group_permissions {
+        BIGINT id PK "Auto-incremento"
+        BIGINT group_id FK "auth_group"
+        BIGINT permission_id FK "auth_permission"
+    }
+
+    accounts_usuario_groups {
+        BIGINT id PK "Auto-incremento"
+        BIGINT usuario_id FK "accounts_usuario"
+        BIGINT group_id FK "auth_group"
+    }
+
+    accounts_usuario_user_permissions {
+        BIGINT id PK "Auto-incremento"
+        BIGINT usuario_id FK "accounts_usuario"
+        BIGINT permission_id FK "auth_permission"
+    }
+
+    django_content_type {
+        BIGINT id PK "Auto-incremento"
+        VARCHAR(100) app_label UK "App Django"
+        VARCHAR(100) model UK "UNIQUE con app_label"
+    }
+
+    django_admin_log {
+        BIGINT id PK "Auto-incremento"
+        TIMESTAMP action_time "Fecha acción"
+        BIGINT user_id FK "accounts_usuario"
+        BIGINT content_type_id FK "NULL - django_content_type"
+        TEXT object_id "NULL - ID objeto"
+        VARCHAR(200) object_repr "Representación"
+        SMALLINT action_flag "1=add, 2=change, 3=delete"
+        TEXT change_message "Mensaje cambio"
+    }
+
+    django_session {
+        VARCHAR(40) session_key PK "UNIQUE - Session key"
+        TEXT session_data "Datos sesión"
+        TIMESTAMP expire_date "INDEX - Fecha expiración"
+    }
+
+    django_migrations {
+        BIGINT id PK "Auto-incremento"
+        VARCHAR(255) app "App Django"
+        VARCHAR(255) name "Nombre migración"
+        TIMESTAMP applied "Fecha aplicación"
+    }
+
+    %% ========================================
+    %% TABLAS INTERMEDIAS MANY-TO-MANY
+    %% ========================================
+    
+    accounts_usuario_roles {
+        BIGINT id PK "Auto-incremento"
+        BIGINT usuario_id FK "accounts_usuario"
+        BIGINT rol_id FK "roles_rol"
+    }
+
+    grupos_grupo_integrantes {
+        BIGINT id PK "Auto-incremento"
+        BIGINT grupo_id FK "grupos_grupo"
+        BIGINT usuario_id FK "accounts_usuario"
+    }
+
+    roles_rol_permisos {
+        BIGINT id PK "Auto-incremento"
+        BIGINT rol_id FK "roles_rol"
+        BIGINT permiso_id FK "permisos_permiso"
+    }
+
+    %% ========================================
+    %% RELACIONES ONE-TO-MANY
+    %% ========================================
+    
+    accounts_usuario ||--o{ grupos_grupo : "creado_por_id SET_NULL"
+    accounts_usuario ||--o{ grupos_grupo : "lider_id SET_NULL"
+    accounts_usuario ||--o{ proyectos_proyecto : "lider_id SET_NULL"
+    accounts_usuario ||--o{ proyectos_proyecto : "creado_por_id SET_NULL"
+    accounts_usuario ||--o{ requerimientos_requerimiento : "creado_por_id SET_NULL"
+    accounts_usuario ||--o{ casos_de_uso_casodeuso : "creado_por_id SET_NULL"
+    accounts_usuario ||--o{ auditoria_registroactividad : "usuario_id SET_NULL"
+    accounts_usuario ||--o{ proyectos_historicalproyecto : "history_user_id"
+    accounts_usuario ||--o{ requerimientos_historicalrequerimiento : "history_user_id"
+    accounts_usuario ||--o{ casos_de_uso_historicalcasodeuso : "history_user_id"
+
+    grupos_grupo ||--o{ proyectos_proyecto : "grupo_id SET_NULL"
+
+    proyectos_proyecto ||--o{ requerimientos_requerimiento : "proyecto_id CASCADE"
+    proyectos_proyecto ||--o{ casos_de_uso_casodeuso : "proyecto_id CASCADE"
+    proyectos_proyecto ||--o{ proyectos_participacionproyecto : "proyecto_id CASCADE"
+    proyectos_proyecto ||--o{ proyectos_historicalproyecto : "original"
+
+    roles_rol ||--o{ proyectos_participacionproyecto : "rol_id PROTECT"
+
+    requerimientos_requerimiento ||--o{ requerimientos_requerimientocaso : "requerimiento_id CASCADE"
+    requerimientos_requerimiento ||--o{ requerimientos_historicalrequerimiento : "original"
+    
+    casos_de_uso_casodeuso ||--o{ requerimientos_requerimientocaso : "caso_de_uso_id CASCADE"
+    casos_de_uso_casodeuso ||--o{ casos_de_uso_historicalcasodeuso : "original"
+
+    %% ========================================
+    %% RELACIONES DE TABLAS INTERMEDIAS M2M
+    %% ========================================
+    
+    %% Tabla: accounts_usuario_roles
+    accounts_usuario ||--o{ accounts_usuario_roles : "usuario_id"
+    roles_rol ||--o{ accounts_usuario_roles : "rol_id"
+    
+    %% Tabla: grupos_grupo_integrantes
+    grupos_grupo ||--o{ grupos_grupo_integrantes : "grupo_id"
+    accounts_usuario ||--o{ grupos_grupo_integrantes : "usuario_id"
+    
+    %% Tabla: roles_rol_permisos
+    roles_rol ||--o{ roles_rol_permisos : "rol_id"
+    permisos_permiso ||--o{ roles_rol_permisos : "permiso_id"
+
+    %% ========================================
+    %% RELACIONES ONE-TO-ONE
+    %% ========================================
+    
+    requerimientos_requerimiento ||--|| requerimientos_detallerequerimientotradicional : "detalle_tradicional_id"
+    requerimientos_requerimiento ||--|| requerimientos_detallerequerimientoagil : "detalle_agil_id"
+    casos_de_uso_casodeuso ||--|| casos_de_uso_detallecasodeusotradicional : "detalle_tradicional_id"
+    casos_de_uso_casodeuso ||--|| casos_de_uso_detallecasodeusoagil : "detalle_agil_id"
+
+    %% ========================================
+    %% RELACIONES SISTEMA DJANGO
+    %% ========================================
+    
+    %% Content Types y Permisos
+    django_content_type ||--o{ auth_permission : "content_type_id CASCADE"
+    django_content_type ||--o{ django_admin_log : "content_type_id SET_NULL"
+    
+    %% Grupos y Permisos Django
+    auth_group ||--o{ auth_group_permissions : "group_id CASCADE"
+    auth_permission ||--o{ auth_group_permissions : "permission_id CASCADE"
+    
+    %% Usuario con Sistema Django
+    accounts_usuario ||--o{ accounts_usuario_groups : "usuario_id CASCADE"
+    auth_group ||--o{ accounts_usuario_groups : "group_id CASCADE"
+    
+    accounts_usuario ||--o{ accounts_usuario_user_permissions : "usuario_id CASCADE"
+    auth_permission ||--o{ accounts_usuario_user_permissions : "permission_id CASCADE"
+    
+    %% Admin Log
+    accounts_usuario ||--o{ django_admin_log : "user_id CASCADE"
+    
+    %% NOTA: django_session y django_migrations NO tienen relaciones FK
+    %% - django_session: relación implícita (user_id en session_data JSON)
+    %% - django_migrations: tabla de control standalone

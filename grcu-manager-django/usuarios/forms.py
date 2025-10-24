@@ -1,5 +1,5 @@
 from django import forms
-from .models import Usuario
+from accounts.models import Usuario  # Usuario está en accounts, no en usuarios
 from roles.models import Rol
 from django.core.exceptions import ValidationError
 

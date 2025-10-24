@@ -871,7 +871,7 @@ def proyecto_detail_admin(request, proyecto_id):
     """
     from requerimientos.models import Requerimiento, RequerimientoCaso
     from casos_de_uso.models import CasoDeUso
-    from usuarios.models import AccionUsuario
+    from auditoria.models import RegistroActividad
     from django.db.models import Count
     
     proyecto = get_object_or_404(Proyecto, id=proyecto_id)
@@ -880,7 +880,7 @@ def proyecto_detail_admin(request, proyecto_id):
     lider = proyecto.lider
     requerimientos = Requerimiento.objects.filter(proyecto=proyecto)
     casos = CasoDeUso.objects.filter(proyecto=proyecto)
-    acciones = AccionUsuario.objects.filter(usuario__in=integrantes).order_by('-fecha')[:20]
+    acciones = RegistroActividad.objects.filter(usuario__in=integrantes).order_by('-fecha')[:20]
     
     # Huérfanos definidos como aquellos sin relación persistida en la tabla intermedia RequerimientoCaso
     reqs_huerfanos = requerimientos.annotate(rel_count=Count('relaciones_casos')).filter(rel_count=0)
@@ -915,7 +915,7 @@ def proyecto_detail_admin(request, proyecto_id):
     casos_tipo_values = [casos_trad, casos_agil, casos_sin]
     
     # Acciones por usuario (top 5)
-    acciones_por_usuario_qs = AccionUsuario.objects.filter(usuario__in=integrantes).values('usuario__nombre').annotate(count=Count('id')).order_by('-count')[:5]
+    acciones_por_usuario_qs = RegistroActividad.objects.filter(usuario__in=integrantes).values('usuario__nombre').annotate(count=Count('id')).order_by('-count')[:5]
     acciones_labels = [a['usuario__nombre'] for a in acciones_por_usuario_qs]
     acciones_values = [a['count'] for a in acciones_por_usuario_qs]
     

@@ -1,0 +1,218 @@
+erDiagram
+    %% Grupo de Autenticacion
+    accounts_usuario {
+        BIGINT id PK
+        VARCHAR(128) password
+        TIMESTAMP last_login
+        BOOLEAN is_superuser
+        VARCHAR(150) first_name
+        VARCHAR(150) last_name
+        BOOLEAN is_staff
+        BOOLEAN is_active
+        TIMESTAMP date_joined
+        VARCHAR(254) email UK
+        VARCHAR(255) nombre
+        VARCHAR(200) avatar  %% ← Avatar de Google OAuth2
+        VARCHAR(150) username
+    }
+
+    roles_rol {
+        BIGINT id PK
+        VARCHAR(50) nombre UK
+        VARCHAR(7) color
+        VARCHAR(200) icono_url
+    }
+
+    permisos_permiso {
+        BIGINT id PK
+        VARCHAR(100) nombre UK
+    }
+
+    %% Grupo de Organizacion
+    grupos_grupo {
+        BIGINT id PK
+        VARCHAR(255) nombre UK
+        VARCHAR(100) logo
+        TIMESTAMP fecha_creacion
+        BIGINT creado_por_id FK
+        BOOLEAN activo
+        BIGINT lider_id FK
+    }
+
+    proyectos_proyecto {
+        BIGINT id PK
+        VARCHAR(200) nombre UK
+        TEXT descripcion
+        VARCHAR(20) metodologia
+        TIMESTAMP fecha_creacion
+        BOOLEAN activo
+        VARCHAR(100) logo
+        BIGINT grupo_id FK
+        BIGINT lider_id FK
+        BIGINT creado_por_id FK
+    }
+
+    proyectos_participacionproyecto {
+        BIGINT id PK
+        BIGINT usuario_id FK
+        BIGINT proyecto_id FK
+        BIGINT rol_id FK
+        TIMESTAMP fecha_asignacion
+    }
+
+    %% Grupo de Requerimientos
+    requerimientos_requerimiento {
+        BIGINT id PK
+        VARCHAR(255) nombre
+        TEXT descripcion
+        VARCHAR(20) tipo
+        VARCHAR(20) estado
+        BIGINT proyecto_id FK
+        BIGINT creado_por_id FK
+        TIMESTAMP fecha_creacion
+        TIMESTAMP fecha_actualizacion
+        VARCHAR(100) imagen
+        VARCHAR(500) link_externo
+        BIGINT detalle_tradicional_id FK
+        BIGINT detalle_agil_id FK
+    }
+
+    requerimientos_detallerequerimientotradicional {
+        BIGINT id PK
+        BIGINT requerimiento_padre_id FK
+        VARCHAR(50) prioridad
+        VARCHAR(255) fuente
+        VARCHAR(100) categoria
+        DATE fecha_compromiso
+        VARCHAR(100) estado_validacion
+        TEXT observaciones
+    }
+
+    requerimientos_detallerequerimientoagil {
+        BIGINT id PK
+        BIGINT requerimiento_padre_id FK
+        TEXT historia_usuario
+        TEXT criterio_aceptacion
+        INTEGER puntos_estimados
+        VARCHAR(100) sprint_asignado
+        VARCHAR(100) responsable
+        VARCHAR(100) estado_scrum
+        TEXT observaciones
+    }
+
+    requerimientos_requerimientocaso {
+        BIGINT id PK
+        BIGINT requerimiento_id FK
+        BIGINT caso_de_uso_id FK
+        TIMESTAMP fecha_vinculacion
+        VARCHAR(255) nota
+    }
+
+    %% Grupo de Casos de Uso
+    casos_de_uso_casodeuso {
+        BIGINT id PK
+        VARCHAR(255) nombre
+        TEXT descripcion
+        BIGINT proyecto_id FK
+        BIGINT creado_por_id FK
+        TIMESTAMP fecha_creacion
+        TIMESTAMP fecha_actualizacion
+        VARCHAR(100) imagen
+        VARCHAR(500) link_externo
+        BIGINT detalle_tradicional_id FK
+        BIGINT detalle_agil_id FK
+    }
+
+    casos_de_uso_detallecasodeusotradicional {
+        BIGINT id PK
+        BIGINT caso_de_uso_padre_id FK
+        VARCHAR(255) actor_principal
+        TEXT precondiciones
+        TEXT flujo_principal
+        TEXT flujo_alternativo
+        TEXT postcondiciones
+        TEXT observaciones
+    }
+
+    casos_de_uso_detallecasodeusoagil {
+        BIGINT id PK
+        BIGINT caso_de_uso_padre_id FK
+        TEXT historia_usuario
+        TEXT criterio_aceptacion
+        VARCHAR(100) responsable
+        VARCHAR(100) estado_scrum
+        TEXT observaciones
+    }
+
+    %% Grupo de Auditoria
+    auditoria_registroactividad {
+        BIGINT id PK
+        BIGINT usuario_id FK
+        VARCHAR(20) accion
+        TEXT descripcion
+        JSON detalles
+        INET ip_address
+        TEXT user_agent
+        TIMESTAMP fecha
+    }
+
+    %% Tablas Intermedias Many-to-Many
+    accounts_usuario_roles {
+        BIGINT id PK
+        BIGINT usuario_id FK
+        BIGINT rol_id FK
+    }
+
+    grupos_grupo_integrantes {
+        BIGINT id PK
+        BIGINT grupo_id FK
+        BIGINT usuario_id FK
+    }
+
+    roles_rol_permisos {
+        BIGINT id PK
+        BIGINT rol_id FK
+        BIGINT permiso_id FK
+    }
+
+    requerimientos_requerimiento_casos_relacionados {
+        BIGINT id PK
+        BIGINT requerimiento_id FK
+        BIGINT casodeuso_id FK
+    }
+
+    %% Relaciones One-to-Many
+    accounts_usuario ||--o{ grupos_grupo : creado_por_id
+    accounts_usuario ||--o{ grupos_grupo : lider_id
+    accounts_usuario ||--o{ proyectos_proyecto : lider_id
+    accounts_usuario ||--o{ proyectos_proyecto : creado_por_id
+    accounts_usuario ||--o{ requerimientos_requerimiento : creado_por_id
+    accounts_usuario ||--o{ casos_de_uso_casodeuso : creado_por_id
+    accounts_usuario ||--o{ auditoria_registroactividad : usuario_id
+
+    grupos_grupo ||--o{ proyectos_proyecto : grupo_id
+
+    proyectos_proyecto ||--o{ requerimientos_requerimiento : proyecto_id
+    proyectos_proyecto ||--o{ casos_de_uso_casodeuso : proyecto_id
+
+    requerimientos_requerimiento ||--o{ requerimientos_detallerequerimientotradicional : detalle_tradicional_id
+    requerimientos_requerimiento ||--o{ requerimientos_detallerequerimientoagil : detalle_agil_id
+
+    casos_de_uso_casodeuso ||--o{ casos_de_uso_detallecasodeusotradicional : detalle_tradicional_id
+    casos_de_uso_casodeuso ||--o{ casos_de_uso_detallecasodeusoagil : detalle_agil_id
+
+    %% Relaciones Many-to-Many (a traves de tablas intermedias)
+    accounts_usuario }o--o{ roles_rol : accounts_usuario_roles
+    grupos_grupo }o--o{ accounts_usuario : grupos_grupo_integrantes
+    roles_rol }o--o{ permisos_permiso : roles_rol_permisos
+    requerimientos_requerimiento }o--o{ casos_de_uso_casodeuso : requerimientos_requerimiento_casos_relacionados
+
+    %% Relaciones Many-to-Many directas
+    proyectos_proyecto }o--o{ accounts_usuario : proyectos_participacionproyecto
+    requerimientos_requerimiento }o--o{ casos_de_uso_casodeuso : requerimientos_requerimientocaso
+
+    %% Relaciones One-to-One
+    requerimientos_requerimiento |o--||o requerimientos_detallerequerimientotradicional : detalle_tradicional_id
+    requerimientos_requerimiento |o--||o requerimientos_detallerequerimientoagil : detalle_agil_id
+    casos_de_uso_casodeuso |o--||o casos_de_uso_detallecasodeusotradicional : detalle_tradicional_id
+    casos_de_uso_casodeuso |o--||o casos_de_uso_detallecasodeusoagil : detalle_agil_id
