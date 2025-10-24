@@ -2347,6 +2347,569 @@ MEDIA - Útil para auditoría y trazabilidad, no bloqueante para operación bás
 
 ---
 
+CU-10: Registrar caso de uso
+
+Descripción
+
+El analista o desarrollador crea un nuevo caso de uso en el proyecto, vinculándolo a uno o más requerimientos existentes. Un caso de uso describe cómo los actores interactúan con el sistema para alcanzar un objetivo específico.
+
+Un caso de uso representa:
+- Una funcionalidad completa desde la perspectiva del usuario
+- La secuencia de interacciones entre actores y sistema
+- Los flujos principales y alternativos de ejecución
+- Las precondiciones y postcondiciones necesarias
+- Los escenarios de éxito y fracaso
+
+Campos comunes (ambas metodologías):
+- Código: Identificador único (ej: CU-001, CU-Login)
+- Nombre: Título descriptivo del caso de uso
+- Descripción: Objetivo y contexto general
+- Actor principal: Usuario o sistema que inicia el caso de uso
+- Actores secundarios: Otros participantes involucrados
+- Precondiciones: Estados que deben cumplirse antes
+- Postcondiciones: Estados resultantes tras ejecución exitosa
+- Flujo principal: Secuencia normal de pasos
+- Flujos alternativos: Caminos opcionales o de error
+- Requerimientos relacionados: Vínculos a requerimientos que implementa
+
+Metodología Tradicional - Campos específicos:
+- Nivel: Usuario/Subfunción/Resumen
+- Complejidad: Baja/Media/Alta
+- Prioridad: Crítica/Alta/Media/Baja
+- Disparador: Evento que inicia el caso de uso
+- Frecuencia de uso: Diaria/Semanal/Mensual/Ocasional
+- Extensiones: Casos de uso que extienden este
+- Inclusiones: Casos de uso incluidos en este
+
+Metodología Ágil - Campos específicos:
+- Épica relacionada: Agrupación de alto nivel
+- Sprint objetivo: Sprint donde se planea implementar
+- Criterios de aceptación: Condiciones de completitud
+- Estimación: Puntos de historia o horas
+- Dependencias técnicas: Requisitos previos de desarrollo
+- Notas de implementación: Guías para el equipo
+
+El sistema valida campos obligatorios, crea el caso de uso y permite:
+- Vinculación con requerimientos (CU-11)
+- Adjuntar diagramas y mockups
+- Agregar comentarios colaborativos (CU-13)
+- Consultar historial de cambios (CU-09)
+- Generar matriz de trazabilidad (CU-15)
+
+Actores
+
+- Analista (rol principal para especificar casos de uso)
+- Desarrollador (puede crear según permisos)
+- Líder (puede crear y aprobar)
+- Arquitecto (puede definir casos técnicos)
+
+Precondiciones
+
+- Usuario autenticado con rol de analista, desarrollador, líder o arquitecto
+- Proyecto existente con metodología definida (CU-05 completado)
+- Al menos un requerimiento creado en el proyecto (CU-06)
+- proyecto.metodologia IN ('TRADICIONAL', 'AGIL')
+- Acceso a la sección de casos de uso del proyecto
+
+Postcondiciones
+
+- Caso de uso creado en tabla casos_de_uso_casodeuso
+- Registro de detalle creado según metodología:
+  - casos_de_uso_detallecasodeusotradicional (si tradicional)
+  - casos_de_uso_detallecasodeusoagil (si ágil)
+- Caso de uso visible en lista del proyecto
+- Campos creado_por, fecha_creacion poblados automáticamente
+- Entrada inicial creada en casos_de_uso_historicalcasodeuso (django-simple-history)
+- Actividad registrada en auditoria_registroactividad:
+  `
+  accion = 'CREACION_CASO_USO'
+  detalles = {
+      "caso_uso_id": caso.id,
+      "codigo": caso.codigo,
+      "nombre": caso.nombre,
+      "proyecto": proyecto.nombre,
+      "metodologia": proyecto.metodologia,
+      "requerimientos_vinculados": [req.id for req in requerimientos]
+  }
+  `
+
+Flujo Principal
+
+1. El analista accede al proyecto desde su dashboard
+2. El analista navega a la sección "Casos de Uso"
+3. El sistema muestra lista de casos de uso existentes
+4. El analista hace clic en "Crear caso de uso" o "Nuevo +"
+5. El sistema verifica la metodología del proyecto: proyecto.get_metodologia_display()
+6. El sistema verifica que existan requerimientos en el proyecto
+7. El sistema muestra formulario con campos específicos de la metodología
+8. El analista completa los campos obligatorios comunes:
+   - Código del caso de uso (mínimo 3 caracteres, ej: CU-001)
+   - Nombre del caso de uso (mínimo 5 caracteres)
+   - Descripción breve (mínimo 20 caracteres)
+   - Actor principal (obligatorio)
+   - Precondiciones (mínimo 10 caracteres)
+   - Postcondiciones (mínimo 10 caracteres)
+   - Flujo principal (mínimo 50 caracteres, pasos numerados)
+9. El analista completa los campos específicos de la metodología:
+   - Tradicional: nivel, complejidad, prioridad, disparador
+   - Ágil: épica, sprint objetivo, criterios de aceptación, estimación
+10. El analista opcionalmente completa:
+    - Actores secundarios (lista separada por comas)
+    - Flujos alternativos (escenarios de error o caminos opcionales)
+    - Frecuencia de uso o notas de implementación
+11. El analista selecciona requerimientos relacionados:
+    - Sistema muestra lista de requerimientos del proyecto
+    - Analista marca checkboxes de requerimientos que implementa este caso
+12. El analista opcionalmente adjunta:
+    - Diagramas de secuencia (PNG, JPG, SVG)
+    - Mockups de interfaz
+    - Enlaces a prototipos o documentos externos
+13. El analista hace clic en "Guardar"
+14. El sistema valida campos obligatorios:
+    - Código no vacío, único en el proyecto (len >= 3)
+    - Nombre no vacío (len >= 5)
+    - Descripción no vacía (len >= 20)
+    - Actor principal no vacío
+    - Precondiciones no vacías (len >= 10)
+    - Postcondiciones no vacías (len >= 10)
+    - Flujo principal no vacío (len >= 50)
+    - Si Tradicional: nivel, complejidad, prioridad no vacíos
+    - Si Ágil: épica, criterios de aceptación no vacíos
+15. El sistema valida que el código sea único en el proyecto
+16. El sistema crea el caso de uso base:
+    `
+    caso_uso = CasoDeUso.objects.create(
+        proyecto=proyecto,
+        codigo=form.cleaned_data['codigo'],
+        nombre=form.cleaned_data['nombre'],
+        descripcion=form.cleaned_data['descripcion'],
+        actor_principal=form.cleaned_data['actor_principal'],
+        actores_secundarios=form.cleaned_data['actores_secundarios'],
+        precondiciones=form.cleaned_data['precondiciones'],
+        postcondiciones=form.cleaned_data['postcondiciones'],
+        flujo_principal=form.cleaned_data['flujo_principal'],
+        flujos_alternativos=form.cleaned_data['flujos_alternativos'],
+        creado_por=request.user,
+        estado='PENDIENTE'
+    )
+    `
+17. El sistema crea el detalle específico según metodología:
+    - Si Tradicional:
+      `
+      DetalleCasoDeUsoTradicional.objects.create(
+          caso_uso=caso_uso,
+          nivel=form.cleaned_data['nivel'],
+          complejidad=form.cleaned_data['complejidad'],
+          prioridad=form.cleaned_data['prioridad'],
+          disparador=form.cleaned_data['disparador'],
+          frecuencia_uso=form.cleaned_data['frecuencia_uso'],
+          extensiones=form.cleaned_data['extensiones'],
+          inclusiones=form.cleaned_data['inclusiones']
+      )
+      `
+    - Si Ágil:
+      `
+      DetalleCasoDeUsoAgil.objects.create(
+          caso_uso=caso_uso,
+          epica_relacionada=form.cleaned_data['epica'],
+          sprint_objetivo=form.cleaned_data['sprint'],
+          criterios_aceptacion=form.cleaned_data['criterios'],
+          estimacion_puntos=form.cleaned_data['estimacion'],
+          dependencias_tecnicas=form.cleaned_data['dependencias'],
+          notas_implementacion=form.cleaned_data['notas']
+      )
+      `
+18. El sistema vincula los requerimientos seleccionados:
+    `
+    for req_id in requerimientos_seleccionados:
+        requerimiento = Requerimiento.objects.get(id=req_id)
+        caso_uso.requerimientos.add(requerimiento)
+    `
+19. El sistema crea entrada en historial (django-simple-history automático)
+20. El sistema registra la creación en auditoría:
+    `
+    RegistroActividad.objects.create(
+        usuario=request.user,
+        accion='CREACION_CASO_USO',
+        detalles={
+            "caso_uso_id": caso_uso.id,
+            "codigo": caso_uso.codigo,
+            "nombre": caso_uso.nombre,
+            "proyecto": proyecto.nombre,
+            "metodologia": proyecto.metodologia,
+            "requerimientos_vinculados": [r.id for r in caso_uso.requerimientos.all()]
+        },
+        ip_address=request.META.get('REMOTE_ADDR'),
+        user_agent=request.META.get('HTTP_USER_AGENT')
+    )
+    `
+21. El sistema muestra mensaje de éxito:
+    `
+    ✅ Caso de uso "CU-001: Autenticación con Google OAuth2" creado exitosamente
+    Vinculado a 2 requerimientos
+    `
+22. El sistema redirige a la vista de detalle del caso de uso
+23. El caso de uso aparece en la lista con código, nombre, estado y requerimientos vinculados
+
+Flujos Alternativos
+
+A1. Proyecto sin metodología asignada
+1. El sistema detecta en paso 5: proyecto.metodologia IS NULL
+2. El sistema muestra error prominente:
+   `
+   ⚠️ Este proyecto no tiene metodología asignada.
+   No puedes crear casos de uso hasta que el líder seleccione Tradicional o Ágil.
+   
+   [Volver] [Contactar al Líder]
+   `
+3. El botón "Crear caso de uso" está deshabilitado
+4. Fin del caso de uso
+
+A2. Proyecto sin requerimientos
+1. El sistema detecta en paso 6: proyecto.requerimientos.count() == 0
+2. El sistema muestra advertencia:
+   `
+   ℹ️ Este proyecto no tiene requerimientos registrados aún.
+   
+   Los casos de uso implementan requerimientos. Se recomienda crear
+   al menos un requerimiento antes de definir casos de uso.
+   
+   ¿Deseas continuar de todas formas?
+   
+   [Crear Requerimiento Primero]  [Continuar Sin Vincular]
+   `
+3. Si el usuario elige "Continuar Sin Vincular":
+   - El sistema permite crear el caso de uso
+   - Paso 11 se omite (no hay requerimientos para seleccionar)
+   - Se puede vincular requerimientos después con CU-11
+4. Si elige "Crear Requerimiento Primero":
+   - Redirige a formulario de creación de requerimiento (CU-06)
+
+A3. Código duplicado
+1. El sistema valida en paso 15: CasoDeUso.objects.filter(proyecto=proyecto, codigo=codigo).exists()
+2. El sistema detecta código ya usado en el proyecto
+3. El sistema muestra error:
+   `
+   ❌ El código "CU-001" ya existe en este proyecto.
+   Los códigos deben ser únicos dentro del proyecto.
+   Sugerencia: CU-002
+   `
+4. El sistema mantiene todos los datos del formulario
+5. El analista corrige el código y vuelve a intentar
+
+A4. Campos obligatorios incompletos
+1. El sistema valida en paso 14 y detecta campos vacíos
+2. El sistema resalta los campos faltantes en rojo
+3. El sistema muestra mensajes específicos:
+   - "El código es obligatorio (mínimo 3 caracteres)"
+   - "El nombre es obligatorio (mínimo 5 caracteres)"
+   - "El actor principal es obligatorio"
+   - "Las precondiciones son obligatorias (mínimo 10 caracteres)"
+   - "El flujo principal es obligatorio (mínimo 50 caracteres)"
+4. El sistema mantiene los datos ingresados
+5. El analista corrige y vuelve a intentar guardar
+
+A5. Flujo principal sin formato de pasos
+1. El sistema detecta que el flujo principal no tiene formato de pasos numerados
+2. El sistema muestra advertencia (no bloqueante):
+   `
+   ⚠️ Se recomienda formatear el flujo principal con pasos numerados:
+   
+   Ejemplo:
+   1. El usuario hace clic en "Iniciar sesión con Google"
+   2. El sistema redirige a la pantalla de autorización de Google
+   3. El usuario autoriza el acceso
+   4. El sistema crea la sesión y redirige al dashboard
+   `
+3. El analista puede:
+   - Corregir el formato y guardar
+   - O ignorar la advertencia y guardar (es recomendación)
+
+A6. Error al guardar en base de datos
+1. El sistema intenta guardar en paso 16 o 17
+2. Ocurre excepción de BD (connection error, constraint violation)
+3. El sistema captura la excepción y hace rollback
+4. El sistema muestra error:
+   `
+   ❌ Error al guardar el caso de uso. Por favor, intenta nuevamente.
+   Si el problema persiste, contacta al administrador.
+   `
+5. El sistema registra el error en logs con stack trace
+6. El sistema mantiene todos los datos del formulario
+
+A7. Usuario cancela la creación
+1. El analista hace clic en "Cancelar" en paso 13
+2. El sistema detecta campos con datos ingresados
+3. El sistema pregunta confirmación:
+   `
+   ¿Deseas descartar los cambios?
+   Todos los datos ingresados se perderán.
+   
+   [Descartar]  [Continuar editando]
+   `
+4. Si confirma: redirige a lista de casos de uso sin guardar
+5. Si cancela: vuelve al formulario con datos intactos
+
+A8. Archivo adjunto inválido
+1. El analista intenta adjuntar archivo no permitido (ej: EXE, ZIP)
+2. El sistema valida extensión en paso 12
+3. El sistema muestra error:
+   `
+   ❌ Solo se permiten diagramas e imágenes: PNG, JPG, JPEG, SVG, PDF
+   Tamaño máximo: 10 MB
+   `
+4. El sistema rechaza el archivo
+5. El analista puede seleccionar archivo válido
+
+A9. Usuario sin permisos para crear casos de uso
+1. Usuario con rol "Visitante" intenta acceder
+2. El sistema valida permisos en paso 4
+3. El sistema muestra error 403:
+   `
+   ❌ No tienes permisos para crear casos de uso.
+   
+   Solo los siguientes roles pueden crear casos de uso:
+   - Analista
+   - Desarrollador
+   - Líder
+   - Arquitecto
+   
+   Contacta al líder del proyecto para obtener permisos.
+   `
+4. El sistema redirige al dashboard
+5. Fin del caso de uso
+
+A10. Guardar como Borrador
+1. El analista completa parcialmente el formulario
+2. El analista hace clic en "Guardar como borrador"
+3. El sistema guarda con estado='BORRADOR' sin validaciones estrictas
+4. El sistema permite campos opcionales vacíos
+5. El sistema muestra mensaje: "Caso de uso guardado como borrador"
+6. El caso aparece en lista con indicador "📝 Incompleto"
+7. El analista puede editarlo posteriormente
+
+Reglas de Negocio
+
+- RN-01: Solo usuarios con rol Analista, Desarrollador, Líder o Arquitecto pueden crear casos de uso
+- RN-02: El código del caso de uso debe ser único dentro del proyecto
+- RN-03: El código debe seguir un patrón consistente (ej: CU-XXX o CU-NombreCorto)
+- RN-04: El nombre debe ser descriptivo y representar la acción del caso de uso
+- RN-05: El actor principal es obligatorio (quién inicia el caso de uso)
+- RN-06: Las precondiciones y postcondiciones son obligatorias
+- RN-07: El flujo principal debe tener al menos 50 caracteres (para asegurar detalle)
+- RN-08: Los campos específicos de metodología son obligatorios según el tipo
+- RN-09: El estado inicial siempre es "PENDIENTE" o "BORRADOR"
+- RN-10: El creador queda registrado automáticamente en creado_por
+- RN-11: La fecha de creación se asigna automáticamente
+- RN-12: Un caso de uso puede implementar múltiples requerimientos
+- RN-13: Un caso de uso debe vincularse al menos a un requerimiento (recomendado)
+- RN-14: Los casos de uso sin metodología definida NO pueden crearse
+- RN-15: El historial se registra automáticamente con django-simple-history
+
+Validaciones Específicas
+
+Metodología Tradicional:
+- Nivel (obligatorio): Usuario / Subfunción / Resumen
+- Complejidad (obligatorio): Baja / Media / Alta
+- Prioridad (obligatorio): Crítica / Alta / Media / Baja
+- Disparador (obligatorio): Evento que inicia el caso de uso
+- Frecuencia de uso (opcional): Diaria / Semanal / Mensual / Ocasional
+- Extensiones (opcional): Formato texto libre, casos que extienden este
+- Inclusiones (opcional): Formato texto libre, casos incluidos
+
+Metodología Ágil:
+- Épica relacionada (obligatorio): Nombre de la épica
+- Sprint objetivo (opcional): Número o nombre del sprint
+- Criterios de aceptación (obligatorio): Mínimo 20 caracteres
+- Estimación (opcional): Puntos de historia (número entero positivo)
+- Dependencias técnicas (opcional): Lista de dependencias
+- Notas de implementación (opcional): Guías para el equipo
+
+Modelo de Datos
+
+Tabla Principal: casos_de_uso_casodeuso
+`
+class CasoDeUso(models.Model):
+    proyecto = models.ForeignKey(Proyecto, on_delete=models.CASCADE)
+    codigo = models.CharField(max_length=50)
+    nombre = models.CharField(max_length=255)
+    descripcion = models.TextField()
+    actor_principal = models.CharField(max_length=100)
+    actores_secundarios = models.TextField(blank=True)
+    precondiciones = models.TextField()
+    postcondiciones = models.TextField()
+    flujo_principal = models.TextField()
+    flujos_alternativos = models.TextField(blank=True)
+    requerimientos = models.ManyToManyField(Requerimiento, related_name='casos_uso')
+    creado_por = models.ForeignKey(Usuario, on_delete=models.PROTECT)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    estado = models.CharField(max_length=20, choices=ESTADOS)
+    
+    history = HistoricalRecords()
+    
+    class Meta:
+        unique_together = ('proyecto', 'codigo')
+`
+
+Detalle Tradicional: casos_de_uso_detallecasodeusotradicional
+`
+class DetalleCasoDeUsoTradicional(models.Model):
+    caso_uso = models.OneToOneField(CasoDeUso, on_delete=models.CASCADE)
+    nivel = models.CharField(max_length=20)
+    complejidad = models.CharField(max_length=20)
+    prioridad = models.CharField(max_length=20)
+    disparador = models.TextField()
+    frecuencia_uso = models.CharField(max_length=50, blank=True)
+    extensiones = models.TextField(blank=True)
+    inclusiones = models.TextField(blank=True)
+`
+
+Detalle Ágil: casos_de_uso_detallecasodeusoagil
+`
+class DetalleCasoDeUsoAgil(models.Model):
+    caso_uso = models.OneToOneField(CasoDeUso, on_delete=models.CASCADE)
+    epica_relacionada = models.CharField(max_length=100)
+    sprint_objetivo = models.CharField(max_length=50, blank=True)
+    criterios_aceptacion = models.TextField()
+    estimacion_puntos = models.IntegerField(null=True, blank=True)
+    dependencias_tecnicas = models.TextField(blank=True)
+    notas_implementacion = models.TextField(blank=True)
+`
+
+Ejemplo de Uso
+
+Caso de Uso Tradicional:
+`
+Código: CU-001
+Nombre: Autenticación con Google OAuth2
+Descripción: Permite a los usuarios iniciar sesión utilizando su cuenta de Google,
+eliminando la necesidad de gestionar contraseñas locales.
+
+Actor Principal: Usuario no autenticado
+Actores Secundarios: Google OAuth Server, Sistema GRCU
+
+Precondiciones:
+- Usuario tiene cuenta de Google activa
+- Sistema tiene credenciales OAuth2 configuradas
+- Conexión a internet disponible
+
+Postcondiciones:
+- Usuario autenticado en el sistema
+- Sesión creada en django_session
+- Avatar de Google almacenado en BD
+- Registro de LOGIN en auditoría
+
+Flujo Principal:
+1. Usuario accede a la página de inicio del sistema
+2. Usuario hace clic en botón "Iniciar sesión con Google"
+3. Sistema redirige a pantalla de autorización de Google
+4. Usuario selecciona cuenta de Google y autoriza permisos
+5. Google redirige de vuelta con código de autorización
+6. Sistema intercambia código por access token
+7. Sistema obtiene datos del usuario (email, nombre, avatar)
+8. Sistema crea o actualiza usuario en BD
+9. Sistema crea sesión activa
+10. Sistema redirige al dashboard del usuario
+
+Flujos Alternativos:
+A1. Usuario cancela en pantalla de Google (paso 4)
+  - Sistema muestra mensaje de cancelación
+  - Usuario permanece en página de login
+  
+A2. Error en intercambio de tokens (paso 6)
+  - Sistema registra error en logs
+  - Sistema muestra mensaje de error técnico
+  - Usuario puede reintentar
+
+Nivel: Usuario
+Complejidad: Media
+Prioridad: Crítica
+Disparador: Usuario hace clic en "Iniciar sesión con Google"
+Frecuencia de uso: Diaria
+
+Requerimientos vinculados:
+- REQ-001: El sistema debe permitir autenticación con Google OAuth2
+- REQ-002: El sistema debe almacenar avatar del usuario
+`
+
+Caso de Uso Ágil:
+`
+Código: CU-REQ-05
+Nombre: Crear requerimiento con metodología ágil
+Descripción: Permite al analista crear un nuevo requerimiento siguiendo
+la metodología ágil del proyecto.
+
+Actor Principal: Analista del proyecto
+Actores Secundarios: Sistema de auditoría
+
+Precondiciones:
+- Usuario autenticado como analista
+- Proyecto tiene metodología ÁGIL asignada
+- Usuario tiene permisos de escritura en el proyecto
+
+Postcondiciones:
+- Requerimiento creado en BD con detalle ágil
+- Historia de usuario registrada
+- Entrada en historial creada
+- Actividad registrada en auditoría
+
+Flujo Principal:
+1. Analista navega a sección de Requerimientos
+2. Analista hace clic en "Crear requerimiento"
+3. Sistema muestra formulario con campos ágiles
+4. Analista completa historia de usuario
+5. Analista define criterios de aceptación
+6. Analista asigna prioridad y puntos estimados
+7. Analista hace clic en "Guardar"
+8. Sistema valida campos obligatorios
+9. Sistema crea requerimiento con detalle ágil
+10. Sistema muestra mensaje de éxito
+
+Flujos Alternativos:
+A1. Campos obligatorios incompletos (paso 8)
+  - Sistema resalta campos faltantes
+  - Analista completa y vuelve a guardar
+
+Épica relacionada: Gestión de Requerimientos
+Sprint objetivo: Sprint 2
+Criterios de aceptación:
+- El formulario muestra campos específicos de metodología ágil
+- La historia de usuario sigue formato "Como... quiero... para..."
+- Los criterios de aceptación son obligatorios
+- Se registra en auditoría con todos los detalles
+
+Estimación: 3 puntos
+Dependencias técnicas: Ninguna
+Notas de implementación: Reutilizar formulario de requerimientos existente,
+agregar validación de formato de historia de usuario
+
+Requerimientos vinculados:
+- REQ-015: El sistema debe soportar metodología ágil
+- REQ-016: Los requerimientos ágiles deben tener criterios de aceptación
+`
+
+Estado de Implementación
+
+⚠️ PARCIALMENTE IMPLEMENTADO
+
+Funcionalidad operativa:
+- Modelos CasoDeUso, DetalleCasoDeUsoTradicional, DetalleCasoDeUsoAgil creados
+- django-simple-history configurado para historial automático
+- Relación M2M con Requerimiento definida
+
+Pendiente de implementar:
+- Vistas de creación con formularios dinámicos
+- Validaciones de campos obligatorios según metodología
+- Interfaz de vinculación con requerimientos
+- Registro en auditoría en vistas
+- Soporte de adjuntos (diagramas, mockups)
+
+Prioridad
+
+ALTA - Funcionalidad core para especificación detallada del sistema
+
+---
+
 CU-12: Comentar requerimiento
 
 Descripción
