@@ -96,6 +96,24 @@ def admin_proyecto_detail(request, project_id):
 
 
 @login_required
+def admin_herramientas(request):
+    """
+    Página de herramientas administrativas avanzadas.
+    Solo accesible para administradores.
+    """
+    if not request.user.es_admin():
+        from django.contrib import messages
+        messages.error(request, "No tienes permisos para acceder a esta sección.")
+        return redirect('dashboards:admin_dashboard')
+    
+    from django.conf import settings
+    return render(request, "dashboards/admin_herramientas.html", {
+        "page_title": "Herramientas Administrativas",
+        "debug": settings.DEBUG,
+    })
+
+
+@login_required
 def lider_dashboard(request):
     from requerimientos.models import Requerimiento
     from casos_de_uso.models import CasoDeUso
@@ -291,4 +309,73 @@ def developer_matriz(request):
     
     # Redirigir a la matriz del proyecto
     return redirect('proyectos:matriz_trazabilidad', proyecto_id=proyecto.pk)
+
+@login_required
+def limpiar_base_datos(request):
+    """
+    Limpia la base de datos eliminando todas las entradas de las tablas seleccionadas
+    o realizando un reset completo usando el comando reset_data.
+    Esta vista es solo para propósitos de desarrollo y pruebas.
+    """
+    from django.contrib import messages
+    from django.db import transaction
+    from django.core.management import call_command
+    from django.conf import settings
+    
+    # Verificar que sea administrador (usando el sistema de roles personalizado)
+    if not request.user.es_admin():
+        messages.error(request, "No tienes permisos para realizar esta acción. Se requiere rol de Administrador.")
+        return redirect('dashboards:admin_herramientas')
+    
+    if request.method == "POST":
+        tipo_limpieza = request.POST.get("tipo_limpieza")
+        
+        if tipo_limpieza == "reset_completo":
+            # Usar el comando reset_data.py de la app core
+            if not settings.DEBUG:
+                messages.error(request, "El reset completo solo puede ejecutarse en modo DEBUG.")
+                return redirect('dashboards:admin_herramientas')
+            
+            # Confirmar la acción
+            if "confirmar" in request.POST:
+                try:
+                    # Ejecutar el comando reset_data con --force (sin confirmación interactiva)
+                    call_command('reset_data', force=True, verbosity=2)
+                    messages.success(request, "Base de datos reseteada completamente usando el comando reset_data.")
+                except Exception as e:
+                    messages.error(request, f"Ocurrió un error al resetear la base de datos: {str(e)}")
+            else:
+                return render(request, "dashboards/confirmar_reset_completo.html", {})
+        
+        elif tipo_limpieza == "limpiar_tablas":
+            # Lógica original de limpiar tablas específicas
+            tablas = request.POST.getlist("tablas")
+            
+            # Asegurarse de que al menos una tabla esté seleccionada
+            if not tablas:
+                messages.error(request, "Debes seleccionar al menos una tabla para limpiar.")
+                return redirect('dashboards:admin_herramientas')
+            
+            # Confirmar la acción
+            if "confirmar" in request.POST:
+                try:
+                    with transaction.atomic():
+                        for tabla in tablas:
+                            if tabla == "usuarios":
+                                Usuario.objects.all().delete()
+                            elif tabla == "proyectos":
+                                Proyecto.objects.all().delete()
+                            elif tabla == "grupos":
+                                Grupo.objects.all().delete()
+                                
+                    messages.success(request, "Base de datos limpiada exitosamente.")
+                except Exception as e:
+                    messages.error(request, f"Ocurrió un error al limpiar la base de datos: {str(e)}")
+            else:
+                return render(request, "dashboards/confirmar_limpiar_bd.html", {"tablas": tablas})
+        
+        else:
+            messages.error(request, "Tipo de limpieza no válido.")
+    
+    return redirect('dashboards:admin_herramientas')
 

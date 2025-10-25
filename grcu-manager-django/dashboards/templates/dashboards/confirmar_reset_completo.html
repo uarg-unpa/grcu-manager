@@ -1,0 +1,75 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Confirmar Reset Completo de Base de Datos{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        🚨 RESET COMPLETO DE BASE DE DATOS
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger" role="alert">
+                        <h4 class="alert-heading">¡PELIGRO EXTREMO!</h4>
+                        <p class="mb-3">
+                            Esta acción eliminará <strong>TODO EL ESQUEMA</strong> de la base de datos y lo recreará desde cero.
+                        </p>
+                        <hr>
+                        <p class="mb-0">
+                            <strong>Se perderán permanentemente:</strong>
+                        </p>
+                        <ul class="mb-0">
+                            <li>✅ Todas las tablas y su estructura</li>
+                            <li>✅ Todos los datos (usuarios, proyectos, etc.)</li>
+                            <li>✅ Todas las migraciones aplicadas</li>
+                            <li>✅ Índices, constraints y relaciones</li>
+                        </ul>
+                    </div>
+
+                    <div class="alert alert-info" role="alert">
+                        <h6 class="alert-heading">¿Qué hace exactamente?</h6>
+                        <p class="mb-0">
+                            Este comando ejecuta el script <code>reset_data.py</code> de la app <strong>core</strong>,
+                            que elimina completamente el esquema <code>public</code> de PostgreSQL y lo recrea,
+                            luego aplica todas las migraciones desde cero.
+                        </p>
+                    </div>
+
+                    <div class="alert alert-warning" role="alert">
+                        <strong>Solo funciona en modo DEBUG.</strong><br>
+                        Este comando está diseñado únicamente para desarrollo y pruebas.
+                        <strong>NO USAR EN PRODUCCIÓN.</strong>
+                    </div>
+
+                    <div class="text-center mb-4">
+                        <h6 class="text-muted">¿Estás completamente seguro?</h6>
+                        <p class="text-danger fw-bold">Esta acción NO se puede deshacer.</p>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'dashboards:admin_herramientas' %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Cancelar - Volver a Herramientas
+                        </a>
+
+                        <form method="post" class="d-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="tipo_limpieza" value="reset_completo">
+                            <input type="hidden" name="confirmar" value="1">
+                            <button type="submit" class="btn btn-danger btn-lg">
+                                <i class="bi bi-exclamation-triangle-fill"></i>
+                                SÍ, HACER RESET COMPLETO
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -15,6 +15,11 @@
         <div class="custom-header-right">
             {% if user.is_authenticated %}
                 <div class="custom-header-user">
+                    {% if user.es_admin %}
+                        <a href="{% url 'dashboards:admin_herramientas' %}" class="admin-tools-btn me-3" title="Herramientas Administrativas">
+                            <i class="bi bi-tools"></i>
+                        </a>
+                    {% endif %}
                     {% if user.avatar %}
                         <img src="{{ user.avatar }}" alt="Avatar" class="user-avatar">
                     {% else %}

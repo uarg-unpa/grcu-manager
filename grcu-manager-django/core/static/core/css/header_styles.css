@@ -104,3 +104,24 @@
     background-color: #17A2B8;
     color: #ffffff;
 }
+
+/* Botón de herramientas administrativas */
+.admin-tools-btn {
+    border: 1px solid #dc3545;
+    padding: 0.4rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    color: #dc3545;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    transition: all 0.2s ease-in-out;
+    background-color: transparent;
+}
+
+.admin-tools-btn:hover {
+    background-color: #dc3545;
+    color: #ffffff;
+    transform: scale(1.05);
+}
