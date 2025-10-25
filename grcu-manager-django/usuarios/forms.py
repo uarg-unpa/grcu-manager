@@ -33,5 +33,13 @@ class UsuarioEditarForm(forms.ModelForm):
 
     class Meta:
         model = Usuario
-        fields = ["email", "nombre", "roles", "is_active"]
+        fields = ["email", "roles", "is_active"]
+
+    def clean_email(self):
+        email = self.cleaned_data.get("email")
+        if not email:
+            raise ValidationError("El email es obligatorio.")
+        if not email.lower().endswith("@gmail.com"):
+            raise ValidationError("Solo se permiten correos de Gmail.")
+        return email
 

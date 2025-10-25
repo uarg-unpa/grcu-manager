@@ -97,7 +97,7 @@ def editar_usuario(request, pk):
             user.save()
             form.save_m2m()
             messages.success(request, "Usuario actualizado correctamente.")
-            # Renderizar el mismo template para mostrar el mensaje sin redirección
+            return redirect("usuarios:lista")  # Redirigir a la lista después de guardar
         else:
             messages.error(request, "Corrige los errores del formulario.")
     else:
