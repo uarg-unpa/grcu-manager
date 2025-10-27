@@ -1,0 +1,203 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0 text-gray-800">
+                        <i class="fas fa-trash-alt text-danger"></i> Eliminar Caso de Uso
+                    </h1>
+                </div>
+            </div>
+
+            <!-- Alerta de Advertencia -->
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-triangle"></i>
+                <strong>¡Advertencia!</strong> Esta acción no se puede deshacer.
+                Al eliminar este caso de uso, se perderá permanentemente toda su información,
+                incluyendo el historial de versiones. Esta acción se registrará en el historial del proyecto.
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+
+            <!-- Detalles del Caso de Uso -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-danger">
+                        <i class="fas fa-info-circle"></i> Detalles del Caso de Uso a Eliminar
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5 class="text-primary">{{ caso.nombre }}</h5>
+                            <p class="text-muted">{{ caso.descripcion|truncatechars:200 }}</p>
+                            
+                            <div class="mb-3">
+                                <strong>Proyecto:</strong> {{ proyecto.nombre }}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <strong>Creado por:</strong> {{ caso.creado_por.get_full_name|default:caso.creado_por.username }}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <strong>Fecha de creación:</strong> {{ caso.fecha_creacion|date:"d/m/Y H:i" }}
+                            </div>
+                            
+                            {% if caso.imagen %}
+                            <div class="mb-3">
+                                <strong>Imagen adjunta:</strong> Sí
+                            </div>
+                            {% endif %}
+                            
+                            {% if caso.link_externo %}
+                            <div class="mb-3">
+                                <strong>Enlace externo:</strong> 
+                                <a href="{{ caso.link_externo }}" target="_blank" class="text-primary">
+                                    {{ caso.link_externo|truncatechars:50 }}
+                                    <i class="fas fa-external-link-alt ms-1"></i>
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            {% if caso.detalle_tradicional %}
+                                <h6 class="text-info">Detalles Tradicionales</h6>
+                                <div class="mb-2">
+                                    <strong>Actor Principal:</strong> {{ caso.detalle_tradicional.actor_principal }}
+                                </div>
+                                {% if caso.detalle_tradicional.precondiciones %}
+                                <div class="mb-2">
+                                    <strong>Precondiciones:</strong> {{ caso.detalle_tradicional.precondiciones|truncatechars:100 }}
+                                </div>
+                                {% endif %}
+                            {% elif caso.detalle_agil %}
+                                <h6 class="text-success">Detalles Ágiles</h6>
+                                <div class="mb-2">
+                                    <strong>Estado Scrum:</strong> 
+                                    <span class="badge bg-{{ caso.detalle_agil.estado_scrum|lower }}">{{ caso.detalle_agil.get_estado_scrum_display }}</span>
+                                </div>
+                                {% if caso.detalle_agil.responsable %}
+                                <div class="mb-2">
+                                    <strong>Responsable:</strong> {{ caso.detalle_agil.responsable }}
+                                </div>
+                                {% endif %}
+                            {% endif %}
+                            
+                            <!-- Requerimientos relacionados -->
+                            {% if caso.requerimientos_relacionados.exists %}
+                            <div class="mb-3">
+                                <strong>Requerimientos relacionados:</strong>
+                                <ul class="list-unstyled">
+                                    {% for req in caso.requerimientos_relacionados.all %}
+                                    <li>
+                                        <a href="{% url 'requerimientos:requerimiento_detail' req.pk %}" class="text-decoration-none">
+                                            <i class="fas fa-file-alt text-muted"></i> {{ req.nombre }}
+                                        </a>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Formulario de Confirmación -->
+            <div class="card shadow">
+                <div class="card-header py-3 bg-danger text-white">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-question-circle"></i> Confirmar Eliminación
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-4">
+                        ¿Estás seguro de que deseas eliminar permanentemente el caso de uso 
+                        <strong>"{{ caso.nombre }}"</strong>?
+                    </p>
+                    
+                    <form method="post" id="deleteForm">
+                        {% csrf_token %}
+                        
+                        <!-- Campo de confirmación -->
+                        <div class="mb-3">
+                            <label for="confirmText" class="form-label">
+                                Para confirmar, escribe <strong>"{{ caso.nombre }}"</strong> en el campo siguiente:
+                            </label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="confirmText" 
+                                   name="confirm_text" 
+                                   placeholder="Escribe el nombre del caso de uso aquí..."
+                                   required>
+                            <div class="form-text">
+                                Esta verificación adicional asegura que no elimines accidentalmente el caso de uso equivocado.
+                            </div>
+                        </div>
+                        
+                        <!-- Botones de acción -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'casos_de_uso:caso_de_uso_detail' caso.pk %}" 
+                               class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Cancelar
+                            </a>
+                            
+                            <button type="submit" 
+                                    class="btn btn-danger" 
+                                    id="deleteBtn" 
+                                    disabled>
+                                <i class="fas fa-trash-alt"></i> Eliminar Caso de Uso
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Script para validación en tiempo real -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmInput = document.getElementById('confirmText');
+    const deleteBtn = document.getElementById('deleteBtn');
+    const expectedText = "{{ caso.nombre }}";
+    
+    function validateConfirmation() {
+        const inputValue = confirmInput.value.trim();
+        const isValid = inputValue === expectedText;
+        
+        deleteBtn.disabled = !isValid;
+        
+        if (isValid) {
+            deleteBtn.classList.remove('btn-danger');
+            deleteBtn.classList.add('btn-outline-danger');
+        } else {
+            deleteBtn.classList.remove('btn-outline-danger');
+            deleteBtn.classList.add('btn-danger');
+        }
+    }
+    
+    confirmInput.addEventListener('input', validateConfirmation);
+    
+    // Validación adicional en el envío del formulario
+    document.getElementById('deleteForm').addEventListener('submit', function(e) {
+        const inputValue = confirmInput.value.trim();
+        if (inputValue !== expectedText) {
+            e.preventDefault();
+            alert('El texto de confirmación no coincide. Por favor, escribe exactamente: "' + expectedText + '"');
+            confirmInput.focus();
+        }
+    });
+});
+</script>
+
+{% endblock %}

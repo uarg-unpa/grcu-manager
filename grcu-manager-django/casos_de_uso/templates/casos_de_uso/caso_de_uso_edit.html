@@ -29,24 +29,27 @@
         </div>
     </div>
 
-    {# Información del requerimiento si viene desde allí #}
-    {% if requerimiento %}
-    <div class="alert alert-info d-flex align-items-center mt-3" role="alert">
-        <i class="bi bi-info-circle-fill me-2" style="font-size: 1.5rem;"></i>
+    {# Información de edición #}
+    <div class="alert alert-warning d-flex align-items-center mt-3" role="alert">
+        <i class="bi bi-pencil-square me-2" style="font-size: 1.5rem;"></i>
         <div>
-            <strong>Asociando con Requerimiento:</strong> {{ requerimiento.nombre }}
+            <strong>Editando Caso de Uso:</strong> {{ caso.nombre }}
             <br>
-            <small class="text-muted">Este caso de uso se asociará automáticamente con el requerimiento seleccionado.</small>
+            <small class="text-muted">
+                Los cambios se guardarán automáticamente en el historial de versiones.
+                <a href="{% url 'casos_de_uso:caso_de_uso_historial' caso.pk %}" target="_blank" class="alert-link">
+                    Ver historial <i class="bi bi-box-arrow-up-right"></i>
+                </a>
+            </small>
         </div>
     </div>
-    {% endif %}
 
     {# Formulario #}
     <div class="card form-card shadow-sm">
         <div class="card-body">
             <form method="post" enctype="multipart/form-data" novalidate>
                 {% csrf_token %}
-                
+
                 <!-- Secciones en paralelo -->
                 <div class="row">
                     <!-- Columna Izquierda: Información Básica -->
@@ -56,7 +59,7 @@
                                 <i class="bi bi-info-circle-fill text-primary"></i>
                                 Información Básica
                             </div>
-                            
+
                             <!-- Nombre -->
                             <div class="mb-3">
                                 <label for="{{ form.nombre.id_for_label }}" class="form-label required-field">
@@ -67,7 +70,7 @@
                                     <div class="text-danger small mt-1">{{ form.nombre.errors.0 }}</div>
                                 {% endif %}
                             </div>
-                            
+
                             <!-- Descripción -->
                             <div class="mb-3">
                                 <label for="{{ form.descripcion.id_for_label }}" class="form-label">
@@ -90,7 +93,7 @@
                                     <i class="bi bi-list-check" style="color: #6f42c1;"></i>
                                     Detalles Tradicionales
                                 </div>
-                                
+
                                 <!-- Actor Principal -->
                                 <div class="mb-3">
                                     <label for="{{ form.actor_principal.id_for_label }}" class="form-label required-field">
@@ -104,7 +107,7 @@
                                         <div class="text-danger small mt-1">{{ form.actor_principal.errors.0 }}</div>
                                     {% endif %}
                                 </div>
-                                
+
                                 <!-- Precondiciones -->
                                 <div class="mb-3">
                                     <label for="{{ form.precondiciones.id_for_label }}" class="form-label">
@@ -112,7 +115,7 @@
                                     </label>
                                     {{ form.precondiciones }}
                                 </div>
-                                
+
                                 <!-- Flujo Principal -->
                                 <div class="mb-3">
                                     <label for="{{ form.flujo_principal.id_for_label }}" class="form-label required-field">
@@ -126,7 +129,7 @@
                                         <div class="text-danger small mt-1">{{ form.flujo_principal.errors.0 }}</div>
                                     {% endif %}
                                 </div>
-                                
+
                                 <!-- Flujo Alternativo -->
                                 <div class="mb-3">
                                     <label for="{{ form.flujo_alternativo.id_for_label }}" class="form-label">
@@ -134,7 +137,7 @@
                                     </label>
                                     {{ form.flujo_alternativo }}
                                 </div>
-                                
+
                                 <!-- Postcondiciones -->
                                 <div class="mb-3">
                                     <label for="{{ form.postcondiciones.id_for_label }}" class="form-label">
@@ -142,7 +145,7 @@
                                     </label>
                                     {{ form.postcondiciones }}
                                 </div>
-                                
+
                                 <!-- Observaciones -->
                                 <div class="mb-0">
                                     <label for="{{ form.observaciones.id_for_label }}" class="form-label">
@@ -151,7 +154,7 @@
                                     {{ form.observaciones }}
                                 </div>
                             </div>
-                
+
                         {% elif es_agil %}
                             <!-- METODOLOGÍA ÁGIL -->
                             <div class="form-section form-section-agil">
@@ -159,7 +162,7 @@
                                     <i class="bi bi-lightning-charge-fill" style="color: #fd7e14;"></i>
                                     Detalles Ágiles
                                 </div>
-                                
+
                                 <!-- Historia de Usuario -->
                                 <div class="mb-3">
                                     <label for="{{ form.historia_usuario.id_for_label }}" class="form-label required-field">
@@ -175,7 +178,7 @@
                                         <div class="text-danger small mt-1">{{ form.historia_usuario.errors.0 }}</div>
                                     {% endif %}
                                 </div>
-                                
+
                                 <!-- Criterios de Aceptación -->
                                 <div class="mb-3">
                                     <label for="{{ form.criterio_aceptacion.id_for_label }}" class="form-label required-field">
@@ -191,7 +194,7 @@
                                         <div class="text-danger small mt-1">{{ form.criterio_aceptacion.errors.0 }}</div>
                                     {% endif %}
                                 </div>
-                                
+
                                 <!-- Responsable -->
                                 <div class="mb-3">
                                     <label for="{{ form.responsable.id_for_label }}" class="form-label">
@@ -199,7 +202,7 @@
                                     </label>
                                     {{ form.responsable }}
                                 </div>
-                                
+
                                 <!-- Estado Scrum -->
                                 <div class="mb-3">
                                     <label for="{{ form.estado_scrum.id_for_label }}" class="form-label">
@@ -207,7 +210,7 @@
                                     </label>
                                     {{ form.estado_scrum }}
                                 </div>
-                                
+
                                 <!-- Observaciones -->
                                 <div class="mb-0">
                                     <label for="{{ form.observaciones.id_for_label }}" class="form-label">
@@ -228,7 +231,7 @@
                                 <i class="bi bi-paperclip text-info"></i>
                                 Adjuntos y Recursos Externos
                             </div>
-                            
+
                             <div class="row">
                                 <!-- Imagen Adjunta -->
                                 <div class="col-md-6 mb-3">
@@ -243,11 +246,20 @@
                                         <div class="text-danger small mt-1">{{ form.imagen.errors.0 }}</div>
                                     {% endif %}
                                     <div class="form-text">
-                                        <i class="bi bi-info-circle"></i> 
+                                        <i class="bi bi-info-circle"></i>
                                         Adjunta diagramas de secuencia, flujos, o mockups relacionados
                                     </div>
+                                    {% if caso.imagen %}
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            <i class="bi bi-check-circle-fill text-success"></i>
+                                            Imagen actual: {{ caso.imagen.name|truncatechars:30 }}
+                                            (Deja vacío para mantener la actual)
+                                        </small>
+                                    </div>
+                                    {% endif %}
                                 </div>
-                                
+
                                 <!-- Link Externo -->
                                 <div class="col-md-6 mb-3">
                                     <label for="{{ form.link_externo.id_for_label }}" class="form-label">
@@ -261,9 +273,22 @@
                                         <div class="text-danger small mt-1">{{ form.link_externo.errors.0 }}</div>
                                     {% endif %}
                                     <div class="form-text">
-                                        <i class="bi bi-info-circle"></i> 
+                                        <i class="bi bi-info-circle"></i>
                                         Enlace a diagramas UML, documentación externa, etc.
                                     </div>
+                                    {% if caso.link_externo %}
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            <i class="bi bi-check-circle-fill text-success"></i>
+                                            Enlace actual:
+                                            <a href="{{ caso.link_externo }}" target="_blank" class="text-decoration-none">
+                                                {{ caso.link_externo|truncatechars:40 }}
+                                                <i class="bi bi-box-arrow-up-right"></i>
+                                            </a>
+                                            (Deja vacío para mantener el actual)
+                                        </small>
+                                    </div>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
@@ -271,20 +296,20 @@
                 </div>
 
                 <!-- Botones de acción -->
-                <div class="d-flex justify-content-end gap-2 mt-4">
-                    {% if is_edit %}
+                <div class="d-flex justify-content-between align-items-center mt-4">
                     <a href="{% url 'casos_de_uso:caso_de_uso_detail' caso.pk %}" class="btn btn-secondary btn-cancelar">
-                        <i class="bi bi-x-circle"></i> Cancelar
+                        <i class="bi bi-arrow-left"></i> Volver al Detalle
                     </a>
-                    {% else %}
-                    <a href="{% url 'dashboards:lider_dashboard' %}" class="btn btn-secondary btn-cancelar">
-                        <i class="bi bi-x-circle"></i> Cancelar
-                    </a>
-                    {% endif %}
-                    <button type="submit" class="btn btn-guardar-requerimiento">
-                        <i class="bi bi-save"></i>
-                        {% if is_edit %}Actualizar{% else %}Guardar{% endif %} Caso de Uso
-                    </button>
+
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'casos_de_uso:caso_de_uso_historial' caso.pk %}" class="btn btn-outline-info" target="_blank">
+                            <i class="bi bi-clock-history"></i> Ver Historial
+                        </a>
+                        <button type="submit" class="btn btn-guardar-requerimiento">
+                            <i class="bi bi-save"></i>
+                            Actualizar Caso de Uso
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>

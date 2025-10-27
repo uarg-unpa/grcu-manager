@@ -24,13 +24,6 @@
                placeholder="Buscar por nombre o descripción..."
                aria-label="Buscar casos de uso">
       </div>
-      
-      {# Filtro por tipo de detalle #}
-      <select id="filtroTipoDetalle" class="form-select" style="max-width: 180px;">
-        <option value="">Todos los tipos</option>
-        <option value="tradicional">Tradicional</option>
-        <option value="agil">Ágil</option>
-      </select>
       </div>
       
       {# Botón crear caso de uso #}
@@ -51,9 +44,8 @@
           <tr>
             <th><i class="bi bi-hash me-1"></i> ID</th>
             <th><i class="bi bi-diagram-3 me-1"></i> Nombre</th>
-            <th><i class="bi bi-tag me-1"></i> Tipo</th>
             <th><i class="bi bi-card-text me-1"></i> Descripción</th>
-            <th><i class="bi bi-eye me-1"></i> Detalles</th>
+            <th><i class="bi bi-eye me-1"></i> Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -61,58 +53,18 @@
           <tr>
             <td>{{ cu.pk }}</td>
             <td>{{ cu.nombre }}</td>
-            <td>
-              {% if cu.detalle_tradicional %}
-                <span class="badge badge-tradicional">
-                  <i class="bi bi-book me-1"></i>Tradicional
-                </span>
-              {% elif cu.detalle_agil %}
-                <span class="badge badge-agil">
-                  <i class="bi bi-lightning me-1"></i>Ágil
-                </span>
-              {% else %}
-                <span class="badge bg-secondary">Sin tipo</span>
-              {% endif %}
-            </td>
             <td>{{ cu.descripcion|truncatechars:60 }}</td>
             <td>
-              <button class="btn btn-sm btn-outline-info btn-action-caso btn-toggle-detalle" 
-                      type="button" 
-                      data-bs-toggle="collapse" 
-                      data-bs-target="#detalle-{{ cu.pk }}" 
-                      title="Ver Detalles">
-                <i class="bi bi-chevron-down"></i>
-              </button>
               <a href="{% url 'casos_de_uso:caso_de_uso_detail' cu.pk %}" 
                  class="btn btn-sm btn-outline-info btn-action-caso" 
                  title="Ver Completo">
                 <i class="bi bi-eye"></i>
               </a>
-              <div class="collapse mt-2" id="detalle-{{ cu.pk }}">
-                <div class="card card-body">
-                  {% if cu.detalle_tradicional %}
-                    <b>Actor principal:</b> {{ cu.detalle_tradicional.actor_principal|default:'-' }}<br>
-                    <b>Precondiciones:</b> {{ cu.detalle_tradicional.precondiciones|default:'-' }}<br>
-                    <b>Flujo principal:</b> {{ cu.detalle_tradicional.flujo_principal|default:'-' }}<br>
-                    <b>Flujo alternativo:</b> {{ cu.detalle_tradicional.flujo_alternativo|default:'-' }}<br>
-                    <b>Postcondiciones:</b> {{ cu.detalle_tradicional.postcondiciones|default:'-' }}<br>
-                    <b>Observaciones:</b> {{ cu.detalle_tradicional.observaciones|default:'-' }}
-                  {% elif cu.detalle_agil %}
-                    <b>Historia de usuario:</b> {{ cu.detalle_agil.historia_usuario|default:'-' }}<br>
-                    <b>Criterio de aceptación:</b> {{ cu.detalle_agil.criterio_aceptacion|default:'-' }}<br>
-                    <b>Responsable:</b> {{ cu.detalle_agil.responsable|default:'-' }}<br>
-                    <b>Estado Scrum:</b> {{ cu.detalle_agil.estado_scrum|default:'-' }}<br>
-                    <b>Observaciones:</b> {{ cu.detalle_agil.observaciones|default:'-' }}
-                  {% else %}
-                    -
-                  {% endif %}
-                </div>
-              </div>
             </td>
           </tr>
           {% empty %}
           <tr>
-            <td colspan="5">
+            <td colspan="4">
               <div class="empty-state-caso">
                 <i class="bi bi-inbox"></i>
                 <p class="mb-0">No hay casos de uso disponibles.</p>

@@ -171,6 +171,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Archivos estáticos
 STATICFILES_DIRS = [
     BASE_DIR / "static",
+    BASE_DIR / "core" / "static",
+    BASE_DIR / "accounts" / "static", 
+    BASE_DIR / "dashboards" / "static",
+    BASE_DIR / "proyectos" / "static",
+    BASE_DIR / "requerimientos" / "static",
+    BASE_DIR / "casos_de_uso" / "static",
+    BASE_DIR / "grupos" / "static",
+    BASE_DIR / "roles" / "static",
+    BASE_DIR / "usuarios" / "static",
 ]
 
 STATIC_URL = '/static/'

@@ -4,17 +4,6 @@
 
 {% block content %}
 <div class="container-fluid mt-4">
-    <!-- Breadcrumb -->
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'dashboards:lider_dashboard' %}">Dashboard</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'proyectos:proyecto_detail' proyecto.pk %}">{{ proyecto.nombre }}</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'casos_de_uso:caso_de_uso_detail' caso.pk %}">{{ caso.nombre }}</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'casos_de_uso:caso_de_uso_historial' caso.pk %}">Historial</a></li>
-            <li class="breadcrumb-item active" aria-current="page">Comparar Versiones</li>
-        </ol>
-    </nav>
-
     <div class="row">
         <div class="col-12">
             <div class="card shadow-sm">
@@ -82,7 +71,7 @@
                         </h5>
                         <p class="mb-0">
                             Se encontraron <strong>{{ diferencias|length }}</strong> campo{{ diferencias|length|pluralize:"s" }} analizados,
-                            de los cuales <strong>{{ diferencias|selectattr:"cambio"|list|length }}</strong> tiene{{ diferencias|selectattr:"cambio"|list|length|pluralize:"n,n" }} cambios.
+                            de los cuales <strong>{{ cambios_count }}</strong> tiene{{ cambios_count|pluralize:"n,n" }} cambios.
                         </p>
                     </div>
 

@@ -8,7 +8,7 @@
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{% url 'dashboards:lider_dashboard' %}">Dashboard</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'proyectos:proyecto_detail' proyecto.pk %}">{{ proyecto.nombre }}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'proyectos:proyecto_detail_admin' proyecto.pk %}">{{ proyecto.nombre }}</a></li>
             <li class="breadcrumb-item"><a href="{% url 'casos_de_uso:caso_de_uso_detail' caso.pk %}">{{ caso.nombre }}</a></li>
             <li class="breadcrumb-item"><a href="{% url 'casos_de_uso:caso_de_uso_historial' caso.pk %}">Historial</a></li>
             <li class="breadcrumb-item active" aria-current="page">Versión #{{ numero_version }}</li>

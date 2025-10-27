@@ -1,0 +1,147 @@
+.metric-card {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    padding: 1.5rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+}
+
+.metric-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.12);
+}
+
+.metric-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    width: 100%;
+}
+
+.metric-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 1.4rem;
+}
+
+.metric-icon.usuarios { background: linear-gradient(135deg, #007bff, #0056b3); }
+.metric-icon.proyectos { background: linear-gradient(135deg, #17a2b8, #138496); }
+.metric-icon.grupos { background: linear-gradient(135deg, #20c997, #17a2b8); }
+
+.metric-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.metric-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 1rem;
+}
+
+.chart-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.chart-wrapper {
+    width: 120px;
+    height: 120px;
+    position: relative;
+}
+
+.chart-canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.legend-badges {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.legend-badge {
+    padding: 0.25rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #fff;
+    display: inline-block;
+}
+
+/* ==== AUDIT / RESUMEN ==== */
+.audit-section {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.audit-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.audit-icon {
+    font-size: 1.5rem;
+    color: #17a2b8;
+}
+
+.audit-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+/* ==== TABLA ACCIONES ==== */
+.actions-table table {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.actions-table th {
+    background: #f1f5f9;
+    font-weight: 600;
+}
+
+.actions-table td, .actions-table th {
+    padding: 0.75rem 1rem;
+    text-align: left;
+}
+
+.actions-table tr:hover {
+    background: #e2e8f0;
+}
+
+/* ==== RESPONSIVE ==== */
+@media (max-width: 992px) {
+    .metric-card { margin-bottom: 1.5rem; }
+    .chart-wrapper { width: 100px; height: 100px; }
+}
+
+@media (max-width: 576px) {
+    .metric-header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+}

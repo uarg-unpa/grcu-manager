@@ -1,0 +1,74 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Eliminar {{ requerimiento.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h2 class="mb-0">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        Confirmar Eliminación
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger" role="alert">
+                        <h4 class="alert-heading">¡Atención!</h4>
+                        <p>Estás a punto de eliminar permanentemente el siguiente requerimiento:</p>
+                        <hr>
+                        <p class="mb-0">
+                            <strong>{{ requerimiento.nombre }}</strong><br>
+                            <small class="text-muted">Proyecto: {{ proyecto.nombre }}</small>
+                        </p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5>Detalles del requerimiento:</h5>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item">
+                                <strong>Tipo:</strong> {{ requerimiento.get_tipo_display }}
+                            </li>
+                            <li class="list-group-item">
+                                <strong>Estado:</strong> {{ requerimiento.get_estado_display }}
+                            </li>
+                            <li class="list-group-item">
+                                <strong>Creado por:</strong> {{ requerimiento.creado_por.nombre }}
+                            </li>
+                            <li class="list-group-item">
+                                <strong>Fecha de creación:</strong> {{ requerimiento.fecha_creacion|date:"d/m/Y H:i" }}
+                            </li>
+                            {% if requerimiento.descripcion %}
+                            <li class="list-group-item">
+                                <strong>Descripción:</strong> {{ requerimiento.descripcion|truncatechars:100 }}
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        <strong>Nota:</strong> Esta acción no se puede deshacer. El requerimiento será eliminado permanentemente de la base de datos.
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'requerimientos:requerimiento_detail' requerimiento.pk %}" 
+                           class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Cancelar
+                        </a>
+                        <form method="post" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash-fill"></i> Eliminar Requerimiento
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
