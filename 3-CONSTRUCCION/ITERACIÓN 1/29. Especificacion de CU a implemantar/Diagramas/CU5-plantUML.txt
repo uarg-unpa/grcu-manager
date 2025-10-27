@@ -1,0 +1,107 @@
+@startuml
+title CU05 - Seleccionar metodologia
+
+actor "Lider de proyecto" as Lider #purple
+boundary InterfazUsuario
+boundary PDashboardLider
+boundary PAsignarMetodologia
+control ManejadorProyecto
+control ManejadorMetodologia
+control ValidadorPermisos
+database BD
+
+'================= Flujo principal =================
+Lider -> InterfazUsuario: 1) Accede a /dashboard/lider/
+InterfazUsuario -> PDashboardLider: mostrar dashboard lider
+PDashboardLider -> ManejadorProyecto: 2) Solicitar proyectos donde es lider
+ManejadorProyecto -> BD: SELECT proyectos del usuario
+BD --> ManejadorProyecto: lista de proyectos
+ManejadorProyecto --> PDashboardLider: render lista + 3) indicador "Metodologia pendiente"
+
+Lider -> PDashboardLider: 4) Click en proyecto sin metodologia
+PDashboardLider -> ManejadorProyecto: 5) Verificar proyecto.metodologia IS NULL
+ManejadorProyecto -> BD: SELECT proyecto.metodologia
+BD --> ManejadorProyecto: NULL
+ManejadorProyecto --> PDashboardLider: 6) Mostrar banner + boton [Asignar Metodologia]
+
+Lider -> PDashboardLider: 7) Click en "Asignar Metodologia"
+PDashboardLider -> InterfazUsuario: 8) Redirigir a /proyectos/{id}/asignar-metodologia/
+InterfazUsuario -> PAsignarMetodologia: cargar formulario
+
+PAsignarMetodologia -> ValidadorPermisos: 9) Verificar que usuario es lider del proyecto
+ValidadorPermisos -> BD: SELECT proyecto.lider = user
+BD --> ValidadorPermisos: OK
+ValidadorPermisos --> PAsignarMetodologia: autorizado
+
+PAsignarMetodologia -> InterfazUsuario: 10) Mostrar opciones: [Tradicional] [Agil] + detalles
+Lider -> PAsignarMetodologia: 11) Selecciona una metodologia
+Lider -> PAsignarMetodologia: 12) Click en "Confirmar"
+
+PAsignarMetodologia -> ManejadorMetodologia: 13) Validar seleccion (TRADICIONAL|AGIL)
+ManejadorMetodologia -> BD: 14) UPDATE proyectos_proyecto SET metodologia = 'TRADICIONAL'|'AGIL'
+BD --> ManejadorMetodologia: actualizado
+ManejadorMetodologia -> BD: Insert historial (proyectos_historicalproyecto)
+BD --> ManejadorMetodologia: historial OK
+ManejadorMetodologia -> BD: Insert auditoria_registroactividad (ASIGNACION_METODOLOGIA)
+BD --> ManejadorMetodologia: auditoria OK
+
+ManejadorMetodologia --> PAsignarMetodologia: exito
+PAsignarMetodologia -> InterfazUsuario: 16) Mostrar "Metodologia asignada correctamente"
+InterfazUsuario -> PDashboardLider: 17) Redirigir a dashboard lider
+PDashboardLider -> ManejadorProyecto: 18) Refrescar estado de proyectos
+ManejadorProyecto -> BD: SELECT proyectos del usuario
+BD --> ManejadorProyecto: lista sin advertencia
+ManejadorProyecto --> PDashboardLider: render sin "Metodologia pendiente"
+
+'================= Alternativo A1 - No es lider =================
+alt A1) Usuario no es el lider
+  PAsignarMetodologia -> ValidadorPermisos: verificar lider
+  ValidadorPermisos -> BD: SELECT proyecto.lider != user
+  BD --> ValidadorPermisos: NO coincide
+  ValidadorPermisos --> PAsignarMetodologia: 403 No autorizado
+  PAsignarMetodologia -> InterfazUsuario: Mostrar error 403
+  InterfazUsuario -> PDashboardLider: Redirigir a dashboard
+  note right: Se registra intento no autorizado en logs de seguridad
+end
+
+'================= Alternativo A2 - Ya tiene requerimientos =================
+alt A2) Proyecto tiene requerimientos (no se puede cambiar)
+  PAsignarMetodologia -> ManejadorProyecto: verificar requerimientos
+  ManejadorProyecto -> BD: SELECT COUNT(*) FROM requerimientos WHERE proyecto_id = {id}
+  BD --> ManejadorProyecto: count > 0
+  ManejadorProyecto --> PAsignarMetodologia: bloquear formulario
+  PAsignarMetodologia -> InterfazUsuario: Mostrar error + solo boton "Volver"
+  note right
+    No se puede cambiar metodologia:
+    - Requerimientos actuales: N
+    - Metodologia actual: X
+  end note
+end
+
+'================= Alternativo A3 - Usuario cancela =================
+alt A3) Usuario cancela en Confirmar
+  Lider -> PAsignarMetodologia: Click "Cancelar"
+  PAsignarMetodologia -> InterfazUsuario: Confirmar descarte
+  Lider -> InterfazUsuario: Confirma cancelar
+  InterfazUsuario -> PDashboardLider: Redirigir sin guardar
+end
+
+'================= Alternativo A4 - Metodologia invalida =================
+alt A4) Metodologia invalida
+  PAsignarMetodologia -> ManejadorMetodologia: 13) Validar seleccion
+  ManejadorMetodologia --> PAsignarMetodologia: error "Metodologia invalida"
+  PAsignarMetodologia -> InterfazUsuario: Mantener formulario visible\nPermitir corregir y reintentar
+end
+
+'================= Alternativo A5 - Error al guardar en BD =================
+alt A5) Error al guardar en BD
+  PAsignarMetodologia -> ManejadorMetodologia: 14) Guardar metodologia
+  ManejadorMetodologia -> BD: UPDATE proyectos_proyecto SET metodologia=...
+  BD --> ManejadorMetodologia: excepcion (constraint / connection)
+  ManejadorMetodologia --> BD: ROLLBACK transaccion
+  ManejadorMetodologia --> PAsignarMetodologia: error
+  PAsignarMetodologia -> InterfazUsuario: Mostrar "Error al guardar la metodologia. Intenta nuevamente."
+  note right: Se registran logs tecnicos.\nEl formulario mantiene la seleccion del usuario.
+end
+
+@enduml

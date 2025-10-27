@@ -1,0 +1,104 @@
+@startuml
+title CU15 - Visualizar trazabilidad (compacto)
+
+actor "Usuario/Líder" as Usuario #purple
+boundary InterfazUsuario
+boundary PTrazabilidad
+boundary PPanelFiltros
+boundary MensajeSistema
+control ManejadorTrazabilidad
+control ManejadorFiltros
+control ManejadorExportacion
+control ValidadorPermisos
+database BD
+
+== Flujo principal ==
+Usuario -> InterfazUsuario: 1) Navega al proyecto
+InterfazUsuario -> PTrazabilidad: 2) Click "Matriz de trazabilidad"
+PTrazabilidad -> ValidadorPermisos: Verificar acceso al proyecto
+ValidadorPermisos -> BD: SELECT permisos(usuario, proyecto)
+BD --> ValidadorPermisos: OK
+ValidadorPermisos --> PTrazabilidad: Autorizado
+
+PTrazabilidad -> ManejadorTrazabilidad: 3) Solicitar datos (req, CU, relaciones)
+ManejadorTrazabilidad -> BD: SELECT Requerimiento, CasoDeUso
+ManejadorTrazabilidad -> BD: SELECT RequerimientoCaso (N–N)
+BD --> ManejadorTrazabilidad: Conjuntos y relaciones
+ManejadorTrazabilidad --> PTrazabilidad: 4) Matriz bidireccional
+ManejadorTrazabilidad --> PTrazabilidad: 5) Estadísticas (X,Y,Z,W, huérfanos)
+PTrazabilidad --> Usuario: 6–7) Render matriz + destacados (huérfanos, Must sin CU)
+
+== Interacción ==
+Usuario -> PTrazabilidad: 8) Click fila/columna/celda
+PTrazabilidad -> InterfazUsuario: Navegar a detalle (req o CU) / ver vínculo
+
+== Alternativo A - Vista Tabla Interactiva ==
+alt Vista Tabla
+  PTrazabilidad -> ManejadorTrazabilidad: Obtener matriz paginada/scroll
+  ManejadorTrazabilidad -> BD: SELECT con LIMIT/OFFSET
+  BD --> ManejadorTrazabilidad: Página
+  ManejadorTrazabilidad --> PTrazabilidad: Celdas ✓, tooltips
+end
+
+== Alternativo B - Vista Lista Agrupada ==
+alt Vista Lista
+  PTrazabilidad -> ManejadorTrazabilidad: Solicitar agrupaciones
+  ManejadorTrazabilidad -> BD: Queries por grupo (con/sin vínculos)
+  BD --> ManejadorTrazabilidad: Resultados agrupados
+  ManejadorTrazabilidad --> PTrazabilidad: Listas expandibles/colapsables
+end
+
+== Alternativo D - Filtros Dinámicos ==
+Usuario -> PPanelFiltros: Abrir filtros
+PPanelFiltros -> ManejadorFiltros: Aplicar filtro/búsqueda
+ManejadorFiltros -> BD: SELECT con WHERE dinámico
+BD --> ManejadorFiltros: Resultados filtrados
+ManejadorFiltros --> PTrazabilidad: 10) Refrescar matriz (AJAX)
+
+== Alternativo E - Búsqueda Rápida ==
+Usuario -> PTrazabilidad: Buscar por código/nombre/desc
+PTrazabilidad -> ManejadorFiltros: Aplicar texto de búsqueda
+ManejadorFiltros -> BD: SELECT ... WHERE ILIKE '%q%'
+BD --> ManejadorFiltros: Coincidencias
+ManejadorFiltros --> PTrazabilidad: Actualizar vista
+
+== Exportación (rel. CU-21) ==
+opt Exportar PDF/Excel
+  Usuario -> PTrazabilidad: Click "Exportar"
+  PTrazabilidad -> ManejadorExportacion: Generar export
+  ManejadorExportacion -> BD: Consultar matriz + stats actuales
+  BD --> ManejadorExportacion: Datos
+  ManejadorExportacion --> MensajeSistema: Archivo disponible (PDF/Excel)
+end
+
+== Opcionales ==
+opt Análisis de impacto
+  Usuario -> PTrazabilidad: Click derecho "Análisis de impacto"
+  PTrazabilidad -> ManejadorTrazabilidad: Calcular vecinos y esfuerzo
+  ManejadorTrazabilidad -> BD: JOINs requerimientos↔casos↔asignaciones
+  BD --> ManejadorTrazabilidad: Datos de impacto
+  ManejadorTrazabilidad --> PTrazabilidad: Vista de impacto (tabla/grafo)
+end
+
+opt Sugerencias de vinculación
+  Usuario -> PTrazabilidad: "Sugerir vinculaciones"
+  PTrazabilidad -> ManejadorTrazabilidad: Ejecutar heurísticas (similaridad)
+  ManejadorTrazabilidad -> BD: Traer textos de req/CU
+  BD --> ManejadorTrazabilidad: Datos
+  ManejadorTrazabilidad --> PTrazabilidad: Lista de sugerencias (aceptar/rechazar)
+end
+
+== Errores ==
+alt Sin datos (proyecto vacío)
+  ManejadorTrazabilidad --> PTrazabilidad: Matriz vacía + 0% cobertura
+  PTrazabilidad -> MensajeSistema: Aviso "No hay req ni casos en el proyecto"
+end
+
+alt Error de BD / timeout
+  ManejadorTrazabilidad -> BD: SELECT *
+  BD --> ManejadorTrazabilidad: Excepción
+  ManejadorTrazabilidad --> PTrazabilidad: Mostrar "Reintentar"
+  PTrazabilidad -> MensajeSistema: "Error al cargar datos. Intente nuevamente."
+end
+
+@enduml
