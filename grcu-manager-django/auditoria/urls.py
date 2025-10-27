@@ -1,10 +1,11 @@
 from django.urls import path
-from . import views
+from core import views as core_views
 
 app_name = 'auditoria'
 
+# Todas las rutas redirigen a "en desarrollo" para la demo
 urlpatterns = [
-    path('admin/dashboard/', views.admin_auditoria_dashboard, name='admin_dashboard'),
-    path('admin/resumen/', views.auditoria_resumen, name='auditoria_resumen'),
-    path('admin/actividad/<int:actividad_id>/', views.admin_auditoria_detalle, name='actividad_detalle'),
+    path('admin/dashboard/', core_views.under_development, name='admin_dashboard'),
+    path('admin/resumen/', core_views.under_development, name='auditoria_resumen'),
+    path('admin/actividad/<int:actividad_id>/', core_views.under_development, name='actividad_detalle'),
 ]

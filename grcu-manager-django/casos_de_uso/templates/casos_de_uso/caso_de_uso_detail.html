@@ -102,18 +102,20 @@
                     <i class="bi bi-arrow-left"></i> Volver a la lista
                 </a>
                 <div>
-                    <a href="{% url 'casos_de_uso:caso_de_uso_historial' caso.pk %}" 
+                    {% comment %} Historial bloqueado para demo {% endcomment %}
+                    <a href="{% url 'under_development' %}?feature_name=Historial de Casos de Uso" 
                        class="btn btn-info text-white">
                         <i class="bi bi-clock-history"></i> Ver Historial
                     </a>
+                    {% comment %} Editar y eliminar bloqueados para demo {% endcomment %}
                     {% if user == proyecto.lider or caso.creado_por == user %}
-                    <a href="{% url 'casos_de_uso:caso_de_uso_update' caso.pk %}" 
+                    <a href="{% url 'under_development' %}?feature_name=Edición de Casos de Uso" 
                        class="btn btn-warning text-white ms-2">
                         <i class="bi bi-pencil-fill"></i> Editar
                     </a>
                     {% endif %}
                     {% if user == proyecto.lider %}
-                    <a href="{% url 'casos_de_uso:caso_de_uso_delete' caso.pk %}" 
+                    <a href="{% url 'under_development' %}?feature_name=Eliminación de Casos de Uso" 
                        class="btn btn-danger ms-2">
                         <i class="bi bi-trash-fill"></i> Eliminar
                     </a>

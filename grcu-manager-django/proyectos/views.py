@@ -264,7 +264,7 @@ def is_lider_del_proyecto(user, proyecto):
 def asignar_metodologia(request, proyecto_id):
     """
     Vista para que el líder asigne o cambie la metodología del proyecto.
-    Solo se permite cambiar si NO hay requerimientos cargados.
+    Muestra advertencia si hay requerimientos o casos de uso, pero permite ver el formulario.
     """
     proyecto = get_object_or_404(Proyecto, id=proyecto_id)
     
@@ -273,12 +273,19 @@ def asignar_metodologia(request, proyecto_id):
         messages.error(request, "No tienes permiso para modificar este proyecto. Solo el líder puede asignar la metodología.")
         return redirect("dashboards:lider_dashboard")
     
-    # Verificar si se puede cambiar la metodología
-    if not proyecto.necesita_metodologia() and not proyecto.puede_cambiar_metodologia():
-        messages.error(request, "No puedes cambiar la metodología porque el proyecto ya tiene requerimientos cargados.")
-        return redirect("dashboards:lider_dashboard")
+    puede_cambiar = proyecto.puede_cambiar_metodologia()
+    necesita_metodologia = proyecto.necesita_metodologia()
     
     if request.method == "POST":
+        # Validar nuevamente en el POST si se puede cambiar
+        if not necesita_metodologia and not puede_cambiar:
+            messages.error(
+                request, 
+                "No puedes cambiar la metodología porque el proyecto ya tiene requerimientos o casos de uso cargados. "
+                "Elimina primero todos los requerimientos y casos de uso para poder cambiar la metodología."
+            )
+            return redirect("proyectos:asignar_metodologia", proyecto_id=proyecto_id)
+        
         metodologia = request.POST.get('metodologia')
         
         if metodologia in ['TRADICIONAL', 'AGIL']:
@@ -293,8 +300,8 @@ def asignar_metodologia(request, proyecto_id):
     
     return render(request, "proyectos/asignar_metodologia.html", {
         "proyecto": proyecto,
-        "puede_cambiar": proyecto.puede_cambiar_metodologia(),
-        "necesita_metodologia": proyecto.necesita_metodologia(),
+        "puede_cambiar": puede_cambiar,
+        "necesita_metodologia": necesita_metodologia,
         "page_title": "Asignar Metodología"
     })
 

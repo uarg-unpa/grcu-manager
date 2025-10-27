@@ -63,9 +63,12 @@ class Proyecto(models.Model):
     def puede_cambiar_metodologia(self):
         """
         Verifica si se puede cambiar la metodología del proyecto.
-        Solo se puede cambiar si NO hay requerimientos cargados.
+        Solo se puede cambiar si NO hay requerimientos NI casos de uso cargados.
         """
-        return not self.requerimientos.exists()
+        from casos_de_uso.models import CasoDeUso
+        tiene_requerimientos = self.requerimientos.exists()
+        tiene_casos = CasoDeUso.objects.filter(proyecto=self).exists()
+        return not (tiene_requerimientos or tiene_casos)
     
     def necesita_metodologia(self):
         """

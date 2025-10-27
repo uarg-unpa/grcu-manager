@@ -28,7 +28,7 @@
       
       {# Botón crear caso de uso #}
       {% if proyecto %}
-        <a href="#" class="btn btn-crear-caso-uso">
+        <a href="{% url 'casos_de_uso:caso_de_uso_create' proyecto.pk %}" class="btn btn-crear-caso-uso">
           <i class="bi bi-plus-circle-fill me-2"></i>
           Nuevo Caso de Uso
         </a>

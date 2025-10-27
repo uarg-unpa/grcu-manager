@@ -20,6 +20,7 @@ from django.urls import path, include
 from django.shortcuts import redirect
 from django.conf import settings
 from django.conf.urls.static import static
+from core import views as core_views
     
 urlpatterns = [
     path('accounts/', include('accounts.urls', namespace='accounts')),# ← Incluye nuestras URLs personalizadas
@@ -31,7 +32,8 @@ urlpatterns = [
     path('grupos/', include('grupos.urls', namespace='grupos')),
     path('requerimientos/', include('requerimientos.urls', namespace='requerimientos')),
     path('casos_de_uso/', include('casos_de_uso.urls', namespace='casos_de_uso')),
-    path('auditoria/', include('auditoria.urls', namespace='auditoria')),
+    path('auditoria/', include('auditoria.urls', namespace='auditoria')),  # ← Redirige a "en desarrollo"
+    path('under-development/', core_views.under_development, name='under_development'),
 ]
 
 # Servir archivos estáticos y media en desarrollo

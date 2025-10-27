@@ -21,9 +21,13 @@
         <strong>¡Bienvenido!</strong> Para comenzar a trabajar en este proyecto, primero debes seleccionar la metodología de gestión.
     </div>
     {% elif not puede_cambiar %}
-    <div class="alert-warning-custom">
+    <div class="alert-danger" style="padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
         <i class="bi bi-exclamation-triangle-fill me-2"></i>
-        <strong>Atención:</strong> No puedes cambiar la metodología porque el proyecto ya tiene requerimientos cargados.
+        <strong>No se puede cambiar la metodología</strong>
+        <p class="mb-0 mt-2">
+            El proyecto ya tiene <strong>requerimientos o casos de uso</strong> cargados. 
+            Para cambiar la metodología, primero debes eliminar todos los requerimientos y casos de uso asociados al proyecto.
+        </p>
     </div>
     {% endif %}
     

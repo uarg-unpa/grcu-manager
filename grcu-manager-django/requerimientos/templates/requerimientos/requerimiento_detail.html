@@ -108,11 +108,15 @@
                     <i class="bi bi-arrow-left"></i> Volver a la lista
                 </a>
                 <div>
-                    <a href="{% url 'requerimientos:requerimiento_historial' requerimiento.pk %}" 
+                    {% comment %} Botones de edición e historial bloqueados para demo {% endcomment %}
+                    <a href="{% url 'under_development' %}?feature_name=Editar Requerimiento" 
+                       class="btn btn-warning">
+                        <i class="bi bi-pencil"></i> Editar
+                    </a>
+                    <a href="{% url 'under_development' %}?feature_name=Historial de Requerimientos" 
                        class="btn btn-info text-white">
                         <i class="bi bi-clock-history"></i> Ver Historial
                     </a>
-                    <!-- Aquí se pueden agregar más acciones como editar/eliminar -->
                 </div>
             </div>
         </div>

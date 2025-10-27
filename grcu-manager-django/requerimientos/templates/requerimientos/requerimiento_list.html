@@ -91,32 +91,33 @@
                   {% endif %}
                 {% endwith %}
               </td>
-              <td>
+                            <td>
                 <div class="d-flex gap-1">
                   <a href="{% url 'requerimientos:requerimiento_detail' req.pk %}" 
                      class="btn btn-outline-success btn-sm btn-action-req" 
                      title="Ver Detalle">
                     <i class="bi bi-eye"></i>
                   </a>
+                  {% comment %} Acciones bloqueadas para demo {% endcomment %}
                   {% with casos=req.casos_relacionados.all %}
                     {% if casos|length == 0 %}
-                      <a href="{% url 'casos_de_uso:caso_de_uso_create' req.proyecto.pk %}?requerimiento_id={{ req.pk }}" 
+                      <a href="{% url 'under_development' %}?feature_name=Crear Caso de Uso" 
                          class="btn btn-outline-primary btn-sm btn-action-req" 
                          title="Crear Caso de Uso">
                         <i class="bi bi-diagram-3-fill"></i>
                       </a>
-                      <a href="{% url 'requerimientos:relacionar_casos_existentes' req.pk %}" 
+                      <a href="{% url 'under_development' %}?feature_name=Relacionar Casos de Uso" 
                          class="btn btn-outline-warning btn-sm btn-action-req" 
                          title="Relacionar Caso de Uso Existente">
                         <i class="bi bi-link"></i>
                       </a>
                     {% else %}
-                      <a href="{% url 'casos_de_uso:caso_de_uso_create' req.proyecto.pk %}?requerimiento_id={{ req.pk }}" 
+                      <a href="{% url 'under_development' %}?feature_name=Crear Caso de Uso" 
                          class="btn btn-outline-info btn-sm btn-action-req" 
                          title="Agregar Otro Caso de Uso">
                         <i class="bi bi-plus-circle"></i>
                       </a>
-                      <a href="{% url 'requerimientos:relacionar_casos_existentes' req.pk %}" 
+                      <a href="{% url 'under_development' %}?feature_name=Relacionar Casos de Uso" 
                          class="btn btn-outline-warning btn-sm btn-action-req" 
                          title="Relacionar Caso de Uso Existente">
                         <i class="bi bi-link"></i>

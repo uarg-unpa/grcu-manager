@@ -1,0 +1,85 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Funcionalidad en Desarrollo{% endblock %}
+
+{% block content %}
+<div class="container-fluid d-flex align-items-center justify-content-center" style="min-height: 70vh;">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-lg border-warning" style="max-width: 600px; margin: 0 auto;">
+                <div class="card-header bg-warning text-dark text-center py-4">
+                    <h3 class="mb-0">
+                        <i class="bi bi-tools" style="font-size: 2.5rem;"></i>
+                    </h3>
+                </div>
+                <div class="card-body text-center py-5">
+                    <h2 class="mb-4">Funcionalidad en Desarrollo</h2>
+                    <p class="lead text-muted mb-4">
+                        Esta funcionalidad está actualmente en desarrollo y no está disponible en esta versión de demostración.
+                    </p>
+                    <div class="alert alert-info mb-4">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Disculpe las molestias.</strong><br>
+                        Estamos trabajando para incluir esta característica en futuras versiones del sistema.
+                    </div>
+                    
+                    <div class="d-flex gap-2 justify-content-center mt-4">
+                        {% if user.es_admin %}
+                            <a href="{% url 'dashboards:admin_dashboard' %}" class="btn btn-primary btn-lg">
+                                <i class="bi bi-arrow-left me-2"></i>
+                                Volver al Dashboard
+                            </a>
+                        {% elif user.es_lider %}
+                            <a href="{% url 'dashboards:lider_dashboard' %}" class="btn btn-primary btn-lg">
+                                <i class="bi bi-arrow-left me-2"></i>
+                                Volver al Dashboard
+                            </a>
+                        {% elif user.es_desarrollador %}
+                            <a href="{% url 'dashboards:developer_dashboard' %}" class="btn btn-primary btn-lg">
+                                <i class="bi bi-arrow-left me-2"></i>
+                                Volver al Dashboard
+                            </a>
+                        {% else %}
+                            <a href="{% url 'accounts:login' %}" class="btn btn-primary btn-lg">
+                                <i class="bi bi-arrow-left me-2"></i>
+                                Volver al Inicio
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-footer text-center text-muted py-3">
+                    <small>
+                        <i class="bi bi-calendar3 me-1"></i>
+                        Versión de Demostración - {{ request.GET.feature_name|default:"Funcionalidad" }}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.card-header {
+    border-bottom: 3px solid #f0ad4e;
+}
+
+.bi-tools {
+    animation: rotate 2s linear infinite;
+}
+
+@keyframes rotate {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.alert-info {
+    border-left: 4px solid #0dcaf0;
+    background-color: #e7f6fd;
+}
+</style>
+{% endblock %}
