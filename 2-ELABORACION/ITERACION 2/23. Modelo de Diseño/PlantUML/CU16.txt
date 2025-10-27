@@ -1,0 +1,33 @@
+@startuml
+actor "Analista / Líder" as Usuario
+participant "Interfaz de usuario" as UI
+participant "Gestor de Trazabilidad" as Gestor
+database "BDD" as BDD
+collections "Exportador" as Exportador
+
+== Inicio ==
+Usuario -> UI : Acceder a módulo "Trazabilidad"
+UI -> Gestor : listarCasosSinRequerimiento(proyectoId)
+Gestor -> BDD : obtenerCasosDeUsoSinVinculo(proyectoId)
+BDD --> Gestor : listaOrfanos[]
+
+alt Sin casos huérfanos
+  Gestor -> UI : mostrarMensaje("Todos los casos de uso están vinculados correctamente")
+else Con casos huérfanos
+  Gestor -> UI : mostrarListado(listaOrfanos)
+
+  == Exportación ==
+  Usuario -> UI : Exportar listado (PDF o CSV)
+  UI -> Gestor : exportarListado(formato, listaOrfanos)
+  Gestor -> Exportador : generarArchivo(formato, listaOrfanos)
+  Exportador --> Gestor : {OK / ERROR}
+
+  alt Exportación OK
+    Gestor -> UI : mostrarArchivoDescargable(formato)
+  else Error en exportación
+    Gestor -> Exportador : generarArchivo("CSV", listaOrfanos)
+    Exportador --> Gestor : OK
+    Gestor -> UI : ofrecerDescargaAlternativa("CSV")
+  end
+end
+@enduml

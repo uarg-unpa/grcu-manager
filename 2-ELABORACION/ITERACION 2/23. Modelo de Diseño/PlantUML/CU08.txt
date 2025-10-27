@@ -1,0 +1,32 @@
+@startuml
+actor "Usuario autorizado" as Usuario
+participant "Interfaz de usuario" as UI
+participant "Gestor de Requerimientos" as Gestor
+database "BDD" as BDD
+
+== Inicio ==
+Usuario -> UI : Abrir módulo "Requerimientos"
+UI -> Gestor : obtenerRequerimientos(proyectoId)
+Gestor -> BDD : listarRequerimientos(proyectoId)
+BDD --> Gestor : listaRequerimientos
+Gestor -> UI : mostrarLista(listaRequerimientos)
+
+== Selección ==
+Usuario -> UI : Seleccionar requerimiento (reqId)
+UI -> Gestor : obtenerDetalle(reqId)
+Gestor -> BDD : obtenerDetalle(reqId)
+BDD --> Gestor : detalleReq
+Gestor -> UI : mostrarDetalle(detalleReq)
+
+== Historial ==
+Usuario -> UI : Solicitar ver historial
+UI -> Gestor : obtenerHistorial(reqId)
+Gestor -> BDD : listarHistorial(reqId)
+BDD --> Gestor : historial[]
+
+alt Historial vacío
+  Gestor -> UI : mostrarMensaje("Sin historial disponible")
+else Historial disponible
+  Gestor -> UI : mostrarHistorial(historial en orden cronológico)
+end
+@enduml

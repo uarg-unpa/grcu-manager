@@ -1,0 +1,41 @@
+@startuml
+actor "Líder de proyecto" as Lider
+participant "Interfaz de usuario" as UI
+participant "Gestor de Roles" as Gestor
+database "BDD" as BDD
+
+== Inicio ==
+Lider -> UI : Abrir módulo "Gestión de roles"
+UI -> Gestor : seleccionarProyecto(proyectoId)
+Gestor -> BDD : obtenerMiembros(proyectoId)
+BDD --> Gestor : listaMiembros
+Gestor -> UI : mostrarMiembros(listaMiembros)
+
+== Asignación de roles ==
+loop Para cada miembro seleccionado
+  Lider -> UI : Elegir usuario y rol
+  UI -> Gestor : asignarRol(proyectoId, usuarioId, rol)
+
+  alt Rol válido
+    Gestor -> BDD : actualizarPermisos(proyectoId, usuarioId, rol)
+    BDD --> Gestor : {OK / ERROR}
+
+    alt Guardado OK
+      Gestor -> UI : notificar("Rol asignado")
+    else Error al guardar
+      Gestor -> UI : notificarFallo("No se pudo guardar; se conservan datos anteriores")
+    end
+
+  else Rol no válido
+    Gestor -> UI : mostrarError("Rol seleccionado no válido")
+  end
+end
+
+== Cierre ==
+Lider -> UI : Finalizar asignaciones
+UI -> Gestor : guardarCambios(proyectoId)
+Gestor -> BDD : confirmarCambios(proyectoId)
+BDD --> Gestor : OK
+Gestor -> UI : mostrarResumenCambios()
+UI -> Lider : Fin
+@enduml

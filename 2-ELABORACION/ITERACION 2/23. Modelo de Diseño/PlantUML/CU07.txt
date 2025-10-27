@@ -1,0 +1,38 @@
+@startuml
+actor "Líder de proyecto" as Lider
+participant "Interfaz de usuario" as UI
+participant "Gestor de Requerimientos" as Gestor
+database "BDD" as BDD
+
+== Inicio ==
+Lider -> UI : Abrir lista de requerimientos
+UI -> Gestor : obtenerRequerimientos(proyectoId)
+Gestor -> BDD : listarRequerimientos(proyectoId)
+BDD --> Gestor : listaRequerimientos
+Gestor -> UI : mostrarLista(listaRequerimientos)
+
+== Selección ==
+Lider -> UI : Seleccionar requerimiento (reqId)
+UI -> Gestor : cargarOpcionesPrioridad(reqId)
+Gestor -> UI : mostrarOpciones([Must, Should, Could, Won't])
+
+== Priorización ==
+Lider -> UI : Elegir prioridad (p)
+UI -> Gestor : asignarPrioridad(reqId, p)
+
+alt No se selecciona prioridad
+  Gestor -> UI : mantenerPrioridadAnterior(reqId)
+  UI -> Lider : Sin cambios aplicados
+else Se selecciona prioridad
+  Gestor -> BDD : guardarPrioridad(reqId, p)
+  BDD --> Gestor : {OK / ERROR}
+
+  alt Guardado OK
+    Gestor -> UI : actualizarVista(reqId, p)
+    UI -> Lider : Confirmación de prioridad aplicada
+  else Error en BDD
+    Gestor -> UI : notificarError("No se pudo guardar")
+    UI -> Lider : Mostrar mensaje de error
+  end
+end
+@enduml

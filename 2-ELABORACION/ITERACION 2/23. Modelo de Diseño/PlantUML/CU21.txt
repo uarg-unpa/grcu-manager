@@ -1,0 +1,33 @@
+@startuml
+actor "Docente administrador / Líder de proyecto" as Usuario
+participant "Interfaz de usuario" as UI
+participant "Gestor de Informes" as Gestor
+database "BDD" as BDD
+collections "Exportador" as Exportador
+
+== Inicio ==
+Usuario -> UI : Acceder al menú "Informes"
+UI -> Gestor : mostrarOpcionesDeInforme()
+Usuario -> UI : Seleccionar tipo de informe y filtros
+UI -> Gestor : generarInforme(tipo, filtros)
+Gestor -> BDD : recopilarDatos(tipo, filtros)
+BDD --> Gestor : datosInforme
+
+== Generación ==
+Gestor -> Exportador : generarArchivo("PDF", datosInforme)
+Exportador --> Gestor : {OK / ERROR}
+
+alt Generación exitosa
+  Gestor -> UI : mostrarArchivoDescargable("PDF")
+  UI -> Usuario : Archivo disponible para descarga
+else Error o informe muy grande
+  Gestor -> Exportador : generarArchivo("CSV", datosInforme)
+  Exportador --> Gestor : {OK / ERROR}
+
+  alt Exportación alternativa OK
+    Gestor -> UI : ofrecerDescargaAlternativa("CSV")
+  else Falla general
+    Gestor -> UI : notificarError("No se pudo generar el informe")
+  end
+end
+@enduml

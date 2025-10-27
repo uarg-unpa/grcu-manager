@@ -1,0 +1,169 @@
+@startuml
+title CU06 - Registrar requerimiento
+
+' Actores y participantes (estilo PSI/UNPA)
+actor "Analista/Desarrollador" as Usuario #purple
+boundary InterfazUsuario
+boundary PProyecto
+boundary PListaRequerimientos
+boundary PFormularioRequerimiento
+boundary MensajeSistema
+control ManejadorProyecto
+control ManejadorRequerimientos
+control ManejadorDetalleRequerimiento
+control ValidadorPermisos
+control ValidadorCampos
+database BD
+
+' =====================  Flujo principal  =====================
+Usuario -> InterfazUsuario: 1) Accede al proyecto desde su dashboard
+InterfazUsuario -> PProyecto: mostrar vista del proyecto
+PProyecto -> PListaRequerimientos: 2) Ir a sección "Requerimientos"
+PListaRequerimientos -> ManejadorRequerimientos: 3) Solicitar lista
+ManejadorRequerimientos -> BD: SELECT requerimientos WHERE proyecto_id
+BD --> ManejadorRequerimientos: lista
+ManejadorRequerimientos --> PListaRequerimientos: render lista
+
+Usuario -> PListaRequerimientos: 4) Clic "Nuevo +" (Crear requerimiento)
+PListaRequerimientos -> ManejadorProyecto: 5) Obtener metodología del proyecto
+ManejadorProyecto -> BD: SELECT proyecto.metodologia
+BD --> ManejadorProyecto: TRADICIONAL | AGIL
+ManejadorProyecto --> PFormularioRequerimiento: 6) Cargar formulario segun metodología
+
+' Completar formulario (comunes + específicos)
+Usuario -> PFormularioRequerimiento: 7) Completa campos comunes (nombre, desc, tipo)
+Usuario -> PFormularioRequerimiento: 8) Completa campos específicos según metodología
+Usuario -> PFormularioRequerimiento: 9) (Opcional) Adjunta imagen / Link externo
+Usuario -> PFormularioRequerimiento: 10) Clic "Guardar"
+
+' Validaciones
+PFormularioRequerimiento -> ValidadorPermisos: Verificar puede crear (dev/lider)
+ValidadorPermisos -> BD: SELECT rol del usuario en el proyecto
+BD --> ValidadorPermisos: OK
+ValidadorPermisos --> PFormularioRequerimiento: autorizado
+
+PFormularioRequerimiento -> ValidadorCampos: 11) Validar obligatorios y formatos
+ValidadorCampos --> PFormularioRequerimiento: OK
+
+' Crear requerimiento base
+PFormularioRequerimiento -> ManejadorRequerimientos: 12) Crear requerimiento base
+ManejadorRequerimientos -> BD: INSERT requerimientos_requerimiento (...)
+BD --> ManejadorRequerimientos: id = REQ-XX
+
+' Crear detalle segun metodologia
+PFormularioRequerimiento -> ManejadorDetalleRequerimiento: 13) Crear detalle (según metodología)
+alt Tradicional
+  ManejadorDetalleRequerimiento -> BD: INSERT detallerequerimientotradicional (...)
+  BD --> ManejadorDetalleRequerimiento: OK
+else Ágil
+  ManejadorDetalleRequerimiento -> BD: INSERT detallerequerimientoagil (...)
+  BD --> ManejadorDetalleRequerimiento: OK
+end
+
+' Historial y auditoría
+ManejadorRequerimientos -> BD: (14) historicalrequerimiento (auto por save)
+ManejadorRequerimientos -> BD: (15) INSERT auditoria_registroactividad (CREACION_REQUERIMIENTO)
+
+' Confirmación y redirección
+ManejadorRequerimientos --> PFormularioRequerimiento: OK
+PFormularioRequerimiento -> MensajeSistema: 16) Mostrar éxito ("creado correctamente / Código: REQ-XX")
+PFormularioRequerimiento -> InterfazUsuario: 17) Redirigir a detalle o lista
+InterfazUsuario -> PListaRequerimientos: 18) Mostrar en lista (código, nombre, tipo, estado)
+
+' =====================  Alternativos  =====================
+
+' A1 Proyecto sin metodología
+alt A1) Proyecto sin metodología (paso 5 => NULL)
+  PListaRequerimientos -> ManejadorProyecto: obtener metodología
+  ManejadorProyecto -> BD: SELECT proyecto.metodologia
+  BD --> ManejadorProyecto: NULL
+  ManejadorProyecto --> PListaRequerimientos: bloquear creación
+  PListaRequerimientos -> MensajeSistema: Error prominente: "Debes seleccionar Tradicional o Ágil"
+  note right of PListaRequerimientos
+    Botón "Crear" deshabilitado
+    Acciones: [Volver] [Contactar al Líder]
+  end note
+end
+
+' A2 Campos obligatorios incompletos
+alt A2) Campos obligatorios incompletos (fallo en 11)
+  PFormularioRequerimiento -> ValidadorCampos: Validar
+  ValidadorCampos --> PFormularioRequerimiento: errores (nombre/desc/tipo/según metodología)
+  PFormularioRequerimiento -> MensajeSistema: Mostrar mensajes por campo
+  note right of PFormularioRequerimiento
+    Mantiene datos del formulario
+    Usuario corrige y reintenta (volver a paso 10)
+  end note
+end
+
+' A3 Historia de usuario con formato incorrecto (Ágil)
+alt A3) Historia con formato no recomendado
+  PFormularioRequerimiento -> ValidadorCampos: validar formato historia
+  ValidadorCampos --> PFormularioRequerimiento: advertencia no bloqueante
+  MensajeSistema <- PFormularioRequerimiento: Sugerir "Como [rol], quiero [acción] para [beneficio]"
+  note right of PFormularioRequerimiento
+    Usuario puede corregir o continuar igualmente
+  end note
+end
+
+' A4 Error al guardar en BD
+alt A4) Error al guardar en BD (paso 12/13)
+  ManejadorRequerimientos -> BD: INSERT base / detalle
+  BD --> ManejadorRequerimientos: excepción (constraint/connection)
+  ManejadorRequerimientos --> BD: ROLLBACK
+  PFormularioRequerimiento <- ManejadorRequerimientos: error
+  PFormularioRequerimiento -> MensajeSistema: "Error al guardar. Intenta nuevamente."
+  note right of PFormularioRequerimiento
+    Se registran logs técnicos
+    Se mantienen los datos en el formulario
+  end note
+end
+
+' A5 Usuario cancela la creación
+alt A5) Cancelar en paso 10
+  Usuario -> PFormularioRequerimiento: Clic "Cancelar"
+  PFormularioRequerimiento -> MensajeSistema: Confirmar descarte
+  Usuario -> PFormularioRequerimiento: Confirmar/Cancelar
+  alt Confirma descartar
+    PFormularioRequerimiento -> InterfazUsuario: Redirigir a lista (sin guardar)
+  else Continuar editando
+    PFormularioRequerimiento -> PFormularioRequerimiento: Mantener datos
+  end
+end
+
+' A6 Archivo de imagen inválido
+alt A6) Imagen inválida (paso 9)
+  PFormularioRequerimiento -> ValidadorCampos: validar extensión/tamaño imagen
+  ValidadorCampos --> PFormularioRequerimiento: error (solo PNG/JPG/JPEG, máx 5MB)
+  PFormularioRequerimiento -> MensajeSistema: Mostrar error y rechazar archivo
+end
+
+' A7 Link externo inválido
+alt A7) URL inválida (paso 11)
+  PFormularioRequerimiento -> ValidadorCampos: validar URL
+  ValidadorCampos --> PFormularioRequerimiento: error "URL no válida"
+  PFormularioRequerimiento -> MensajeSistema: Sugerir formato https://ejemplo.com/...
+end
+
+' A8 Usuario sin permisos para crear
+alt A8) Usuario sin permisos (visitante)
+  PFormularioRequerimiento -> ValidadorPermisos: verificar rol
+  ValidadorPermisos -> BD: SELECT rol en proyecto
+  BD --> ValidadorPermisos: Visitante
+  ValidadorPermisos --> PFormularioRequerimiento: 403
+  PFormularioRequerimiento -> MensajeSistema: "No tienes permisos para crear requerimientos"
+  InterfazUsuario <- PFormularioRequerimiento: Redirigir a dashboard
+end
+
+' A9 Guardar como borrador
+alt A9) Guardar como borrador
+  Usuario -> PFormularioRequerimiento: Clic "Guardar como borrador"
+  PFormularioRequerimiento -> ManejadorRequerimientos: crear en estado PENDIENTE (validación laxa)
+  ManejadorRequerimientos -> BD: INSERT requerimiento (mínimos)
+  BD --> ManejadorRequerimientos: id
+  ManejadorRequerimientos --> PFormularioRequerimiento: OK
+  PFormularioRequerimiento -> MensajeSistema: "Guardado como borrador"
+  InterfazUsuario <- PFormularioRequerimiento: Volver a lista con indicador "Incompleto"
+end
+
+@enduml

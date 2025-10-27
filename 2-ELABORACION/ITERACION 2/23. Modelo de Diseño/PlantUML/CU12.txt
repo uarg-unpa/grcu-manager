@@ -1,0 +1,44 @@
+@startuml
+actor "Analista / Líder" as Usuario
+participant "Interfaz de usuario" as UI
+participant "Gestor de Requerimientos" as Gestor
+database "BDD" as BDD
+collections "Caché" as Cache
+
+== Inicio ==
+Usuario -> UI : Acceder a "Requerimientos"
+UI -> Gestor : obtenerRequerimientos(proyectoId)
+Gestor -> BDD : listarRequerimientos(proyectoId)
+BDD --> Gestor : listaRequerimientos
+Gestor -> UI : mostrarLista(listaRequerimientos)
+
+== Selección ==
+Usuario -> UI : Seleccionar requerimientos (reqIds[])
+UI -> Gestor : prepararAgrupamiento(reqIds[], proyectoId)
+
+alt Sin selección
+  Gestor -> UI : advertir("Seleccione al menos un requerimiento")
+  UI -> Usuario : Mostrar advertencia
+else Con selección
+  Gestor -> BDD : obtenerMetodologia(proyectoId)
+  BDD --> Gestor : metodologia
+  Gestor -> UI : mostrarOpcionesAgrupamiento(metodologia)
+
+  == Asignación de categorías/etiquetas ==
+  Usuario -> UI : Asignar categorías/etiquetas (cat, etiquetas)
+  UI -> Gestor : aplicarAgrupamiento(reqIds[], cat, etiquetas, metodologia)
+
+  == Guardado ==
+  Gestor -> BDD : guardarGrupos(reqIds[], cat, etiquetas)
+  BDD --> Gestor : {OK / ERROR}
+
+  alt Guardado OK
+    Gestor -> UI : actualizarVistaClasificada(filtros=cat/etiquetas)
+    UI -> Usuario : Mostrar requerimientos clasificados
+  else Error de conexión/guardado
+    Gestor -> Cache : persistirTemporal(reqIds[], cat, etiquetas)
+    Cache --> Gestor : OK
+    Gestor -> UI : notificarError("No se pudo guardar. Cambios en caché")
+  end
+end
+@enduml

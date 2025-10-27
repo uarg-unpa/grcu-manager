@@ -1,0 +1,53 @@
+actor "Usuario" as Usuario
+participant "Interfaz de usuario" as UI
+participant "Gestor de Usuarios" as Gestor
+database "BDD" as BDD
+participant "UARGFlow / OAuth2 (Google)" as OAuth2
+
+note over UI
+Precondiciones:
+ - El usuario está registrado en el sistema
+ - Posee una cuenta Gmail válida
+Disparador:
+ - El usuario accede a la app e inicia sesión
+end note
+
+== Inicio ==
+Usuario -> UI : Seleccionar "Iniciar sesión con Google"
+UI -> OAuth2 : redirigirAProveedorOAuth2()
+
+== Autorización ==
+OAuth2 -> Usuario : Pantalla autorización (consent)
+Usuario --> OAuth2 : Autorizar con cuenta de Gmail
+OAuth2 --> UI : credenciales/código de autorización
+UI -> Gestor : validarCredenciales(codigo)
+
+== Validación ==
+Gestor -> OAuth2 : intercambiarCodigoPorToken(codigo)
+OAuth2 --> Gestor : token / error
+
+alt Token válido
+  Gestor -> BDD : verificarUsuarioPorEmail(email)
+  BDD --> Gestor : {existe / noExiste}
+
+  alt Cuenta registrada (vinculada)
+    Gestor -> BDD : obtenerDatosUsuario(id)
+    BDD --> Gestor : datosUsuario + roles
+    Gestor -> UI : accesoConcedido(datosUsuario, roles)
+    UI -> Usuario : Redirigir a "inicio"
+  else Cuenta NO registrada
+    Gestor -> UI : accesoDenegado\n"Cuenta no registrada"
+    UI -> Usuario : Mostrar opción: "Solicitar alta al administrador"
+  end
+
+else Token inválido / error de validación
+  Gestor -> UI : accesoDenegado\n"Error de validación"
+  UI -> Usuario : Mostrar mensaje de error\nReintentar inicio de sesión
+end
+
+== Cierre ==
+note over Usuario, UI
+Postcondición (si éxito):
+ - Sesión iniciada y funciones habilitadas según roles del usuario.
+end note
+@enduml

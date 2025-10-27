@@ -1,0 +1,36 @@
+@startuml
+actor "Analista / Líder de proyecto" as Usuario
+participant "Interfaz de usuario" as UI
+participant "Gestor de Trazabilidad" as Gestor
+database "BDD" as BDD
+collections "Exportador" as Exportador
+
+== Inicio ==
+Usuario -> UI : Acceder a "Trazabilidad"
+UI -> Gestor : iniciarGeneracionMatriz(proyectoId)
+Gestor -> BDD : obtenerRequerimientosYCasos(proyectoId)
+BDD --> Gestor : {requerimientos[], casosDeUso[]}
+
+alt Sin datos suficientes
+  Gestor -> UI : mostrarMensaje("No hay datos suficientes para generar la matriz")
+else Datos disponibles
+  Gestor -> Gestor : vincularRequerimientosConCasos()
+  Gestor -> Gestor : identificarElementosSinVinculo()
+  Gestor -> Gestor : generarMatrizBidireccional()
+  Gestor -> UI : mostrarMatrizGenerada()
+
+  == Exportación ==
+  Usuario -> UI : Solicitar exportar matriz (PDF)
+  UI -> Gestor : exportarMatriz("PDF")
+  Gestor -> Exportador : generarArchivo("PDF", matriz)
+  Exportador --> Gestor : {OK / ERROR}
+
+  alt Exportación correcta
+    Gestor -> UI : mostrarArchivoDescargable("PDF")
+  else Error en exportación
+    Gestor -> Exportador : generarArchivo("CSV", matriz)
+    Exportador --> Gestor : OK
+    Gestor -> UI : ofrecerDescargaAlternativa("CSV")
+  end
+end
+@enduml

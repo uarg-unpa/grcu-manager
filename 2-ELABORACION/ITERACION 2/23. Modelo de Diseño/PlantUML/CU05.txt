@@ -1,0 +1,43 @@
+@startuml
+actor "Líder de proyecto" as Lider
+participant "Interfaz de usuario" as UI
+participant "Gestor de Configuración" as Gestor
+database "BDD" as BDD
+
+== Inicio ==
+Lider -> UI : Abrir configuración del proyecto
+UI -> Gestor : obtenerMetodologiasDisponibles(proyectoId)
+Gestor -> BDD : listarMetodologias()
+BDD --> Gestor : [Tradicional, Ágil]
+Gestor -> UI : mostrarOpciones([Tradicional, Ágil])
+
+== Selección ==
+Lider -> UI : Seleccionar metodología (m)
+UI -> Gestor : definirMetodologia(proyectoId, m)
+
+alt No se selecciona ninguna
+  Gestor -> UI : mantenerConfiguracionActual()
+  UI -> Lider : Continuar sin cambios
+else Se selecciona metodología
+  == Adaptación ==
+  alt Tradicional
+    Gestor -> UI : adaptarUI(requerimientos, casosDeUso)
+    Gestor -> BDD : configurarEstructuras(proyectoId, "Tradicional")
+  else Ágil
+    Gestor -> UI : adaptarUI(productBacklog, sprints, historias)
+    Gestor -> BDD : configurarEstructuras(proyectoId, "Ágil")
+  end
+
+  == Registro ==
+  Gestor -> BDD : guardarEleccion(proyectoId, m)
+  BDD --> Gestor : {OK / ERROR}
+
+  alt Guardado OK
+    Gestor -> UI : notificar("Metodología registrada")
+    UI -> Lider : Fin
+  else Error al guardar
+    Gestor -> UI : notificarError("No se pudo guardar. Reintentar")
+    UI -> Lider : Solicitar reintento
+  end
+end
+@enduml

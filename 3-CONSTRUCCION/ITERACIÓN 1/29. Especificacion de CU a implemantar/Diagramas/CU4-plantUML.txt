@@ -1,0 +1,36 @@
+@startuml
+actor "Líder de proyecto" as Lider #purple
+boundary InterfazUsuario
+boundary PUsuarios
+control ManejadorUsuarios
+control ManejadorRol
+database BD
+
+Lider -> InterfazUsuario: accede a sección "Usuarios"
+InterfazUsuario -> PUsuarios: mostrar lista de participantes
+PUsuarios -> ManejadorUsuarios: solicitar lista participantes
+ManejadorUsuarios -> BD: SELECT participantes del proyecto
+BD --> ManejadorUsuarios: lista (nombre, email, rol actual)
+ManejadorUsuarios --> PUsuarios: mostrar lista
+
+Lider -> PUsuarios: clic en "Cambiar rol"
+PUsuarios -> ManejadorUsuarios: solicitar cambio de rol
+ManejadorUsuarios -> ManejadorRol: cambiar rol (usuario, nuevo rol)
+ManejadorRol -> BD: UPDATE ParticipacionProyecto SET rol_id=nuevoRol
+BD --> ManejadorRol: confirmación exitosa
+ManejadorRol --> ManejadorUsuarios: resultado OK
+ManejadorUsuarios --> PUsuarios: mostrar mensaje "Rol actualizado exitosamente"
+PUsuarios -> ManejadorUsuarios: refrescar lista
+ManejadorUsuarios -> BD: SELECT participantes actualizados
+BD --> ManejadorUsuarios: lista actualizada
+ManejadorUsuarios --> PUsuarios: mostrar nueva lista
+
+alt Error al actualizar rol
+  ManejadorRol -> BD: UPDATE ParticipacionProyecto
+  BD --> ManejadorRol: excepción SGBD
+  ManejadorRol --> ManejadorUsuarios: error en actualización
+  ManejadorUsuarios --> PUsuarios: mostrar mensaje "Error al actualizar el rol, intente nuevamente"
+  note right: se mantiene el rol anterior\npermite reintentar
+end
+
+@enduml

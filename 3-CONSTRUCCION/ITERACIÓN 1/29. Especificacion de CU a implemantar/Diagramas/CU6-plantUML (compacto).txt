@@ -1,0 +1,78 @@
+@startuml
+title CU06 - Registrar requerimiento (compacto)
+
+actor "Analista/Desarrollador" as Usuario #purple
+boundary InterfazUsuario
+boundary PFormularioRequerimiento
+control ManejadorProyecto
+control ManejadorRequerimientos
+control ManejadorDetalleRequerimiento
+control ValidadorPermisos
+control ValidadorCampos
+database BD
+
+== Flujo principal ==
+Usuario -> InterfazUsuario: Accede al proyecto
+InterfazUsuario -> PFormularioRequerimiento: Abrir "Nuevo requerimiento"
+PFormularioRequerimiento -> ManejadorProyecto: Obtener metodología del proyecto
+ManejadorProyecto -> BD: SELECT proyecto.metodologia
+BD --> ManejadorProyecto: TRADICIONAL | AGIL
+ManejadorProyecto --> PFormularioRequerimiento: Cargar campos según metodología
+
+Usuario -> PFormularioRequerimiento: Completa comunes + específicos\n(Imagen/Link opcional) y presiona Guardar
+PFormularioRequerimiento -> ValidadorPermisos: ¿Usuario puede crear?
+ValidadorPermisos -> BD: SELECT rol en proyecto
+BD --> ValidadorPermisos: OK
+ValidadorPermisos --> PFormularioRequerimiento: Autorizado
+
+PFormularioRequerimiento -> ValidadorCampos: Validar obligatorios y formatos
+ValidadorCampos --> PFormularioRequerimiento: OK
+
+PFormularioRequerimiento -> ManejadorRequerimientos: Crear requerimiento base
+ManejadorRequerimientos -> BD: INSERT requerimientos_requerimiento (...)
+BD --> ManejadorRequerimientos: id = REQ-XX
+
+PFormularioRequerimiento -> ManejadorDetalleRequerimiento: Crear detalle (según metodología)
+alt Tradicional
+  ManejadorDetalleRequerimiento -> BD: INSERT detallerequerimientotradicional
+  BD --> ManejadorDetalleRequerimiento: OK
+else Ágil
+  ManejadorDetalleRequerimiento -> BD: INSERT detallerequerimientoagil
+  BD --> ManejadorDetalleRequerimiento: OK
+end
+
+ManejadorRequerimientos -> BD: (Historial auto) + INSERT auditoría CREACION_REQUERIMIENTO
+ManejadorRequerimientos --> PFormularioRequerimiento: OK
+PFormularioRequerimiento --> Usuario: Éxito ("Creado") + Código REQ-XX
+
+== Alternativos clave ==
+alt A1) Proyecto sin metodología
+  PFormularioRequerimiento -> ManejadorProyecto: Consultar metodología
+  ManejadorProyecto -> BD: SELECT metodologia
+  BD --> ManejadorProyecto: NULL
+  ManejadorProyecto --> PFormularioRequerimiento: Bloquear creación
+  PFormularioRequerimiento --> Usuario: Error "Seleccionar Tradicional o Ágil"
+end
+
+alt A2) Campos obligatorios incompletos
+  PFormularioRequerimiento -> ValidadorCampos: Validar
+  ValidadorCampos --> PFormularioRequerimiento: Errores por campo
+  PFormularioRequerimiento --> Usuario: Mostrar mensajes y mantener datos
+end
+
+alt A8) Usuario sin permisos
+  PFormularioRequerimiento -> ValidadorPermisos: Verificar rol
+  ValidadorPermisos -> BD: SELECT rol
+  BD --> ValidadorPermisos: Visitante
+  ValidadorPermisos --> PFormularioRequerimiento: 403
+  PFormularioRequerimiento --> Usuario: "No tienes permisos" (redirigir)
+end
+
+alt A4) Error al guardar en BD
+  ManejadorRequerimientos -> BD: INSERT base/detalle
+  BD --> ManejadorRequerimientos: Excepción
+  ManejadorRequerimientos --> PFormularioRequerimiento: Error + rollback
+  PFormularioRequerimiento --> Usuario: "Error al guardar. Intenta nuevamente."
+end
+
+@enduml

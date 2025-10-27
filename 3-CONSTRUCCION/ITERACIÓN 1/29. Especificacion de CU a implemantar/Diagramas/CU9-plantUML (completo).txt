@@ -1,0 +1,101 @@
+@startuml
+title CU09 - Registrar Caso de Uso (compacto)
+
+actor "Desarrollador/Líder" as Usuario #purple
+boundary InterfazUsuario
+boundary PFormularioCasoDeUso
+control ManejadorProyecto
+control ManejadorCasosDeUso
+control ManejadorDetalleCasoDeUso
+control ValidadorPermisos
+control ValidadorCampos
+database BD
+
+== Flujo principal ==
+Usuario -> InterfazUsuario: Accede al proyecto / sección "Casos de Uso"
+InterfazUsuario -> PFormularioCasoDeUso: Clic en "Nuevo +"
+PFormularioCasoDeUso -> ManejadorProyecto: Obtener metodología y requerimientos
+ManejadorProyecto -> BD: SELECT proyecto.metodologia, COUNT(requerimientos)
+BD --> ManejadorProyecto: TRADICIONAL | AGIL , count>=1
+ManejadorProyecto --> PFormularioCasoDeUso: Mostrar formulario según metodología
+
+Usuario -> PFormularioCasoDeUso: Completa campos comunes + específicos\nAdjunta diagramas o enlaces
+PFormularioCasoDeUso -> ValidadorPermisos: ¿Usuario autorizado?
+ValidadorPermisos -> BD: SELECT rol en proyecto
+BD --> ValidadorPermisos: OK
+ValidadorPermisos --> PFormularioCasoDeUso: Autorizado
+
+PFormularioCasoDeUso -> ValidadorCampos: Validar campos obligatorios
+ValidadorCampos --> PFormularioCasoDeUso: OK
+
+PFormularioCasoDeUso -> ManejadorCasosDeUso: Crear caso base
+ManejadorCasosDeUso -> BD: INSERT casos_de_uso_casodeuso (...)
+BD --> ManejadorCasosDeUso: id = CU-XX
+
+PFormularioCasoDeUso -> ManejadorDetalleCasoDeUso: Crear detalle según metodología
+alt Tradicional
+  ManejadorDetalleCasoDeUso -> BD: INSERT detallecasodeusotradicional
+  BD --> ManejadorDetalleCasoDeUso: OK
+else Ágil
+  ManejadorDetalleCasoDeUso -> BD: INSERT detallecasodeusoagil
+  BD --> ManejadorDetalleCasoDeUso: OK
+end
+
+ManejadorCasosDeUso -> BD: Vincular requerimientos seleccionados
+BD --> ManejadorCasosDeUso: OK
+ManejadorCasosDeUso -> BD: INSERT auditoría CREACION_CASO_USO
+ManejadorCasosDeUso --> PFormularioCasoDeUso: OK
+PFormularioCasoDeUso --> Usuario: Éxito ("Caso de uso creado y vinculado")
+
+== Alternativos ==
+alt A1) Proyecto sin metodología
+  PFormularioCasoDeUso -> ManejadorProyecto: Consultar metodología
+  ManejadorProyecto -> BD: SELECT metodologia
+  BD --> ManejadorProyecto: NULL
+  ManejadorProyecto --> PFormularioCasoDeUso: Bloquear creación
+  PFormularioCasoDeUso --> Usuario: Error "Debes seleccionar Tradicional o Ágil"
+end
+
+alt A2) Sin requerimientos
+  ManejadorProyecto -> BD: COUNT(requerimientos)=0
+  BD --> ManejadorProyecto: 0
+  ManejadorProyecto --> PFormularioCasoDeUso: Advertencia "Crea requerimientos antes"
+end
+
+alt A3) Código duplicado
+  ManejadorCasosDeUso -> BD: Verificar código único
+  BD --> ManejadorCasosDeUso: duplicado
+  ManejadorCasosDeUso --> PFormularioCasoDeUso: Error "Código ya existente"
+end
+
+alt A4) Campos incompletos
+  PFormularioCasoDeUso -> ValidadorCampos: Validar
+  ValidadorCampos --> PFormularioCasoDeUso: errores por campo
+  PFormularioCasoDeUso --> Usuario: Mostrar mensajes y mantener datos
+end
+
+alt A6) Error al guardar en BD
+  ManejadorCasosDeUso -> BD: INSERT base/detalle
+  BD --> ManejadorCasosDeUso: Excepción
+  ManejadorCasosDeUso --> PFormularioCasoDeUso: Error + rollback
+  PFormularioCasoDeUso --> Usuario: "Error al guardar. Intenta nuevamente."
+end
+
+alt A9) Usuario sin permisos
+  PFormularioCasoDeUso -> ValidadorPermisos: Verificar rol
+  ValidadorPermisos -> BD: SELECT rol
+  BD --> ValidadorPermisos: Visitante
+  ValidadorPermisos --> PFormularioCasoDeUso: 403
+  PFormularioCasoDeUso --> Usuario: "No tienes permisos para crear Casos de Uso"
+end
+
+alt A10) Guardar como borrador
+  Usuario -> PFormularioCasoDeUso: Clic "Guardar como borrador"
+  PFormularioCasoDeUso -> ManejadorCasosDeUso: Guardar con estado 'BORRADOR'
+  ManejadorCasosDeUso -> BD: INSERT caso_de_uso (campos mínimos)
+  BD --> ManejadorCasosDeUso: id
+  ManejadorCasosDeUso --> PFormularioCasoDeUso: OK
+  PFormularioCasoDeUso --> Usuario: "Guardado como borrador"
+end
+
+@enduml
