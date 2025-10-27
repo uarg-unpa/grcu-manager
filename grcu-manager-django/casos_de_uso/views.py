@@ -12,24 +12,34 @@ from django.contrib import messages
 def caso_de_uso_list(request, proyecto_id=None):
     if proyecto_id:
         proyecto = get_object_or_404(Proyecto, id=proyecto_id)
-        casos = CasoDeUso.objects.filter(proyecto=proyecto)
+        casos = CasoDeUso.objects.filter(proyecto=proyecto).select_related(
+            'proyecto', 'detalle_tradicional', 'detalle_agil'
+        )
     else:
         # Si el usuario es líder, mostrar solo el proyecto que lidera
         proyectos_liderados = getattr(request.user, 'lidera_proyectos', None)
         if proyectos_liderados and proyectos_liderados.exists():
             proyecto = proyectos_liderados.first()
-            casos = CasoDeUso.objects.filter(proyecto=proyecto)
+            casos = CasoDeUso.objects.filter(proyecto=proyecto).select_related(
+                'proyecto', 'detalle_tradicional', 'detalle_agil'
+            )
         # Si es un developer, mostrar el proyecto en el que participa
         elif request.user.es_desarrollador():
             proyectos_participa = Proyecto.objects.filter(participantes=request.user)
             if proyectos_participa.exists():
                 proyecto = proyectos_participa.first()
-                casos = CasoDeUso.objects.filter(proyecto=proyecto)
+                casos = CasoDeUso.objects.filter(proyecto=proyecto).select_related(
+                    'proyecto', 'detalle_tradicional', 'detalle_agil'
+                )
             else:
-                casos = CasoDeUso.objects.all()
+                casos = CasoDeUso.objects.all().select_related(
+                    'proyecto', 'detalle_tradicional', 'detalle_agil'
+                )
                 proyecto = None
         else:
-            casos = CasoDeUso.objects.all()
+            casos = CasoDeUso.objects.all().select_related(
+                'proyecto', 'detalle_tradicional', 'detalle_agil'
+            )
             proyecto = None
     if proyecto:
         page_title = f"{proyecto.nombre} - Casos de Uso"
@@ -41,6 +51,175 @@ def caso_de_uso_list(request, proyecto_id=None):
 def caso_de_uso_detail(request, pk):
     caso = get_object_or_404(CasoDeUso, pk=pk)
     return render(request, "casos_de_uso/caso_de_uso_detail.html", {"caso": caso})
+
+
+@login_required
+def caso_de_uso_update(request, pk):
+    """
+    Vista para editar casos de uso según la metodología del proyecto.
+    """
+    caso = get_object_or_404(CasoDeUso, pk=pk)
+    proyecto = caso.proyecto
+
+    # Verificar permisos: solo líderes o participantes del proyecto
+    es_lider = request.user == proyecto.lider
+    es_participante = proyecto.participantes.filter(id=request.user.id).exists()
+
+    if not (es_lider or es_participante):
+        messages.error(
+            request,
+            'No tienes permiso para editar casos de uso en este proyecto.'
+        )
+        return redirect('casos_de_uso:caso_de_uso_detail', pk=pk)
+
+    # Determinar formulario según metodología del proyecto
+    es_tradicional = proyecto.metodologia == 'TRADICIONAL'
+    es_agil = proyecto.metodologia == 'AGIL'
+
+    if request.method == 'POST':
+        # Instanciar el formulario apropiado
+        if es_tradicional:
+            form = CasoDeUsoTradicionalForm(request.POST, request.FILES)
+        elif es_agil:
+            form = CasoDeUsoAgilForm(request.POST, request.FILES)
+        else:
+            messages.error(request, 'Metodología no reconocida.')
+            return redirect('casos_de_uso:caso_de_uso_detail', pk=pk)
+
+        if form.is_valid():
+            # Actualizar el caso de uso base
+            caso.nombre = form.cleaned_data['nombre']
+            caso.descripcion = form.cleaned_data.get('descripcion', '')
+            nueva_imagen = form.cleaned_data.get('imagen')
+            if nueva_imagen:
+                caso.imagen = nueva_imagen
+            caso.link_externo = form.cleaned_data.get('link_externo', '')
+            caso.save()
+
+            # Actualizar o crear el detalle específico según la metodología
+            if es_tradicional:
+                detalle, created = DetalleCasoDeUsoTradicional.objects.get_or_create(
+                    caso_de_uso_padre=caso,
+                    defaults={
+                        'actor_principal': form.cleaned_data.get('actor_principal', ''),
+                        'precondiciones': form.cleaned_data.get('precondiciones', ''),
+                        'flujo_principal': form.cleaned_data.get('flujo_principal', ''),
+                        'flujo_alternativo': form.cleaned_data.get('flujo_alternativo', ''),
+                        'postcondiciones': form.cleaned_data.get('postcondiciones', ''),
+                        'observaciones': form.cleaned_data.get('observaciones', '')
+                    }
+                )
+                if not created:
+                    detalle.actor_principal = form.cleaned_data.get('actor_principal', '')
+                    detalle.precondiciones = form.cleaned_data.get('precondiciones', '')
+                    detalle.flujo_principal = form.cleaned_data.get('flujo_principal', '')
+                    detalle.flujo_alternativo = form.cleaned_data.get('flujo_alternativo', '')
+                    detalle.postcondiciones = form.cleaned_data.get('postcondiciones', '')
+                    detalle.observaciones = form.cleaned_data.get('observaciones', '')
+                    detalle.save()
+
+            elif es_agil:
+                detalle, created = DetalleCasoDeUsoAgil.objects.get_or_create(
+                    caso_de_uso_padre=caso,
+                    defaults={
+                        'historia_usuario': form.cleaned_data.get('historia_usuario', ''),
+                        'criterio_aceptacion': form.cleaned_data.get('criterio_aceptacion', ''),
+                        'responsable': form.cleaned_data.get('responsable', ''),
+                        'estado_scrum': form.cleaned_data.get('estado_scrum', ''),
+                        'observaciones': form.cleaned_data.get('observaciones', '')
+                    }
+                )
+                if not created:
+                    detalle.historia_usuario = form.cleaned_data.get('historia_usuario', '')
+                    detalle.criterio_aceptacion = form.cleaned_data.get('criterio_aceptacion', '')
+                    detalle.responsable = form.cleaned_data.get('responsable', '')
+                    detalle.estado_scrum = form.cleaned_data.get('estado_scrum', '')
+                    detalle.observaciones = form.cleaned_data.get('observaciones', '')
+                    detalle.save()
+
+            messages.success(request, f'✅ Caso de Uso "{caso.nombre}" actualizado exitosamente.')
+            return redirect('casos_de_uso:caso_de_uso_detail', pk=pk)
+    else:
+        # GET: Instanciar formulario con datos existentes
+        initial_data = {
+            'nombre': caso.nombre,
+            'descripcion': caso.descripcion,
+            'imagen': caso.imagen,
+            'link_externo': caso.link_externo,
+        }
+
+        if es_tradicional:
+            # Agregar datos del detalle tradicional si existe
+            if hasattr(caso, 'detalle_tradicional') and caso.detalle_tradicional:
+                initial_data.update({
+                    'actor_principal': caso.detalle_tradicional.actor_principal,
+                    'precondiciones': caso.detalle_tradicional.precondiciones,
+                    'flujo_principal': caso.detalle_tradicional.flujo_principal,
+                    'flujo_alternativo': caso.detalle_tradicional.flujo_alternativo,
+                    'postcondiciones': caso.detalle_tradicional.postcondiciones,
+                    'observaciones': caso.detalle_tradicional.observaciones,
+                })
+            form = CasoDeUsoTradicionalForm(initial=initial_data)
+        elif es_agil:
+            # Agregar datos del detalle ágil si existe
+            if hasattr(caso, 'detalle_agil') and caso.detalle_agil:
+                initial_data.update({
+                    'historia_usuario': caso.detalle_agil.historia_usuario,
+                    'criterio_aceptacion': caso.detalle_agil.criterio_aceptacion,
+                    'responsable': caso.detalle_agil.responsable,
+                    'estado_scrum': caso.detalle_agil.estado_scrum,
+                    'observaciones': caso.detalle_agil.observaciones,
+                })
+            form = CasoDeUsoAgilForm(initial=initial_data)
+        else:
+            messages.error(request, 'Metodología no reconocida.')
+            return redirect('casos_de_uso:caso_de_uso_detail', pk=pk)
+
+    page_title = f"{proyecto.nombre} - Editar Caso de Uso: {caso.nombre}"
+
+    context = {
+        'form': form,
+        'caso': caso,
+        'proyecto': proyecto,
+        'es_tradicional': es_tradicional,
+        'es_agil': es_agil,
+        'metodologia_display': proyecto.get_metodologia_display(),
+        'page_title': page_title,
+        'is_edit': True
+    }
+
+    return render(request, 'casos_de_uso/caso_de_uso_create.html', context)
+
+
+@login_required
+def caso_de_uso_delete(request, pk):
+    """
+    Vista para eliminar casos de uso con confirmación.
+    """
+    caso = get_object_or_404(CasoDeUso, pk=pk)
+    proyecto = caso.proyecto
+
+    # Verificar permisos: solo líderes del proyecto pueden eliminar
+    if request.user != proyecto.lider:
+        messages.error(
+            request,
+            'Solo el líder del proyecto puede eliminar casos de uso.'
+        )
+        return redirect('casos_de_uso:caso_de_uso_detail', pk=pk)
+
+    if request.method == 'POST':
+        nombre_caso = caso.nombre
+        caso.delete()
+        messages.success(request, f'✅ Caso de Uso "{nombre_caso}" eliminado exitosamente.')
+        return redirect('casos_de_uso:caso_de_uso_list')
+
+    context = {
+        'caso': caso,
+        'proyecto': proyecto,
+        'page_title': f'{proyecto.nombre} - Eliminar Caso de Uso: {caso.nombre}',
+    }
+
+    return render(request, 'casos_de_uso/caso_de_uso_delete.html', context)
 
 
 @login_required
@@ -183,7 +362,6 @@ def buscar_casos_de_uso_ajax(request):
     """Endpoint AJAX para búsqueda de casos de uso"""
     search_query = request.GET.get('q', '').strip()
     proyecto_id = request.GET.get('proyecto_id', '').strip()
-    tipo_detalle = request.GET.get('tipo_detalle', '').strip()  # 'tradicional' o 'agil'
     
     # Construir filtros
     filtros = Q()
@@ -197,20 +375,14 @@ def buscar_casos_de_uso_ajax(request):
     if proyecto_id:
         filtros &= Q(proyecto_id=proyecto_id)
     
-    # Filtro por tipo de detalle
-    if tipo_detalle == 'tradicional':
-        filtros &= Q(detalle_tradicional__isnull=False)
-    elif tipo_detalle == 'agil':
-        filtros &= Q(detalle_agil__isnull=False)
-    
     # Si no hay filtros, devolver vacío
-    if not (search_query or proyecto_id or tipo_detalle):
+    if not (search_query or proyecto_id):
         return JsonResponse({'casos': [], 'count': 0})
     
     # Buscar casos de uso con prefetch_related para optimizar
     casos = CasoDeUso.objects.filter(filtros).select_related(
-        'proyecto', 'detalle_tradicional', 'detalle_agil'
-    ).prefetch_related('requerimientos_relacionados').order_by('nombre')[:100]
+        'proyecto'
+    ).order_by('nombre')[:100]
     
     # Serializar casos de uso
     casos_data = []
@@ -220,29 +392,12 @@ def buscar_casos_de_uso_ajax(request):
         if len(descripcion) > 60:
             descripcion = descripcion[:57] + '...'
         
-        # Determinar tipo de detalle
-        tipo = 'sin_tipo'
-        if hasattr(caso, 'detalle_tradicional') and caso.detalle_tradicional:
-            tipo = 'tradicional'
-        elif hasattr(caso, 'detalle_agil') and caso.detalle_agil:
-            tipo = 'agil'
-        
-        # Obtener requerimientos relacionados
-        requerimientos = []
-        for req in caso.requerimientos_relacionados.all():  # type: ignore[attr-defined]
-            requerimientos.append({
-                'id': req.pk,
-                'nombre': req.nombre
-            })
-        
         casos_data.append({
             'id': caso.pk,
             'nombre': caso.nombre,
             'descripcion': descripcion,
-            'tipo': tipo,
-            'requerimientos': requerimientos
         })
-    
+        
     return JsonResponse({
         'casos': casos_data,
         'count': len(casos_data)
@@ -267,7 +422,7 @@ def caso_de_uso_historial(request, pk):
     
     if not (es_lider or es_participante):
         messages.error(request, "No tienes permiso para ver el historial de este caso de uso.")
-        return redirect('proyectos:proyecto_list')
+        return redirect('proyectos:lista_proyectos')
     
     # Obtener historial ordenado por fecha (más reciente primero)
     historial = caso.history.all().order_by('-history_date')  # type: ignore[attr-defined]
@@ -321,7 +476,7 @@ def caso_de_uso_version_detail(request, pk, history_id):
     
     if not (es_lider or es_participante):
         messages.error(request, "No tienes permiso para ver esta información.")
-        return redirect('proyectos:proyecto_list')
+        return redirect('proyectos:lista_proyectos')
     
     # Obtener la versión histórica específica
     version = get_object_or_404(
@@ -396,7 +551,7 @@ def caso_de_uso_comparar_versiones(request, pk):
     
     if not (es_lider or es_participante):
         messages.error(request, "No tienes permiso para comparar versiones.")
-        return redirect('proyectos:proyecto_list')
+        return redirect('proyectos:lista_proyectos')
     
     # Obtener IDs de versiones a comparar
     history_id_1 = request.GET.get('version1_id')
@@ -463,6 +618,7 @@ def caso_de_uso_comparar_versiones(request, pk):
         'numero_v1': numero_v1,
         'numero_v2': numero_v2,
         'diferencias': diferencias,
+        'cambios_count': sum(1 for d in diferencias if d['cambio']),
         'page_title': f'{proyecto.nombre} - Comparar versiones de {caso.nombre}',
     }
     

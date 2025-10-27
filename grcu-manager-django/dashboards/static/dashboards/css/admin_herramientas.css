@@ -1,0 +1,251 @@
+/* Admin Herramientas - Estilos para herramientas administrativas */
+:root {
+  --danger-bg: #fff5f5;
+  --danger-border: #dc3545;
+  --warning-bg: #fffbf0;
+  --warning-border: #ffc107;
+  --shadow-light: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --shadow-hover: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Efectos hover generales */
+.hover-shadow:hover {
+  box-shadow: var(--shadow-hover) !important;
+  transform: translateY(-2px);
+  transition: all 0.3s ease;
+}
+
+/* Zona de peligro - Reset completo */
+.danger-zone {
+  border: 2px solid var(--danger-border);
+  background-color: var(--danger-bg);
+  border-radius: 8px;
+  box-shadow: var(--shadow-light);
+  transition: all 0.3s ease;
+}
+
+.danger-zone:hover {
+  box-shadow: var(--shadow-hover);
+  border-color: #c82333;
+}
+
+/* Zona de advertencia - Limpieza selectiva */
+.warning-zone {
+  border: 2px solid var(--warning-border);
+  background-color: var(--warning-bg);
+  border-radius: 8px;
+  box-shadow: var(--shadow-light);
+  transition: all 0.3s ease;
+}
+
+.warning-zone:hover {
+  box-shadow: var(--shadow-hover);
+  border-color: #e0a800;
+}
+
+/* Header de herramientas */
+.admin-tools-header {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 2px solid #dee2e6;
+  padding: 2rem;
+  margin: -1rem -1rem 2rem -1rem;
+  border-radius: 8px 8px 0 0;
+}
+
+.admin-tools-title {
+  color: #495057;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.admin-tools-subtitle {
+  color: #6c757d;
+  font-size: 1rem;
+  margin-bottom: 0;
+}
+
+/* Cards de herramientas */
+.tool-card {
+  border: none;
+  box-shadow: var(--shadow-light);
+  transition: all 0.3s ease;
+  margin-bottom: 2rem;
+}
+
+.tool-card:hover {
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-2px);
+}
+
+.tool-card.danger .card-header {
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  color: white;
+  border-bottom: none;
+}
+
+.tool-card.warning .card-header {
+  background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+  color: #212529;
+  border-bottom: none;
+}
+
+.tool-card.info .card-header {
+  background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+  color: white;
+  border-bottom: none;
+}
+
+/* Alertas mejoradas */
+.alert-danger {
+  border: none;
+  border-left: 4px solid #dc3545;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+}
+
+.alert-warning {
+  border: none;
+  border-left: 4px solid #ffc107;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+}
+
+.alert-info {
+  border: none;
+  border-left: 4px solid #17a2b8;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+}
+
+/* Formularios de herramientas */
+.tool-form {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 1rem 0;
+}
+
+.tool-form .form-check {
+  padding: 0.75rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  margin-bottom: 0.5rem;
+}
+
+.tool-form .form-check:hover {
+  background: rgba(0, 123, 255, 0.05);
+  border: 1px solid rgba(0, 123, 255, 0.1);
+}
+
+.tool-form .form-check-input:checked {
+  background-color: #007bff;
+  border-color: #007bff;
+}
+
+/* Botones de acción */
+.btn-danger.btn-lg {
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  border: none;
+  padding: 0.75rem 2rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+  transition: all 0.3s ease;
+}
+
+.btn-danger.btn-lg:hover {
+  background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+}
+
+.btn-warning.btn-lg {
+  background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+  border: none;
+  color: #212529;
+  padding: 0.75rem 2rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+  transition: all 0.3s ease;
+}
+
+.btn-warning.btn-lg:hover {
+  background: linear-gradient(135deg, #e0a800 0%, #d39e00 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 193, 7, 0.4);
+}
+
+/* Información del sistema */
+.system-info-card {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+}
+
+.system-info-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.system-info-item:last-child {
+  margin-bottom: 0;
+}
+
+.system-info-label {
+  font-weight: 600;
+  color: #495057;
+  min-width: 140px;
+}
+
+.system-info-value {
+  color: #6c757d;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .admin-tools-header {
+    padding: 1.5rem;
+    text-align: center;
+  }
+
+  .tool-form {
+    padding: 1rem;
+  }
+
+  .btn-danger.btn-lg,
+  .btn-warning.btn-lg {
+    width: 100%;
+    margin-bottom: 1rem;
+  }
+
+  .system-info-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+}
+
+/* Animaciones de entrada */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tool-card {
+  animation: slideInUp 0.5s ease-out;
+}
+
+.tool-card:nth-child(1) { animation-delay: 0.1s; }
+.tool-card:nth-child(2) { animation-delay: 0.2s; }
+.tool-card:nth-child(3) { animation-delay: 0.3s; }

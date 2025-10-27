@@ -1,0 +1,270 @@
+{% extends 'core/base.html' %}
+
+{% load static %}
+
+{% block title %}Relacionar Casos de Uso - {{ requerimiento.nombre }}{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'requerimientos/css/requerimiento_styles.css' %}?v=1.0">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'dashboards:lider_dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'proyectos:proyecto_detail_admin' proyecto.pk %}">{{ proyecto.nombre }}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'requerimientos:requerimiento_detail' requerimiento.pk %}">{{ requerimiento.nombre }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Relacionar Casos de Uso</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0">
+                        <i class="bi bi-link"></i>
+                        Relacionar Casos de Uso Existentes
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Información del requerimiento -->
+                    <div class="alert alert-info mb-4">
+                        <h5 class="alert-heading">
+                            <i class="bi bi-file-earmark-text"></i> Requerimiento: {{ requerimiento.nombre }}
+                        </h5>
+                        <p class="mb-2">
+                            <strong>Tipo:</strong> {{ requerimiento.get_tipo_display }}
+                        </p>
+                        <p class="mb-2">
+                            <strong>Estado:</strong> {{ requerimiento.get_estado_display }}
+                        </p>
+                        {% if requerimiento.descripcion %}
+                        <p class="mb-0">
+                            <strong>Descripción:</strong> {{ requerimiento.descripcion|truncatechars:100 }}
+                        </p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Casos ya relacionados -->
+                    {% if casos_relacionados %}
+                    <div class="card mb-4 border-success">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-check-circle"></i>
+                                Casos de Uso Ya Relacionados ({{ casos_relacionados|length }})
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                {% for caso in casos_relacionados %}
+                                <div class="col-md-6 col-lg-4 mb-3">
+                                    <div class="card h-100 border-success">
+                                        <div class="card-body">
+                                            <h6 class="card-title">
+                                                <i class="bi bi-diagram-3 text-success"></i>
+                                                {{ caso.nombre }}
+                                            </h6>
+                                            {% if caso.descripcion %}
+                                            <p class="card-text small text-muted">
+                                                {{ caso.descripcion|truncatechars:80 }}
+                                            </p>
+                                            {% endif %}
+                                            <div class="text-end">
+                                                <a href="{% url 'casos_de_uso:caso_de_uso_detail' caso.pk %}"
+                                                   class="btn btn-sm btn-outline-success">
+                                                    <i class="bi bi-eye"></i> Ver
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Formulario para seleccionar casos -->
+                    {% if casos_no_relacionados %}
+                    <form method="post" id="relacionarForm">
+                        {% csrf_token %}
+
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-list-check"></i>
+                                    Casos de Uso Disponibles ({{ casos_no_relacionados|length }})
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted mb-3">
+                                    Selecciona los casos de uso que deseas relacionar con este requerimiento:
+                                </p>
+
+                                <div class="row">
+                                    {% for caso in casos_no_relacionados %}
+                                    <div class="col-md-6 col-lg-4 mb-3">
+                                        <div class="card h-100">
+                                            <div class="card-body">
+                                                <div class="form-check">
+                                                    <input class="form-check-input caso-checkbox"
+                                                           type="checkbox"
+                                                           name="casos_seleccionados"
+                                                           value="{{ caso.pk }}"
+                                                           id="caso_{{ caso.pk }}">
+                                                    <label class="form-check-label w-100" for="caso_{{ caso.pk }}">
+                                                        <h6 class="mb-1">
+                                                            <i class="bi bi-diagram-3 text-primary"></i>
+                                                            {{ caso.nombre }}
+                                                        </h6>
+                                                        {% if caso.descripcion %}
+                                                        <p class="small text-muted mb-2">
+                                                            {{ caso.descripcion|truncatechars:80 }}
+                                                        </p>
+                                                        {% endif %}
+                                                        <small class="text-muted">
+                                                            Creado: {{ caso.fecha_creacion|date:'d/m/Y' }}
+                                                        </small>
+                                                    </label>
+                                                </div>
+                                                <div class="text-end mt-2">
+                                                    <a href="{% url 'casos_de_uso:caso_de_uso_detail' caso.pk %}"
+                                                       class="btn btn-sm btn-outline-primary"
+                                                       target="_blank">
+                                                        <i class="bi bi-eye"></i> Ver detalle
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+
+                                <!-- Controles del formulario -->
+                                <div class="d-flex justify-content-between align-items-center mt-4">
+                                    <div>
+                                        <button type="button" class="btn btn-outline-secondary" id="seleccionarTodos">
+                                            <i class="bi bi-check-all"></i> Seleccionar Todos
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary" id="deseleccionarTodos">
+                                            <i class="bi bi-x"></i> Deseleccionar Todos
+                                        </button>
+                                    </div>
+                                    <div>
+                                        <a href="{% url 'requerimientos:requerimiento_detail' requerimiento.pk %}"
+                                           class="btn btn-secondary me-2">
+                                            <i class="bi bi-arrow-left"></i> Cancelar
+                                        </a>
+                                        <button type="submit" class="btn btn-warning" id="btnRelacionar">
+                                            <i class="bi bi-link"></i> Relacionar Seleccionados
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                    {% else %}
+                    <!-- No hay casos disponibles -->
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <i class="bi bi-info-circle text-info" style="font-size: 3rem;"></i>
+                            <h5 class="mt-3">No hay casos de uso disponibles</h5>
+                            <p class="text-muted">
+                                Todos los casos de uso del proyecto ya están relacionados con este requerimiento,
+                                o no existen casos de uso en este proyecto.
+                            </p>
+                            <div class="mt-3">
+                                <a href="{% url 'casos_de_uso:caso_de_uso_create' proyecto.pk %}?requerimiento_id={{ requerimiento.pk }}"
+                                   class="btn btn-primary me-2">
+                                    <i class="bi bi-plus-circle"></i> Crear Nuevo Caso de Uso
+                                </a>
+                                <a href="{% url 'requerimientos:requerimiento_detail' requerimiento.pk %}"
+                                   class="btn btn-secondary">
+                                    <i class="bi bi-arrow-left"></i> Volver al Requerimiento
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.caso-checkbox {
+    transform: scale(1.2);
+    margin-right: 10px;
+}
+
+.card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transition: box-shadow 0.3s ease;
+}
+
+.form-check-label {
+    cursor: pointer;
+}
+
+#btnRelacionar:disabled {
+    opacity: 0.6;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('.caso-checkbox');
+    const btnRelacionar = document.getElementById('btnRelacionar');
+    const seleccionarTodosBtn = document.getElementById('seleccionarTodos');
+    const deseleccionarTodosBtn = document.getElementById('deseleccionarTodos');
+
+    // Función para actualizar el estado del botón
+    function actualizarBoton() {
+        const checkedCount = document.querySelectorAll('.caso-checkbox:checked').length;
+        btnRelacionar.disabled = checkedCount === 0;
+        btnRelacionar.textContent = checkedCount > 0
+            ? `Relacionar Seleccionados (${checkedCount})`
+            : 'Relacionar Seleccionados';
+    }
+
+    // Event listeners para checkboxes
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', actualizarBoton);
+    });
+
+    // Botón seleccionar todos
+    seleccionarTodosBtn.addEventListener('click', function() {
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = true;
+        });
+        actualizarBoton();
+    });
+
+    // Botón deseleccionar todos
+    deseleccionarTodosBtn.addEventListener('click', function() {
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        actualizarBoton();
+    });
+
+    // Inicializar estado del botón
+    actualizarBoton();
+
+    // Validación del formulario
+    document.getElementById('relacionarForm').addEventListener('submit', function(e) {
+        const checkedCount = document.querySelectorAll('.caso-checkbox:checked').length;
+        if (checkedCount === 0) {
+            e.preventDefault();
+            alert('Por favor, selecciona al menos un caso de uso para relacionar.');
+        }
+    });
+});
+</script>
+{% endblock %}

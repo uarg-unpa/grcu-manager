@@ -342,7 +342,7 @@ def requerimiento_historial(request, pk):
     
     if not (es_lider or es_participante):
         messages.error(request, "No tienes permiso para ver el historial de este requerimiento.")
-        return redirect('proyectos:proyecto_list')
+        return redirect('proyectos:lista_proyectos')
     
     # Obtener historial ordenado por fecha (más reciente primero)
     historial = requerimiento.history.all().order_by('-history_date')  # type: ignore[attr-defined]
@@ -396,7 +396,7 @@ def requerimiento_version_detail(request, pk, history_id):
     
     if not (es_lider or es_participante):
         messages.error(request, "No tienes permiso para ver esta información.")
-        return redirect('proyectos:proyecto_list')
+        return redirect('proyectos:lista_proyectos')
     
     # Obtener la versión histórica específica
     version = get_object_or_404(
@@ -474,7 +474,7 @@ def requerimiento_comparar_versiones(request, pk):
     
     if not (es_lider or es_participante):
         messages.error(request, "No tienes permiso para comparar versiones.")
-        return redirect('proyectos:proyecto_list')
+        return redirect('proyectos:lista_proyectos')
     
     # Obtener IDs de versiones a comparar
     history_id_1 = request.GET.get('version1_id')
@@ -548,3 +548,95 @@ def requerimiento_comparar_versiones(request, pk):
     }
     
     return render(request, 'requerimientos/comparar_versiones.html', context)
+
+
+@login_required
+def relacionar_casos_existentes(request, pk):
+    """
+    Vista para mostrar casos de uso existentes del proyecto y permitir relacionarlos con un requerimiento.
+    """
+    requerimiento = get_object_or_404(Requerimiento, pk=pk)
+    proyecto = requerimiento.proyecto
+
+    # Verificar permisos: solo líderes o participantes del proyecto
+    es_lider = request.user == proyecto.lider
+    es_participante = proyecto.participantes.filter(id=request.user.id).exists()
+
+    if not (es_lider or es_participante):
+        messages.error(
+            request,
+            'No tienes permiso para relacionar casos de uso con este requerimiento.'
+        )
+        return redirect('requerimientos:requerimiento_detail', pk=pk)
+
+    if request.method == 'POST':
+        # Procesar la selección de casos de uso
+        casos_seleccionados = request.POST.getlist('casos_seleccionados')
+
+        if not casos_seleccionados:
+            messages.warning(request, 'No se seleccionaron casos de uso para relacionar.')
+            return redirect('requerimientos:relacionar_casos_existentes', pk=pk)
+
+        from casos_de_uso.models import CasoDeUso
+        from requerimientos.models import RequerimientoCaso
+
+        casos_relacionados = 0
+        casos_ya_relacionados = 0
+
+        for caso_id in casos_seleccionados:
+            try:
+                caso = CasoDeUso.objects.get(pk=caso_id, proyecto=proyecto)
+
+                # Verificar si ya están relacionados
+                relacion_existente = RequerimientoCaso.objects.filter(
+                    requerimiento=requerimiento,
+                    caso_de_uso=caso
+                ).exists()
+
+                if not relacion_existente:
+                    RequerimientoCaso.objects.create(
+                        requerimiento=requerimiento,
+                        caso_de_uso=caso
+                    )
+                    casos_relacionados += 1
+                else:
+                    casos_ya_relacionados += 1
+
+            except CasoDeUso.DoesNotExist:
+                continue
+
+        if casos_relacionados > 0:
+            messages.success(
+                request,
+                f'✅ Se relacionaron {casos_relacionados} caso(s) de uso con el requerimiento "{requerimiento.nombre}".'
+            )
+
+        if casos_ya_relacionados > 0:
+            messages.info(
+                request,
+                f'ℹ️ {casos_ya_relacionados} caso(s) de uso ya estaban relacionados.'
+            )
+
+        return redirect('requerimientos:requerimiento_detail', pk=pk)
+
+    # GET: Mostrar casos de uso disponibles
+    from casos_de_uso.models import CasoDeUso
+
+    # Obtener todos los casos de uso del proyecto
+    casos_disponibles = CasoDeUso.objects.filter(proyecto=proyecto).select_related('proyecto')
+
+    # Obtener casos ya relacionados con este requerimiento
+    casos_relacionados_ids = requerimiento.casos_relacionados.values_list('id', flat=True)
+
+    # Filtrar casos que no están relacionados aún
+    casos_no_relacionados = casos_disponibles.exclude(id__in=casos_relacionados_ids)
+
+    context = {
+        'requerimiento': requerimiento,
+        'proyecto': proyecto,
+        'casos_no_relacionados': casos_no_relacionados,
+        'casos_relacionados': requerimiento.casos_relacionados.all(),
+        'page_title': f'{proyecto.nombre} - Relacionar Casos de Uso con {requerimiento.nombre}',
+    }
+
+    return render(request, 'requerimientos/relacionar_casos_existentes.html', context)

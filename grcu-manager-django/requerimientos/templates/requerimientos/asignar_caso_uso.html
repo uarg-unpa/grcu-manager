@@ -1,0 +1,197 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Título de la página -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-1">
+                        <i class="bi bi-link-45deg me-2"></i>Asignar Casos de Uso Existentes
+                    </h1>
+                    <p class="text-muted mb-0">
+                        Selecciona los casos de uso que deseas asignar al requerimiento: <strong>{{ requerimiento.nombre }}</strong>.
+                        Los casos ya asignados aparecen marcados y no pueden ser deseleccionados.
+                    </p>
+                </div>
+                <div>
+                    <a href="{% url 'requerimientos:requerimiento_detail' requerimiento.pk %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>Volver al Requerimiento
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Información del requerimiento -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-info-circle me-2"></i>Información del Requerimiento
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Nombre:</strong> {{ requerimiento.nombre }}</p>
+                            <p><strong>Tipo:</strong>
+                                <span class="badge bg-primary">{{ requerimiento.get_tipo_display }}</span>
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Estado:</strong>
+                                <span class="badge bg-secondary">{{ requerimiento.get_estado_display }}</span>
+                            </p>
+                            <p><strong>Proyecto:</strong> {{ proyecto.nombre }}</p>
+                        </div>
+                    </div>
+                    {% if requerimiento.descripcion %}
+                    <div class="row">
+                        <div class="col-12">
+                            <p><strong>Descripción:</strong></p>
+                            <p class="text-muted">{{ requerimiento.descripcion }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulario de selección de casos de uso -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-check-square me-2"></i>Casos de Uso Disponibles
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if casos_con_estado %}
+                        <form method="post" id="asignar-form">
+                            {% csrf_token %}
+                            <div class="row">
+                                {% for caso_estado in casos_con_estado %}
+                                <div class="col-md-6 col-lg-4 mb-3">
+                                    <div class="card h-100 border-primary {% if caso_estado.ya_asignado %}border-success bg-light{% endif %}">
+                                        <div class="card-body">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" 
+                                                       value="{{ caso_estado.caso.id }}" id="caso_{{ caso_estado.caso.id }}" 
+                                                       name="casos_seleccionados"
+                                                       {% if caso_estado.ya_asignado %}checked disabled{% endif %}>
+                                                <label class="form-check-label w-100" for="caso_{{ caso_estado.caso.id }}">
+                                                    <div class="d-flex justify-content-between align-items-start">
+                                                        <div class="flex-grow-1">
+                                                            <h6 class="mb-1">
+                                                                {{ caso_estado.caso.nombre }}
+                                                                {% if caso_estado.ya_asignado %}
+                                                                <span class="badge bg-success ms-1">
+                                                                    <i class="bi bi-check-circle-fill"></i> Ya asignado
+                                                                </span>
+                                                                {% endif %}
+                                                            </h6>
+                                                            {% if caso_estado.caso.descripcion %}
+                                                            <p class="text-muted small mb-2">{{ caso_estado.caso.descripcion|truncatechars:80 }}</p>
+                                                            {% endif %}
+                                                            <div class="d-flex gap-2">
+                                                                <span class="badge bg-info">{{ caso_estado.caso.get_tipo_display }}</span>
+                                                                <span class="badge bg-secondary">{{ caso_estado.caso.get_estado_display }}</span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="ms-2">
+                                                            {% if caso_estado.ya_asignado %}
+                                                            <i class="bi bi-check-circle-fill text-success"></i>
+                                                            {% else %}
+                                                            <i class="bi bi-circle text-primary"></i>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+
+                            <!-- Botones de acción -->
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <button type="button" class="btn btn-outline-secondary" onclick="seleccionarNoAsignados()">
+                                                <i class="bi bi-check-all me-1"></i>Seleccionar No Asignados
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary ms-2" onclick="deseleccionarTodos()">
+                                                <i class="bi bi-x me-1"></i>Deseleccionar Todos
+                                            </button>
+                                        </div>
+                                        <div>
+                                            <button type="submit" class="btn btn-success" id="btn-asignar" disabled>
+                                                <i class="bi bi-link-45deg me-1"></i>Asignar Casos de Uso Seleccionados
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-info-circle text-muted" style="font-size: 3rem;"></i>
+                            <h5 class="mt-3 text-muted">No hay casos de uso en este proyecto</h5>
+                            <p class="text-muted">
+                                No existen casos de uso en el proyecto "{{ proyecto.nombre }}".
+                                Crea algunos casos de uso primero antes de poder asignarlos a requerimientos.
+                            </p>
+                            <a href="{% url 'casos_de_uso:caso_de_uso_create' %}?proyecto_id={{ proyecto.id }}" class="btn btn-primary">
+                                <i class="bi bi-plus-circle me-1"></i>Crear Caso de Uso
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if casos_con_estado %}
+<script>
+// Función para seleccionar todos los casos no asignados
+function seleccionarNoAsignados() {
+    const checkboxes = document.querySelectorAll('input[name="casos_seleccionados"]:not(:disabled)');
+    checkboxes.forEach(cb => cb.checked = true);
+    actualizarBotonAsignar();
+}
+
+// Función para deseleccionar todos los checkboxes
+function deseleccionarTodos() {
+    const checkboxes = document.querySelectorAll('input[name="casos_seleccionados"]');
+    checkboxes.forEach(cb => cb.checked = false);
+    actualizarBotonAsignar();
+}
+
+// Función para actualizar el estado del botón de asignar
+function actualizarBotonAsignar() {
+    const checkboxes = document.querySelectorAll('input[name="casos_seleccionados"]:not(:disabled):checked');
+    const btnAsignar = document.getElementById('btn-asignar');
+    btnAsignar.disabled = checkboxes.length === 0;
+}
+
+// Agregar event listeners a los checkboxes
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('input[name="casos_seleccionados"]');
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', actualizarBotonAsignar);
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Eliminar Caso de Uso{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h2 class="mb-0">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        Confirmar Eliminación
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <strong>¡Atención!</strong> Esta acción no se puede deshacer.
+                    </div>
+
+                    <p>¿Estás seguro de que deseas eliminar el siguiente caso de uso?</p>
+
+                    <div class="card border-warning">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ caso.nombre }}</h5>
+                            <p class="card-text mb-2">
+                                <strong>Proyecto:</strong> {{ proyecto.nombre }}
+                            </p>
+                            {% if caso.descripcion %}
+                            <p class="card-text">
+                                <strong>Descripción:</strong> {{ caso.descripcion|truncatechars:100 }}
+                            </p>
+                            {% endif %}
+                            <p class="card-text">
+                                <strong>Creado por:</strong> {{ caso.creado_por.get_full_name|default:caso.creado_por.username }}
+                                <br>
+                                <strong>Fecha de creación:</strong> {{ caso.fecha_creacion|date:"d/m/Y H:i" }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <p class="text-muted">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Al eliminar este caso de uso, también se eliminarán todos sus detalles específicos
+                            y se perderá su historial de versiones.
+                        </p>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'casos_de_uso:caso_de_uso_detail' caso.pk %}"
+                           class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Cancelar
+                        </a>
+                        <form method="post" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash-fill"></i> Sí, Eliminar Caso de Uso
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

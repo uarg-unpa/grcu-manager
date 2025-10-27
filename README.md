@@ -55,7 +55,7 @@ Su propósito principal es ofrecer a equipos de desarrollo una herramienta prác
 
 1. Clonar el repositorio:  
    ```bash
-   git clone https://github.com/usuario/grcu-manager.git
+   git clone https://github.com/uarg-unpa/grcu-manager.git
    cd grcu-manager
    ```
 2. Configurar entorno virtual y dependencias:  

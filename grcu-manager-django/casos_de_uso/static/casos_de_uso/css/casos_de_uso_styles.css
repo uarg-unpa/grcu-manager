@@ -109,8 +109,8 @@
     flex-shrink: 0;
 }
 
-/* Card de detalles colapsable */
-.collapse .card-body {
+/* Card de detalles colapsable - REMOVIDO */
+/* .collapse .card-body {
     background: #f8f9fa;
     border-left: 3px solid #17A2B8;
     padding: 16px;
@@ -121,7 +121,7 @@
 .collapse .card-body b {
     color: #17A2B8;
     font-weight: 600;
-}
+} */
 
 /* Badges de tipo de detalle */
 .badge-tradicional {
@@ -142,8 +142,8 @@
     font-size: 0.85rem;
 }
 
-/* Botón toggle de detalles */
-.btn-toggle-detalle {
+/* Botón toggle de detalles - REMOVIDO */
+/* .btn-toggle-detalle {
     background: linear-gradient(135deg, #17A2B8 0%, #138496 100%);
     border: none;
     color: white;
@@ -154,7 +154,7 @@
     background: linear-gradient(135deg, #138496 0%, #17A2B8 100%);
     transform: scale(1.05);
     color: white;
-}
+} */
 
 /* Responsivo */
 @media (max-width: 768px) {
