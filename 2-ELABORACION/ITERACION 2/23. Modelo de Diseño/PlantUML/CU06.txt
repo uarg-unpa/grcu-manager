@@ -1,0 +1,41 @@
+@startuml
+actor "Analista / Líder" as Usuario
+participant "Interfaz de usuario" as UI
+participant "Gestor de Requerimientos" as Gestor
+database "BDD" as BDD
+
+== Inicio ==
+Usuario -> UI : Seleccionar "Nuevo requerimiento"
+UI -> Gestor : iniciarRegistro(proyectoId)
+Gestor -> BDD : obtenerMetodologia(proyectoId)
+BDD --> Gestor : metodologia
+Gestor -> UI : mostrarFormulario(metodologia)
+
+== Carga de datos ==
+Usuario -> UI : Completar y enviar formulario (datos)
+UI -> Gestor : enviarFormulario(proyectoId, datos, metodologia)
+
+== Validación ==
+Gestor -> Gestor : validarObligatorios(datos)
+
+alt Faltan campos obligatorios
+  Gestor -> UI : mostrarError("Campos obligatorios faltan")
+  UI -> Usuario : Solicitar corrección y reintento
+
+else Campos completos
+  alt Metodología = Tradicional
+    Gestor -> BDD : registrarReqTradicional(proyectoId, datos)
+  else Metodología = Ágil
+    Gestor -> BDD : registrarReqAgil(proyectoId, datosHU)
+  end
+
+  BDD --> Gestor : {OK / ERROR}
+
+  alt Registro OK
+    Gestor -> UI : notificar("Requerimiento registrado")
+    UI -> Usuario : Confirmación y vista actualizada
+  else Error en base de datos
+    Gestor -> UI : notificarError("Fallo en la BDD; no se guardó")
+  end
+end
+@enduml

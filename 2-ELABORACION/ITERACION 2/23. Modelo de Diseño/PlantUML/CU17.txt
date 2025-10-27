@@ -1,0 +1,33 @@
+@startuml
+actor "Analista / Líder" as Usuario
+participant "Interfaz de usuario" as UI
+participant "Gestor de Trazabilidad" as Gestor
+database "BDD" as BDD
+collections "Exportador" as Exportador
+
+== Inicio ==
+Usuario -> UI : Acceder a sección "Trazabilidad"
+UI -> Gestor : listarRequerimientosSinCaso(proyectoId)
+Gestor -> BDD : obtenerRequerimientosSinVinculo(proyectoId)
+BDD --> Gestor : listaRequerimientos[]
+
+alt Todos los requerimientos vinculados
+  Gestor -> UI : mostrarMensaje("No se encontraron requerimientos huérfanos")
+else Requerimientos sin vincular
+  Gestor -> UI : mostrarListado(listaRequerimientos)
+
+  == Exportación ==
+  Usuario -> UI : Solicitar exportar listado (PDF o CSV)
+  UI -> Gestor : exportarListado(formato, listaRequerimientos)
+  Gestor -> Exportador : generarArchivo(formato, listaRequerimientos)
+  Exportador --> Gestor : {OK / ERROR}
+
+  alt Exportación OK
+    Gestor -> UI : mostrarArchivoDescargable(formato)
+  else Error en exportación
+    Gestor -> Exportador : generarArchivo("CSV", listaRequerimientos)
+    Exportador --> Gestor : OK
+    Gestor -> UI : ofrecerDescargaAlternativa("CSV")
+  end
+end
+@enduml

@@ -1,0 +1,39 @@
+@startuml
+actor "Stakeholder / Validador" as Usuario
+participant "Interfaz de usuario" as UI
+participant "Gestor de Requerimientos" as Gestor
+database "BDD" as BDD
+
+== Inicio ==
+Usuario -> UI : Abrir requerimiento pendiente de validación
+UI -> Gestor : obtenerDetalle(reqId)
+Gestor -> BDD : buscarRequerimiento(reqId)
+BDD --> Gestor : datosRequerimiento
+Gestor -> UI : mostrarDetalle(datosRequerimiento)
+
+== Validación ==
+Usuario -> UI : Seleccionar opción "Validar requerimiento"
+UI -> Gestor : mostrarOpcionesValidacion([Aprobar, Rechazar, Comentar])
+Usuario -> Gestor : Enviar decisión(opción, comentario)
+
+alt Usuario sin permisos
+  Gestor -> UI : bloquearAccion("No tiene permisos para validar")
+else Usuario con permisos
+  Gestor -> BDD : verificarEstado(reqId)
+  BDD --> Gestor : estado
+
+  alt Ya validado
+    Gestor -> UI : mostrarMensaje("Este requerimiento ya fue procesado")
+  else Pendiente de validación
+    Gestor -> BDD : registrarValidacion(reqId, usuarioId, opcion, comentario, fecha)
+    BDD --> Gestor : {OK / ERROR}
+
+    alt Guardado OK
+      Gestor -> UI : actualizarEstadoRequerimiento()
+      UI -> Usuario : Mostrar confirmación de validación
+    else Error al guardar
+      Gestor -> UI : notificarError("No se pudo registrar la validación")
+    end
+  end
+end
+@enduml

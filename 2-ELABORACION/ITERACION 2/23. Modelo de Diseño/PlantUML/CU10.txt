@@ -1,0 +1,41 @@
+@startuml
+actor "Analista / Líder" as Usuario
+participant "Interfaz de usuario" as UI
+participant "Gestor de Casos de Uso" as Gestor
+database "BDD" as BDD
+
+== Inicio ==
+Usuario -> UI : Seleccionar "Nuevo caso de uso"
+UI -> Gestor : iniciarRegistroCU(proyectoId)
+Gestor -> BDD : obtenerMetodologia(proyectoId)
+BDD --> Gestor : metodologia
+Gestor -> UI : mostrarFormularioCU(metodologia)
+
+== Carga de datos ==
+Usuario -> UI : Completar formulario (datosCU)
+UI -> Gestor : enviarFormularioCU(proyectoId, datosCU, metodologia)
+
+== Validación ==
+Gestor -> Gestor : validarCamposObligatorios(datosCU)
+
+alt Campos incompletos
+  Gestor -> UI : mostrarError("Faltan campos obligatorios")
+  UI -> Usuario : Solicitar corrección
+else Campos completos
+  alt Metodología = Tradicional
+    Gestor -> BDD : registrarCUTradicional(proyectoId, datosCU)
+  else Metodología = Ágil
+    Gestor -> BDD : registrarCUAgil(proyectoId, datosCU)
+  end
+
+  BDD --> Gestor : {OK / ERROR}
+
+  alt Registro OK
+    Gestor -> UI : notificar("Caso de uso registrado y asociado al proyecto")
+    UI -> Usuario : Mostrar confirmación
+  else Error en BDD
+    Gestor -> UI : notificarError("Error al guardar en la base de datos")
+    UI -> Usuario : Mostrar mensaje de error
+  end
+end
+@enduml

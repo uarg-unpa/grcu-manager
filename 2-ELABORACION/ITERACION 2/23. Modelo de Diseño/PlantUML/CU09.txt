@@ -1,0 +1,32 @@
+@startuml
+actor "Usuario autorizado" as Usuario
+participant "Interfaz de usuario" as UI
+participant "Gestor de Casos de Uso" as Gestor
+database "BDD" as BDD
+
+== Inicio ==
+Usuario -> UI : Acceder al módulo "Casos de uso"
+UI -> Gestor : obtenerCasosDeUso(proyectoId)
+Gestor -> BDD : listarCasosDeUso(proyectoId)
+BDD --> Gestor : listaCU
+Gestor -> UI : mostrarLista(listaCU)
+
+== Selección ==
+Usuario -> UI : Seleccionar caso de uso (cuId)
+UI -> Gestor : obtenerDetalle(cuId)
+Gestor -> BDD : obtenerDetalle(cuId)
+BDD --> Gestor : detalleCU
+Gestor -> UI : mostrarDetalle(detalleCU)
+
+== Historial ==
+Usuario -> UI : Seleccionar "Ver historial de cambios"
+UI -> Gestor : obtenerHistorial(cuId)
+Gestor -> BDD : listarHistorial(cuId)
+BDD --> Gestor : historial[]
+
+alt Sin registros históricos
+  Gestor -> UI : mostrarMensaje("No hay registros históricos")
+else Con registros
+  Gestor -> UI : mostrarHistorial(historial en orden cronológico)
+end
+@enduml

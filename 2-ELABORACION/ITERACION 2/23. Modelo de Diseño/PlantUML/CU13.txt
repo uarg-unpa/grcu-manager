@@ -1,0 +1,41 @@
+@startuml
+actor "Usuario autorizado" as Usuario
+participant "Interfaz de usuario" as UI
+participant "Gestor de Requerimientos" as Gestor
+database "BDD" as BDD
+collections "Almacenamiento / Enlaces" as Repo
+
+== Inicio ==
+Usuario -> UI : Abrir requerimiento existente
+UI -> Gestor : obtenerDetalle(reqId)
+Gestor -> BDD : buscarRequerimiento(reqId)
+BDD --> Gestor : datosRequerimiento
+Gestor -> UI : mostrarDetalle(datosRequerimiento)
+
+== Adjuntar archivo ==
+Usuario -> UI : Seleccionar "Adjuntar archivo"
+UI -> Gestor : abrirDialogoCarga()
+Gestor -> Usuario : Mostrar opciones (archivo o enlace)
+Usuario -> Gestor : Enviar archivo o enlace
+
+== Validación ==
+Gestor -> Gestor : validarFormatoYTamano(archivo/enlace)
+
+alt Formato no válido
+  Gestor -> UI : mostrarError("Formato no permitido")
+else Tamaño excedido
+  Gestor -> UI : solicitarNuevoArchivo()
+else Archivo válido
+  Gestor -> Repo : guardarArchivo(reqId, archivo/enlace)
+  Repo --> Gestor : {OK / ERROR}
+
+  alt Guardado OK
+    Gestor -> BDD : registrarReferenciaArchivo(reqId, ruta/enlace)
+    BDD --> Gestor : OK
+    Gestor -> UI : actualizarVistaConArchivo()
+    UI -> Usuario : Mostrar archivo adjunto
+  else Error al guardar
+    Gestor -> UI : notificarError("No se pudo cargar el archivo")
+  end
+end
+@enduml

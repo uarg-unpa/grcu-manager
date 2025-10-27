@@ -1,0 +1,35 @@
+@startuml
+actor "Usuario autorizado" as Usuario
+participant "Interfaz de usuario" as UI
+participant "Gestor de Requerimientos" as Gestor
+database "BDD" as BDD
+collections "Caché" as Cache
+
+== Inicio ==
+Usuario -> UI : Acceder al detalle del requerimiento
+UI -> Gestor : obtenerDetalle(reqId)
+Gestor -> BDD : buscarRequerimiento(reqId)
+BDD --> Gestor : datosRequerimiento
+Gestor -> UI : mostrarDetalle(datosRequerimiento)
+
+== Comentario ==
+Usuario -> UI : Seleccionar "Agregar comentario"
+UI -> Gestor : mostrarCampoTexto()
+Usuario -> Gestor : Enviar comentario(texto)
+
+alt Campo vacío
+  Gestor -> UI : mostrarError("No se puede enviar un comentario vacío")
+else Comentario con texto
+  Gestor -> BDD : registrarComentario(reqId, usuarioId, texto, fecha)
+  BDD --> Gestor : {OK / ERROR}
+
+  alt Guardado OK
+    Gestor -> UI : actualizarHiloComentarios()
+    UI -> Usuario : Mostrar nuevo comentario
+  else Error de conexión
+    Gestor -> Cache : guardarTemporal(reqId, texto, fecha)
+    Cache --> Gestor : OK
+    Gestor -> UI : notificar("Comentario guardado localmente, se sincronizará luego")
+  end
+end
+@enduml

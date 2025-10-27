@@ -1,0 +1,44 @@
+@startuml
+
+actor "Persona (despliegue inicial)" as Persona
+participant "Sistema" as Sistema
+database "BDD" as BDD
+participant "UARGFlow / OAuth2" as OAuth2
+
+note over Sistema
+Precondiciones:
+ - Primera ejecución del sistema
+ - La BDD no contiene usuario administrador
+
+Disparador:
+ - El sistema detecta ausencia de admin en el arranque
+end note
+
+== Arranque ==
+Persona -> Sistema : Ejecutar sistema por primera vez
+activate Sistema
+Sistema -> BDD : verificarEstado()\n¿existeAdministrador?
+BDD --> Sistema : false (no hay admin)
+
+Sistema -> Persona : Mostrar formulario de registro de admin
+Persona -> Sistema : Ingresar email y contraseña
+
+Sistema -> OAuth2 : validarCredenciales(email, contraseña)
+OAuth2 --> Sistema : {válidas / inválidas}
+
+alt Credenciales válidas
+  Sistema -> BDD : crearUsuarioAdmin(email, hashPwd, metadata)
+  BDD --> Sistema : {OK / ERROR}
+
+  alt Registro OK
+    Sistema -> Persona : Notificar creación exitosa\nContinuar despliegue
+  else Error al registrar
+    Sistema -> Persona : Mostrar mensaje de error
+    Sistema -> BDD : registrarIncidente(error)
+  end
+
+else Credenciales inválidas
+  Sistema -> Persona : Mostrar error y solicitar reingreso
+end
+deactivate Sistema
+@enduml

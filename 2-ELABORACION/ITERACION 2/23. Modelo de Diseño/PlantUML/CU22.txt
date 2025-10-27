@@ -1,0 +1,35 @@
+@startuml
+actor "Usuario autorizado" as Usuario
+participant "Interfaz de usuario" as UI
+participant "Gestor de Visualización" as Gestor
+database "BDD" as BDD
+participant "Motor Gráfico" as Motor
+
+== Inicio ==
+Usuario -> UI : Acceder al módulo "Visualización"
+UI -> Gestor : generarVistaTrazabilidad(proyectoId)
+Gestor -> BDD : obtenerVinculosRequerimientosCasos(proyectoId)
+BDD --> Gestor : datosTrazabilidad[]
+
+alt Sin elementos para visualizar
+  Gestor -> UI : mostrarMensaje("No hay trazabilidad registrada")
+else Con datos disponibles
+  Gestor -> Motor : construirDiagrama(datosTrazabilidad)
+  Motor --> Gestor : diagramaInteractivo
+  Gestor -> UI : mostrarDiagrama(diagramaInteractivo)
+
+  == Interacción ==
+  Usuario -> UI : Acercar / Alejar / Filtrar elementos
+  UI -> Motor : aplicarFiltros(criterios)
+  Motor --> UI : actualizarVista()
+
+  == Exportación ==
+  Usuario -> UI : Exportar vista / Generar captura
+  UI -> Motor : exportarVista(formato)
+  Motor --> UI : confirmarExportacion()
+end
+
+alt Navegador no compatible
+  Gestor -> UI : ofrecerVersionEstatica()
+end
+@enduml

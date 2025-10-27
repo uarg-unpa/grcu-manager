@@ -1,0 +1,60 @@
+@startuml
+skinparam packageStyle rectangle
+skinparam dpi 160
+left to right direction
+
+package "Autenticación" as PKG_AUTH {
+  usecase "CU-01 Autenticarse" as UC01
+}
+
+package "Gestión de Proyectos y Usuarios" as PKG_PROJECT {
+  usecase "CU-02 Gestionar usuarios" as UC02
+  usecase "CU-03 Crear proyecto" as UC03
+  usecase "CU-04 Asignar roles al proyecto" as UC04
+  usecase "CU-05 Seleccionar metodología" as UC05
+}
+
+package "Gestión de Requerimientos" as PKG_REQ {
+  usecase "CU-06 Registrar requerimiento" as UC06
+  usecase "CU-07 Priorizar requerimiento" as UC07
+  usecase "CU-08 Consultar historial RF" as UC08
+  usecase "CU-11 Definir dependencias" as UC11
+  usecase "CU-12 Agrupar requerimientos" as UC12
+  usecase "CU-13 Adjuntar archivo RF" as UC13
+  usecase "CU-20 Validar requerimiento" as UC20
+}
+
+package "Gestión de Casos de Uso" as PKG_CU {
+  usecase "CU-09 Consultar historial CU" as UC09
+  usecase "CU-10 Registrar caso de uso" as UC10
+  usecase "CU-14 Adjuntar archivo CU" as UC14
+}
+
+package "Trazabilidad y Análisis" as PKG_TRACE {
+  usecase "CU-15 Generar matriz de trazabilidad" as UC15
+  usecase "CU-16 Listar CU sin RF" as UC16
+  usecase "CU-17 Listar RF sin CU" as UC17
+  usecase "CU-22 Visualizar trazabilidad" as UC22
+}
+
+package "Colaboración" as PKG_COLLAB {
+  usecase "CU-18 Comentar requerimiento" as UC18
+  usecase "CU-19 Comentar caso de uso" as UC19
+}
+
+package "Reportes" as PKG_REP {
+  usecase "CU-21 Generar informe" as UC21
+}
+
+' Dependencias entre paquetes
+PKG_PROJECT ..> PKG_AUTH
+PKG_REQ ..> PKG_PROJECT
+PKG_CU ..> PKG_PROJECT
+PKG_TRACE ..> PKG_REQ
+PKG_TRACE ..> PKG_CU
+PKG_COLLAB ..> PKG_REQ
+PKG_COLLAB ..> PKG_CU
+PKG_REP ..> PKG_TRACE
+PKG_REP ..> PKG_COLLAB
+
+@enduml

@@ -1,0 +1,45 @@
+@startuml
+actor "Analista / Líder" as Usuario
+participant "Interfaz de usuario" as UI
+participant "Gestor de Requerimientos" as Gestor
+database "BDD" as BDD
+
+== Inicio ==
+Usuario -> UI : Acceder al módulo "Requerimientos"
+UI -> Gestor : obtenerRequerimientos(proyectoId)
+Gestor -> BDD : listarRequerimientos(proyectoId)
+BDD --> Gestor : listaRequerimientos
+Gestor -> UI : mostrarLista(listaRequerimientos)
+
+== Selección ==
+Usuario -> UI : Seleccionar requerimiento (reqId)
+UI -> Gestor : mostrarOpciones(reqId)
+Gestor -> UI : mostrarOpcion("Agregar dependencia")
+
+== Definición de dependencia ==
+Usuario -> UI : Seleccionar requerimiento dependiente (reqDependienteId)
+UI -> Gestor : definirDependencia(reqId, reqDependienteId)
+Gestor -> BDD : validarExistencia(reqDependienteId)
+BDD --> Gestor : {existe / noExiste}
+
+alt Requerimiento no existe
+  Gestor -> UI : mostrarError("El requerimiento seleccionado no existe o fue eliminado")
+else Existe requerimiento
+  Gestor -> BDD : verificarDependenciaDuplicada(reqId, reqDependienteId)
+  BDD --> Gestor : {duplicada / noDuplicada}
+
+  alt Dependencia duplicada
+    Gestor -> UI : mostrarMensaje("Dependencia duplicada")
+  else No duplicada
+    Gestor -> BDD : guardarDependencia(reqId, reqDependienteId)
+    BDD --> Gestor : {OK / ERROR}
+
+    alt Guardado OK
+      Gestor -> UI : actualizarVistaRequerimientos()
+      UI -> Usuario : Mostrar dependencias actualizadas
+    else Error al guardar
+      Gestor -> UI : mostrarError("No se pudo registrar la dependencia")
+    end
+  end
+end
+@enduml

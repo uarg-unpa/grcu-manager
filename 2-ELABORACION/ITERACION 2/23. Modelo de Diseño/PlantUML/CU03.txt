@@ -1,0 +1,44 @@
+@startuml
+actor "Docente administrador" as Admin
+participant "Interfaz de usuario" as UI
+participant "Gestor de Usuarios" as Gestor
+database "BDD" as BDD
+
+== Inicio ==
+Admin -> UI : Seleccionar opción "Gestión de usuarios"
+UI -> Gestor : solicitarListaUsuarios()
+Gestor -> BDD : obtenerUsuarios()
+BDD --> Gestor : listaUsuarios
+Gestor -> UI : mostrarListaUsuarios(listaUsuarios)
+
+== Gestión ==
+Admin -> UI : Agregar / Modificar / Eliminar usuario
+UI -> Gestor : procesarAccion(tipoAccion, datosUsuario)
+
+alt Agregar o Modificar
+  Gestor -> BDD : guardarDatosUsuario(nombre, correo, rol, contraseña)
+  BDD --> Gestor : confirmación
+  Gestor -> UI : acciónConfirmada()
+  UI -> Admin : Mostrar mensaje "Actualización exitosa"
+
+else Eliminar
+  Gestor -> BDD : verificarProyectosAsociados(idUsuario)
+  BDD --> Gestor : {tiene / noTiene}
+
+  alt Tiene proyectos asociados
+    Gestor -> UI : Solicitar reasignación antes de eliminar
+    UI -> Admin : Mostrar advertencia
+  else No tiene proyectos
+    Gestor -> BDD : eliminarUsuario(idUsuario)
+    BDD --> Gestor : confirmación
+    Gestor -> UI : acciónConfirmada()
+    UI -> Admin : Mostrar mensaje "Usuario eliminado"
+  end
+end
+
+== Actualización ==
+Gestor -> BDD : actualizarDatosEnTiempoReal()
+BDD --> Gestor : OK
+Gestor -> UI : reflejarCambios()
+
+@enduml
