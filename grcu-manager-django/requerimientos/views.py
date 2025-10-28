@@ -664,10 +664,11 @@ def requerimiento_update(request, pk):
     es_agil = proyecto.metodologia == 'AGIL'
     
     if request.method == 'POST':
+        # Instanciar el formulario apropiado
         if es_tradicional:
-            form = RequerimientoTradicionalForm(request.POST, request.FILES, instance=requerimiento)
+            form = RequerimientoTradicionalForm(request.POST, request.FILES)
         elif es_agil:
-            form = RequerimientoAgilForm(request.POST, request.FILES, instance=requerimiento)
+            form = RequerimientoAgilForm(request.POST, request.FILES)
         else:
             messages.error(request, 'Metodología no reconocida.')
             return redirect('requerimientos:requerimiento_detail', pk=pk)
@@ -678,7 +679,12 @@ def requerimiento_update(request, pk):
             requerimiento.descripcion = form.cleaned_data.get('descripcion', '')
             requerimiento.tipo = form.cleaned_data['tipo']
             requerimiento.estado = form.cleaned_data['estado']
-            requerimiento.imagen = form.cleaned_data.get('imagen')
+            
+            # Manejar imagen (solo si se subió una nueva)
+            nueva_imagen = form.cleaned_data.get('imagen')
+            if nueva_imagen:
+                requerimiento.imagen = nueva_imagen
+            
             requerimiento.link_externo = form.cleaned_data.get('link_externo', '')
             requerimiento.save()
             
@@ -784,7 +790,7 @@ def requerimiento_delete(request, pk):
     
     if request.method == 'POST':
         nombre = requerimiento.nombre
-        proyecto_id = proyecto.id
+        proyecto_id = proyecto.pk
         requerimiento.delete()
         messages.success(request, f'✅ Requerimiento "{nombre}" eliminado exitosamente.')
         return redirect('requerimientos:requerimiento_list')
