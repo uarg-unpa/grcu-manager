@@ -108,11 +108,19 @@
                     <i class="bi bi-arrow-left"></i> Volver a la lista
                 </a>
                 <div>
-                    {% comment %} Botones de edición e historial bloqueados para demo {% endcomment %}
-                    <a href="{% url 'under_development' %}?feature_name=Editar Requerimiento" 
+                    {% comment %} Solo historial bloqueado {% endcomment %}
+                    {% if user == requerimiento.proyecto.lider or user == requerimiento.creado_por %}
+                    <a href="{% url 'requerimientos:requerimiento_update' requerimiento.pk %}" 
                        class="btn btn-warning">
                         <i class="bi bi-pencil"></i> Editar
                     </a>
+                    {% endif %}
+                    {% if user == requerimiento.proyecto.lider %}
+                    <a href="{% url 'requerimientos:requerimiento_delete' requerimiento.pk %}" 
+                       class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Eliminar
+                    </a>
+                    {% endif %}
                     <a href="{% url 'under_development' %}?feature_name=Historial de Requerimientos" 
                        class="btn btn-info text-white">
                         <i class="bi bi-clock-history"></i> Ver Historial
