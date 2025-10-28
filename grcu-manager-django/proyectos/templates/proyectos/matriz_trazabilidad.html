@@ -196,9 +196,44 @@
     }
 
     .celda-relacion.no-relacionado {
-        background: #fef5f5;
+        background: #ffebee;
         color: #e0e0e0;
     }
+
+    /* Efecto pulsante para huérfanos */
+    @keyframes pulse-red {
+        0%, 100% {
+            background-color: #ffebee;
+            box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.4);
+        }
+        50% {
+            background-color: #ffcdd2;
+            box-shadow: 0 0 8px 2px rgba(244, 67, 54, 0.3);
+        }
+    }
+
+    .celda-huerfana {
+        animation: pulse-red 2.5s ease-in-out infinite;
+        background: #ffebee !important;
+        border: 1px solid #ef9a9a !important;
+        cursor: help;
+    }
+
+    .req-huerfano {
+        animation: pulse-red 2.5s ease-in-out infinite;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        display: inline-block;
+        cursor: help;
+    }
+
+    .caso-huerfano {
+        animation: pulse-red 2.5s ease-in-out infinite;
+        background: #ffebee !important;
+        border: 1px solid #ef9a9a !important;
+        cursor: help;
+    }
+
 
     /* Badges */
     .badge-tipo {
@@ -392,14 +427,6 @@
         <form method="get" id="filtrosForm">
             <div class="filtros-grid">
                 <div class="filtro-group">
-                    <label for="tipo_req">Tipo de Requerimiento</label>
-                    <select name="tipo_req" id="tipo_req" class="form-select">
-                        <option value="">Todos</option>
-                        <option value="FUNCIONAL" {% if filtro_tipo_req == 'FUNCIONAL' %}selected{% endif %}>Funcional</option>
-                        <option value="NO_FUNCIONAL" {% if filtro_tipo_req == 'NO_FUNCIONAL' %}selected{% endif %}>No Funcional</option>
-                    </select>
-                </div>
-                <div class="filtro-group">
                     <label for="estado_req">Estado de Requerimiento</label>
                     <select name="estado_req" id="estado_req" class="form-select">
                         <option value="">Todos</option>
@@ -437,10 +464,11 @@
             <thead>
                 <tr>
                     <th style="min-width: 300px;">Requerimiento</th>
-                    <th style="min-width: 120px;">Tipo</th>
                     <th style="min-width: 120px;">Estado</th>
                     {% for caso in casos %}
-                    <th class="caso-header caso-tooltip" data-nombre="{{ caso.nombre }}">
+                    <th class="caso-header caso-tooltip {% if caso in casos_huerfanos %}caso-huerfano{% endif %}" 
+                        data-nombre="{{ caso.nombre }}"
+                        title="{% if caso in casos_huerfanos %}⚠️ Caso de uso sin requerimientos asociados{% else %}{{ caso.nombre }}{% endif %}">
                         CU-{{ caso.pk }}
                     </th>
                     {% endfor %}
@@ -451,14 +479,10 @@
                 <tr>
                     <td>
                         <span class="req-id">REQ-{{ fila.requerimiento.pk }}</span>
-                        <span class="req-nombre">{{ fila.requerimiento.nombre }}</span>
-                    </td>
-                    <td>
-                        {% if fila.requerimiento.tipo == 'FUNCIONAL' %}
-                            <span class="badge-tipo badge-funcional">Funcional</span>
-                        {% else %}
-                            <span class="badge-tipo badge-no-funcional">No Funcional</span>
-                        {% endif %}
+                        <span class="req-nombre {% if fila.requerimiento in reqs_huerfanos %}req-huerfano{% endif %}"
+                              title="{% if fila.requerimiento in reqs_huerfanos %}⚠️ Requerimiento sin casos de uso asociados{% endif %}">
+                            {{ fila.requerimiento.nombre }}
+                        </span>
                     </td>
                     <td>
                         {% if fila.requerimiento.estado == 'PENDIENTE' %}
@@ -470,7 +494,8 @@
                         {% endif %}
                     </td>
                     {% for caso in casos %}
-                    <td class="celda-relacion {% if caso.id in fila.relaciones %}relacionado{% else %}no-relacionado{% endif %}">
+                    <td class="celda-relacion {% if caso.id in fila.relaciones %}relacionado{% else %}no-relacionado{% if fila.requerimiento in reqs_huerfanos or caso in casos_huerfanos %} celda-huerfana{% endif %}{% endif %}"
+                        title="{% if caso.id not in fila.relaciones %}{% if fila.requerimiento in reqs_huerfanos and caso in casos_huerfanos %}⚠️ Ambos sin relaciones{% elif fila.requerimiento in reqs_huerfanos %}⚠️ Requerimiento sin casos de uso{% elif caso in casos_huerfanos %}⚠️ Caso de uso sin requerimientos{% endif %}{% endif %}">
                         {% if caso.id in fila.relaciones %}
                             ✓
                         {% else %}

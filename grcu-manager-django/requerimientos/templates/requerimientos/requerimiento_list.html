@@ -4,6 +4,28 @@
 
 {% block extra_css %}
   <link rel="stylesheet" href="{% static 'requerimientos/css/requerimiento_list_styles.css' %}?v=1.0">
+  <style>
+    /* Estilos personalizados para tooltips */
+    .tooltip-inner {
+      text-align: left;
+      max-width: 350px;
+      padding: 10px 15px;
+      background-color: #2c3e50;
+      border-radius: 6px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    
+    .tooltip.bs-tooltip-end .tooltip-arrow::before,
+    .tooltip.bs-tooltip-auto[data-popper-placement^="right"] .tooltip-arrow::before {
+      border-right-color: #2c3e50;
+    }
+    
+    .req-tooltip:hover,
+    .caso-tooltip:hover {
+      text-decoration: underline !important;
+      cursor: help;
+    }
+  </style>
 {% endblock %}
 
 {% block content %}
@@ -68,7 +90,16 @@
           {% for req in requerimientos %}
             <tr>
               <td>
-                <a href="{% url 'requerimientos:requerimiento_detail' req.pk %}" class="fw-bold text-decoration-none">
+                <a href="{% url 'requerimientos:requerimiento_detail' req.pk %}" 
+                   class="fw-bold text-decoration-none req-tooltip"
+                   data-bs-toggle="tooltip" 
+                   data-bs-placement="right"
+                   data-bs-html="true"
+                   title="<strong>{{ req.nombre }}</strong><br>
+                          <small><strong>Tipo:</strong> {{ req.get_tipo_display }}</small><br>
+                          <small><strong>Estado:</strong> {{ req.get_estado_display }}</small><br>
+                          <small><strong>Creado:</strong> {{ req.fecha_creacion|date:'d/m/Y' }}</small><br>
+                          {% if req.descripcion %}<small><strong>Descripción:</strong> {{ req.descripcion|truncatechars:100 }}</small>{% endif %}">
                   {{ req.nombre }}
                 </a>
               </td>
@@ -112,6 +143,8 @@
                     <i class="bi bi-trash"></i>
                   </a>
                   {% endif %}
+                  {% comment %} Solo mostrar botones de casos de uso para requerimientos FUNCIONALES {% endcomment %}
+                  {% if req.tipo == 'FUNCIONAL' %}
                   {% with casos=req.casos_relacionados.all %}
                     {% if casos|length == 0 %}
                       <a href="{% url 'casos_de_uso:caso_de_uso_create' req.proyecto.id %}?requerimiento_id={{ req.id }}" 
@@ -137,6 +170,7 @@
                       </a>
                     {% endif %}
                   {% endwith %}
+                  {% endif %}
                 </div>
               </td>
             </tr>
@@ -162,6 +196,19 @@
 <!-- Pasar proyecto_id al JavaScript -->
 <script>
     document.body.dataset.proyectoId = {{ proyecto.id|default:'null' }};
+</script>
+
+<!-- Inicializar tooltips de Bootstrap -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inicializar todos los tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl, {
+                delay: { show: 300, hide: 100 }
+            });
+        });
+    });
 </script>
 
 <!-- JavaScript para lista de requerimientos -->

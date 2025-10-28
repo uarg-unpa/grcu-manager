@@ -333,8 +333,8 @@ def matriz_trazabilidad(request, proyecto_id):
     solo_huerfanos = request.GET.get('solo_huerfanos') == 'true'
     solo_sin_cubrir = request.GET.get('solo_sin_cubrir') == 'true'
     
-    # Obtener requerimientos con filtros
-    requerimientos_qs = Requerimiento.objects.filter(proyecto=proyecto)
+    # Obtener requerimientos con filtros (excluir NO FUNCIONALES)
+    requerimientos_qs = Requerimiento.objects.filter(proyecto=proyecto, tipo='FUNCIONAL')
     
     if tipo_req:
         requerimientos_qs = requerimientos_qs.filter(tipo=tipo_req)
@@ -456,7 +456,7 @@ def matriz_trazabilidad(request, proyecto_id):
 @login_required
 def exportar_matriz(request, proyecto_id, formato):
     """
-    Exporta la matriz de trazabilidad en diferentes formatos: PDF, Excel, CSV.
+    Exporta la matriz de trazabilidad en diferentes formatos: PDF, CSV.
     """
     from requerimientos.models import Requerimiento, RequerimientoCaso
     from casos_de_uso.models import CasoDeUso
