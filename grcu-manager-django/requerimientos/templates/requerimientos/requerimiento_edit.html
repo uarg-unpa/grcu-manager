@@ -3,6 +3,48 @@
 
 {% block title %}Editar Requerimiento - {{ requerimiento.nombre }}{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* Estilos para evitar superposición de radio buttons */
+    .form-check {
+        padding-left: 1.5rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .form-check-input {
+        margin-top: 0.25rem;
+        margin-right: 0.5rem;
+    }
+    
+    .form-check-label {
+        display: inline-block;
+        padding-left: 0.25rem;
+        cursor: pointer;
+    }
+    
+    /* Estilos para radio buttons en línea */
+    .form-check-inline {
+        display: inline-flex;
+        align-items: center;
+        margin-right: 1.5rem;
+        padding-left: 0;
+    }
+    
+    .form-check-inline .form-check-input {
+        margin-left: 0;
+    }
+    
+    /* Color personalizado para badge purple */
+    .bg-purple {
+        background-color: #6f42c1 !important;
+    }
+    
+    .border-purple {
+        border-color: #6f42c1 !important;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <div class="row mb-4">
@@ -52,10 +94,14 @@
                         </div>
 
                         <div class="mb-3">
-                            <label for="{{ form.tipo.id_for_label }}" class="form-label">
+                            <label class="form-label d-block">
                                 Tipo de Requerimiento <span class="text-danger">*</span>
                             </label>
-                            {{ form.tipo }}
+                            <div class="d-flex gap-3">
+                                {% for choice in form.tipo %}
+                                    {{ choice }}
+                                {% endfor %}
+                            </div>
                             {% if form.tipo.errors %}
                                 <div class="invalid-feedback d-block">
                                     {{ form.tipo.errors }}
