@@ -640,3 +640,164 @@ def relacionar_casos_existentes(request, pk):
     }
 
     return render(request, 'requerimientos/relacionar_casos_existentes.html', context)
+
+
+@login_required
+def requerimiento_update(request, pk):
+    """
+    Vista para editar un requerimiento existente.
+    Solo el líder del proyecto o el creador pueden editar.
+    """
+    requerimiento = get_object_or_404(Requerimiento, pk=pk)
+    proyecto = requerimiento.proyecto
+    
+    # Validar permisos
+    es_lider = request.user == proyecto.lider
+    es_creador = request.user == requerimiento.creado_por
+    
+    if not (es_lider or es_creador):
+        messages.error(request, 'No tienes permiso para editar este requerimiento.')
+        return redirect('requerimientos:requerimiento_detail', pk=pk)
+    
+    # Determinar qué formulario usar según la metodología
+    es_tradicional = proyecto.metodologia == 'TRADICIONAL'
+    es_agil = proyecto.metodologia == 'AGIL'
+    
+    if request.method == 'POST':
+        # Instanciar el formulario apropiado
+        if es_tradicional:
+            form = RequerimientoTradicionalForm(request.POST, request.FILES)
+        elif es_agil:
+            form = RequerimientoAgilForm(request.POST, request.FILES)
+        else:
+            messages.error(request, 'Metodología no reconocida.')
+            return redirect('requerimientos:requerimiento_detail', pk=pk)
+        
+        if form.is_valid():
+            # Actualizar requerimiento base
+            requerimiento.nombre = form.cleaned_data['nombre']
+            requerimiento.descripcion = form.cleaned_data.get('descripcion', '')
+            requerimiento.tipo = form.cleaned_data['tipo']
+            requerimiento.estado = form.cleaned_data['estado']
+            
+            # Manejar imagen (solo si se subió una nueva)
+            nueva_imagen = form.cleaned_data.get('imagen')
+            if nueva_imagen:
+                requerimiento.imagen = nueva_imagen
+            
+            requerimiento.link_externo = form.cleaned_data.get('link_externo', '')
+            requerimiento.save()
+            
+            # Actualizar el detalle específico según la metodología
+            if es_tradicional:
+                detalle, created = DetalleRequerimientoTradicional.objects.get_or_create(
+                    requerimiento_padre=requerimiento
+                )
+                detalle.prioridad = form.cleaned_data.get('prioridad', '')
+                detalle.fuente = form.cleaned_data.get('fuente', '')
+                detalle.categoria = form.cleaned_data.get('categoria', '')
+                detalle.fecha_compromiso = form.cleaned_data.get('fecha_compromiso')
+                detalle.estado_validacion = form.cleaned_data.get('estado_validacion', '')
+                detalle.observaciones = form.cleaned_data.get('observaciones', '')
+                detalle.save()
+                
+            elif es_agil:
+                detalle, created = DetalleRequerimientoAgil.objects.get_or_create(
+                    requerimiento_padre=requerimiento
+                )
+                detalle.historia_usuario = form.cleaned_data.get('historia_usuario', '')
+                detalle.criterio_aceptacion = form.cleaned_data.get('criterio_aceptacion', '')
+                detalle.puntos_estimados = form.cleaned_data.get('puntos_estimados')
+                detalle.sprint_asignado = form.cleaned_data.get('sprint_asignado', '')
+                detalle.responsable = form.cleaned_data.get('responsable', '')
+                detalle.estado_scrum = form.cleaned_data.get('estado_scrum', '')
+                detalle.observaciones = form.cleaned_data.get('observaciones', '')
+                detalle.save()
+            
+            messages.success(request, f'✅ Requerimiento "{requerimiento.nombre}" actualizado exitosamente.')
+            return redirect('requerimientos:requerimiento_detail', pk=pk)
+    else:
+        # GET: Cargar datos existentes en el formulario
+        initial_data = {
+            'nombre': requerimiento.nombre,
+            'descripcion': requerimiento.descripcion,
+            'tipo': requerimiento.tipo,
+            'estado': requerimiento.estado,
+            'imagen': requerimiento.imagen,
+            'link_externo': requerimiento.link_externo,
+        }
+        
+        # Agregar datos del detalle si existe
+        if es_tradicional:
+            try:
+                detalle = requerimiento.detalle_tradicional
+                if detalle:
+                    initial_data.update({
+                        'prioridad': detalle.prioridad,
+                        'fuente': detalle.fuente,
+                        'categoria': detalle.categoria,
+                        'fecha_compromiso': detalle.fecha_compromiso,
+                        'estado_validacion': detalle.estado_validacion,
+                        'observaciones': detalle.observaciones,
+                    })
+            except DetalleRequerimientoTradicional.DoesNotExist:
+                pass
+            form = RequerimientoTradicionalForm(initial=initial_data)
+        elif es_agil:
+            try:
+                detalle = requerimiento.detalle_agil
+                if detalle:
+                    initial_data.update({
+                        'historia_usuario': detalle.historia_usuario,
+                        'criterio_aceptacion': detalle.criterio_aceptacion,
+                        'puntos_estimados': detalle.puntos_estimados,
+                        'sprint_asignado': detalle.sprint_asignado,
+                        'responsable': detalle.responsable,
+                        'estado_scrum': detalle.estado_scrum,
+                        'observaciones': detalle.observaciones,
+                    })
+            except DetalleRequerimientoAgil.DoesNotExist:
+                pass
+            form = RequerimientoAgilForm(initial=initial_data)
+        else:
+            messages.error(request, 'No se pudo cargar el formulario de edición.')
+            return redirect('requerimientos:requerimiento_detail', pk=pk)
+    
+    context = {
+        'form': form,
+        'proyecto': proyecto,
+        'requerimiento': requerimiento,
+        'es_tradicional': es_tradicional,
+        'es_agil': es_agil,
+        'page_title': f'Editar Requerimiento: {requerimiento.nombre}',
+    }
+    return render(request, 'requerimientos/requerimiento_edit.html', context)
+
+
+@login_required
+def requerimiento_delete(request, pk):
+    """
+    Vista para eliminar un requerimiento.
+    Solo el líder del proyecto puede eliminar.
+    """
+    requerimiento = get_object_or_404(Requerimiento, pk=pk)
+    proyecto = requerimiento.proyecto
+    
+    # Validar permisos: solo el líder puede eliminar
+    if request.user != proyecto.lider:
+        messages.error(request, 'Solo el líder del proyecto puede eliminar requerimientos.')
+        return redirect('requerimientos:requerimiento_detail', pk=pk)
+    
+    if request.method == 'POST':
+        nombre = requerimiento.nombre
+        proyecto_id = proyecto.pk
+        requerimiento.delete()
+        messages.success(request, f'✅ Requerimiento "{nombre}" eliminado exitosamente.')
+        return redirect('requerimientos:requerimiento_list')
+    
+    context = {
+        'requerimiento': requerimiento,
+        'proyecto': proyecto,
+        'page_title': f'Eliminar Requerimiento: {requerimiento.nombre}',
+    }
+    return render(request, 'requerimientos/requerimiento_confirm_delete.html', context)

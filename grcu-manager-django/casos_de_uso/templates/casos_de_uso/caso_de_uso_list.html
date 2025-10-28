@@ -55,11 +55,27 @@
             <td>{{ cu.nombre }}</td>
             <td>{{ cu.descripcion|truncatechars:60 }}</td>
             <td>
-              <a href="{% url 'casos_de_uso:caso_de_uso_detail' cu.pk %}" 
-                 class="btn btn-sm btn-outline-info btn-action-caso" 
-                 title="Ver Completo">
-                <i class="bi bi-eye"></i>
-              </a>
+              <div class="d-flex gap-1">
+                <a href="{% url 'casos_de_uso:caso_de_uso_detail' cu.pk %}" 
+                   class="btn btn-sm btn-outline-info btn-action-caso" 
+                   title="Ver Completo">
+                  <i class="bi bi-eye"></i>
+                </a>
+                {% if user == cu.proyecto.lider or cu.creado_por == user %}
+                <a href="{% url 'casos_de_uso:caso_de_uso_update' cu.pk %}" 
+                   class="btn btn-sm btn-outline-warning btn-action-caso" 
+                   title="Editar">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                {% endif %}
+                {% if user == cu.proyecto.lider %}
+                <a href="{% url 'casos_de_uso:caso_de_uso_delete' cu.pk %}" 
+                   class="btn btn-sm btn-outline-danger btn-action-caso" 
+                   title="Eliminar">
+                  <i class="bi bi-trash"></i>
+                </a>
+                {% endif %}
+              </div>
             </td>
           </tr>
           {% empty %}
