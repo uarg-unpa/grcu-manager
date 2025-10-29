@@ -156,6 +156,7 @@
 </style>
 
 <script>
+{% verbatim %}
 let versionSeleccionada = null;
 
 function seleccionarParaComparar(historyId, numeroVersion) {
@@ -185,9 +186,10 @@ function seleccionarParaComparar(historyId, numeroVersion) {
 }
 
 function compararVersiones(version2Id) {
-    const url = '{% url "requerimientos:requerimiento_comparar_versiones" requerimiento.pk %}' +
-                '?version1_id=' + versionSeleccionada + '&version2_id=' + version2Id;
+    const baseUrl = '{% endverbatim %}{% url "requerimientos:requerimiento_comparar_versiones" requerimiento.pk 0 0 %}{% verbatim %}';
+    const url = baseUrl.replace('/0/0/', '/' + versionSeleccionada + '/' + version2Id + '/');
     window.location.href = url;
 }
+{% endverbatim %}
 </script>
 {% endblock %}

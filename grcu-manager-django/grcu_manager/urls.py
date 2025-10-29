@@ -20,20 +20,29 @@ from django.urls import path, include
 from django.shortcuts import redirect
 from django.conf import settings
 from django.conf.urls.static import static
-from core import views as core_views
+
+# Importar vistas de core explícitamente
+from core.views import under_development
     
 urlpatterns = [
-    path('accounts/', include('accounts.urls', namespace='accounts')),# ← Incluye nuestras URLs personalizadas
-    path('', lambda request: redirect('accounts:login')),  # Redirige / → login
+    # Ruta raíz
+    path('', lambda request: redirect('accounts:login')),
+    
+    # Panel de administración Django
     path('admin/', admin.site.urls),
-    path("dashboard/", include("dashboards.urls", namespace='dashboard')),  # ← Incluye las URLs del dashboard
+    
+    # Página de funcionalidad en desarrollo (debe estar ANTES de las apps para evitar conflictos)
+    path('under-development/', under_development, name='under_development'),
+    
+    # Apps del sistema
+    path('accounts/', include('accounts.urls', namespace='accounts')),
+    path("dashboard/", include("dashboards.urls", namespace='dashboard')),
     path('usuarios/', include('usuarios.urls', namespace='usuarios')),
     path('proyectos/', include('proyectos.urls', namespace='proyectos')),
     path('grupos/', include('grupos.urls', namespace='grupos')),
     path('requerimientos/', include('requerimientos.urls', namespace='requerimientos')),
     path('casos_de_uso/', include('casos_de_uso.urls', namespace='casos_de_uso')),
-    path('auditoria/', include('auditoria.urls', namespace='auditoria')),  # ← Redirige a "en desarrollo"
-    path('under-development/', core_views.under_development, name='under_development'),
+    path('auditoria/', include('auditoria.urls', namespace='auditoria')),
 ]
 
 # Servir archivos estáticos y media en desarrollo

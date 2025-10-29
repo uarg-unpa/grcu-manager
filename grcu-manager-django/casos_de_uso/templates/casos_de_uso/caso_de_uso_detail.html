@@ -103,7 +103,7 @@
                 </a>
                 <div>
                     {% comment %} Solo historial bloqueado para demo {% endcomment %}
-                    <a href="{% url 'under_development' %}?feature_name=Historial de Casos de Uso" 
+                    <a href="{% url 'casos_de_uso:caso_de_uso_historial' caso.pk %}" 
                        class="btn btn-info text-white">
                         <i class="bi bi-clock-history"></i> Ver Historial
                     </a>

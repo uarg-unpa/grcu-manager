@@ -121,7 +121,7 @@
                         <i class="bi bi-trash"></i> Eliminar
                     </a>
                     {% endif %}
-                    <a href="{% url 'under_development' %}?feature_name=Historial de Requerimientos" 
+                    <a href="{% url 'requerimientos:requerimiento_historial' requerimiento.pk %}" 
                        class="btn btn-info text-white">
                         <i class="bi bi-clock-history"></i> Ver Historial
                     </a>
