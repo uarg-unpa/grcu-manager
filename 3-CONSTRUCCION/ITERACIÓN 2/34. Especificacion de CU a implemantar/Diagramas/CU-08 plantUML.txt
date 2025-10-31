@@ -1,0 +1,88 @@
+@startuml
+
+
+actor "Usuario" as Usuario #purple
+boundary InterfazUsuario
+boundary PDetalleRequerimiento
+boundary PTabHistorialReq
+boundary ModalDetalleHistorialReq
+boundary MensajeSistema
+control ManejadorRequerimientos
+control ManejadorHistorialRequerimiento
+control ValidadorPermisos
+database BD
+
+
+Usuario -> InterfazUsuario: 1) Accede a lista de requerimientos
+InterfazUsuario -> PDetalleRequerimiento: 2-3) Selecciona "Ver detalle"
+PDetalleRequerimiento -> ManejadorRequerimientos: Obtener requerimiento
+ManejadorRequerimientos -> BD: SELECT requerimiento by id
+BD --> ManejadorRequerimientos: datos requerimiento
+ManejadorRequerimientos --> PDetalleRequerimiento: Render con pestañas
+
+Usuario -> PDetalleRequerimiento: 5) Click pestaña "Historial"
+PDetalleRequerimiento -> ManejadorHistorialRequerimiento: 6) Traer historial
+ManejadorHistorialRequerimiento -> BD: SELECT * FROM requerimientos_historicalrequerimiento
+ManejadorHistorialRequerimiento -> BD: SELECT * FROM requerimientos_historicaldetalle...
+ManejadorHistorialRequerimiento -> BD: SELECT * FROM auditoria_registroactividad WHERE req_id=...
+BD --> ManejadorHistorialRequerimiento: versiones + auditoría
+ManejadorHistorialRequerimiento --> PTabHistorialReq: 7-8) Línea de tiempo combinada (desc)
+PTabHistorialReq --> Usuario: Mostrar historial (fecha, usuario, acción, descripción)
+
+
+Usuario -> PTabHistorialReq: 10) Click "Ver detalles"
+PTabHistorialReq -> ValidadorPermisos: ¿Puede ver valores antiguos/nuevos?
+ValidadorPermisos -> BD: SELECT permisos del usuario en el proyecto
+BD --> ValidadorPermisos: permitido / limitado
+
+alt Permiso completo
+  PTabHistorialReq -> ManejadorHistorialRequerimiento: Cargar versión A/B
+  ManejadorHistorialRequerimiento -> BD: SELECT versión específica
+  BD --> ManejadorHistorialRequerimiento: datos
+  ManejadorHistorialRequerimiento --> ModalDetalleHistorialReq: Tabla "Antes → Después"
+  ModalDetalleHistorialReq --> Usuario: 11-13) Revisa y cierra
+else Permiso limitado
+  PTabHistorialReq --> Usuario: Mostrar solo resumen de cambio\n"Campo X modificado por Y el Z"
+  MensajeSistema <- PTabHistorialReq: "Permisos limitados"
+end
+
+== Alternativos ==
+alt A1) Requerimiento sin historial
+  ManejadorHistorialRequerimiento -> BD: SELECT history (count=1)
+  BD --> ManejadorHistorialRequerimiento: solo creación
+  ManejadorHistorialRequerimiento --> PTabHistorialReq: "Este requerimiento no tiene historial de cambios aún"
+end
+
+alt A2) Historial no disponible
+  ManejadorHistorialRequerimiento -> BD: error/tabla no disponible
+  ManejadorHistorialRequerimiento --> PTabHistorialReq: Mostrar info básica (creación, última act.)
+  PTabHistorialReq -> MensajeSistema: "El historial no está disponible. Contacte al admin."
+end
+
+alt A3) Historial muy extenso
+  PTabHistorialReq -> ManejadorHistorialRequerimiento: Solicitar página 1 (20 ítems)
+  ManejadorHistorialRequerimiento -> BD: SELECT ... LIMIT 20 OFFSET 0
+  BD --> ManejadorHistorialRequerimiento: Página
+  ManejadorHistorialRequerimiento --> PTabHistorialReq: Paginación + filtros por fecha/tipo
+end
+
+alt A5) Error al cargar historial
+  ManejadorHistorialRequerimiento -> BD: SELECT history
+  BD --> ManejadorHistorialRequerimiento: Excepción BD
+  ManejadorHistorialRequerimiento --> PTabHistorialReq: Mostrar botón "Reintentar"
+  PTabHistorialReq -> MensajeSistema: "Error al cargar el historial. Intenta nuevamente."
+end
+
+opt Comparar versiones (opcional)
+  Usuario -> PTabHistorialReq: Selecciona 2 versiones, clic "Comparar"
+  PTabHistorialReq -> ManejadorHistorialRequerimiento: Generar diff
+  ManejadorHistorialRequerimiento -> BD: SELECT versiones A y B
+  BD --> ManejadorHistorialRequerimiento: datos
+  ManejadorHistorialRequerimiento --> ModalDetalleHistorialReq: Vista lado a lado
+end
+
+' Registro opcional de consulta
+PTabHistorialReq -> ManejadorHistorialRequerimiento: (opcional) registrar consulta
+ManejadorHistorialRequerimiento -> BD: INSERT auditoria_registroactividad (CONSULTA_HISTORIAL)
+
+@enduml
