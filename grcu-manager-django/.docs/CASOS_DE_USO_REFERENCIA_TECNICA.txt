@@ -34,6 +34,75 @@ Documentación Actualizada
 
 ---
 
+
+CU-14: Validar requerimiento
+
+Descripción
+Permite validar un requerimiento dentro de un proyecto, asegurando que cumple con los criterios de aceptación definidos y que ha sido revisado por los roles autorizados. La validación puede implicar la aprobación formal (metodología tradicional) o la aceptación por parte del stakeholder (metodología ágil). El proceso queda registrado en el sistema de auditoría para trazabilidad.
+
+Actores
+- Líder del proyecto (puede validar requerimientos)
+- Stakeholder (puede validar requerimientos en metodología ágil)
+- Desarrollador (consulta estado de validación)
+
+Precondiciones
+- Usuario autenticado con permisos de validación en el proyecto
+- Requerimiento existente y activo
+- Criterios de aceptación definidos (según metodología)
+
+Postcondiciones
+- Estado del requerimiento actualizado a "Validado" o equivalente
+- Registro de validación en auditoria_registroactividad
+- Cambios reflejados en listados y reportes
+
+Flujo Principal
+1. El usuario accede a la lista de requerimientos del proyecto
+2. Selecciona el requerimiento a validar
+3. Hace clic en "Validar requerimiento"
+4. El sistema verifica permisos y criterios de aceptación
+5. El sistema muestra formulario de validación (puede incluir comentarios, adjuntos, criterios)
+6. El usuario confirma la validación
+7. El sistema actualiza el estado del requerimiento a "Validado"
+8. El sistema registra la acción en auditoría
+9. El sistema muestra mensaje de éxito: "Requerimiento validado correctamente"
+10. El sistema recarga la vista con el nuevo estado
+
+Flujos Alternativos
+A1. Usuario sin permisos de validación
+- El sistema bloquea la acción y muestra mensaje: "No tienes permisos para validar este requerimiento"
+- Registra intento en log de seguridad
+
+A2. Requerimiento ya validado
+- El sistema detecta estado "Validado"
+- Muestra mensaje: "Este requerimiento ya ha sido validado"
+- No permite validar nuevamente
+
+A3. Criterios de aceptación incompletos
+- El sistema detecta que faltan criterios
+- Muestra mensaje: "No se puede validar el requerimiento: faltan criterios de aceptación"
+- Permite volver y completar criterios
+
+A4. Error al registrar validación
+- El sistema captura la excepción
+- Muestra mensaje: "Error al validar el requerimiento, intente nuevamente"
+- Registra el error en logs
+
+Reglas de Negocio
+- RN-01: Solo Líder y Stakeholder pueden validar requerimientos
+- RN-02: Un requerimiento solo puede validarse si cumple criterios de aceptación
+- RN-03: La validación se registra en auditoría con detalles completos
+- RN-04: No se puede validar dos veces el mismo requerimiento
+- RN-05: El estado "Validado" es visible en listados y reportes
+
+Estado de Implementación
+✅ IMPLEMENTADO
+- Vista de validación en requerimientos/views.py
+- Permisos y validaciones en modelos y vistas
+- Registro en auditoría
+- Estado reflejado en listados
+
+Prioridad
+ALTA - Clave para control de calidad y avance del proyecto
 Índice de Casos de Uso
 
 1. CU-00: Creación de usuario administrador
@@ -44,35 +113,108 @@ Documentación Actualizada
 6. CU-05: Seleccionar metodología
 7. CU-06: Registrar requerimiento
 8. CU-07: Priorizar requerimiento
+9. CU-08: Consultar historial de requerimientos
+10. CU-09: Consultar historial de caso de uso
+11. CU-10: Registrar caso de uso
+12. CU-11: Definir dependencias
+13. CU-12: Comentar requerimiento
+14. CU-13: Comentar caso de uso
+15. CU-14: Validar requerimiento
+16. CU-15: Generar informe
+17. CU-16: Visualizar
 
 ---
 
 CU-07: Priorizar requerimiento
-
-Descripción
-El líder del proyecto establece y modifica la prioridad de los requerimientos utilizando el método MoSCoW (Must have, Should have, Could have, Won't have). Esto permite ordenar el backlog según importancia estratégica, facilitar la toma de decisiones sobre el alcance y comunicar expectativas claras al equipo y stakeholders.
-
 Actores
 - Líder del proyecto (prioriza requerimientos)
-- Equipo de desarrollo (consulta prioridades para planificación)
-
-Precondiciones
-- Usuario autenticado como líder del proyecto
-- Proyecto con metodología Tradicional (prioridad se almacena en DetalleRequerimientoTradicional)
 - Al menos un requerimiento creado en el proyecto
-
 Postcondiciones
-- Prioridades actualizadas en tabla requerimientos_detallerequerimientotradicional
-- Campo prioridad actualizado para los requerimientos modificados
-- Cambios reflejados inmediatamente en listados y reportes
 - Registro en logs de auditoría (si está implementado)
 
 Flujo Principal
 1. El líder accede a su dashboard de proyectos
 2. Selecciona el proyecto deseado
-3. Navega a la sección "Requerimientos"
+
+
+
+CU-09: Consultar historial de caso de uso
+
+Descripción
+Permite a los usuarios consultar el historial completo de cambios realizados sobre un caso de uso específico dentro de un proyecto. El historial incluye modificaciones en campos, cambios de estado, vinculaciones/desvinculaciones con requerimientos, adjuntos, comentarios y toda la trazabilidad relevante. Esta funcionalidad es clave para auditoría, análisis retrospectivo y control de calidad.
+
+Actores
+- Líder del proyecto (acceso completo al historial)
+- Analista/Desarrollador (visualiza historial de casos de uso que puede editar)
+- Stakeholder (visualiza historial en modo lectura)
+- Administrador (acceso completo a todos los historiales)
+
+Precondiciones
+- Usuario autenticado con permisos en el proyecto
+- Caso de uso existente
+- Sistema de auditoría habilitado (django-simple-history, django-reversion, o custom)
+- Al menos un cambio registrado en el caso de uso
+
+Postcondiciones
+- Historial mostrado sin modificar datos
+- Sin cambios en el caso de uso ni su historial
+- Opcionalmente se registra consulta en auditoria_registroactividad con:
+    accion = CONSULTA_HISTORIAL_CASODEUSO
+    detalles (JSON) = {casodeuso_id, usuario_consultante}
+
+Flujo Principal
+1. El usuario accede a la lista de casos de uso del proyecto
+2. Selecciona un caso de uso específico
+3. Hace clic en "Ver detalle" o accede directamente a la vista del caso de uso
+4. El sistema muestra la pantalla de detalle del caso de uso con pestañas/secciones:
+    - Información actual
+    - Requerimientos relacionados
+    - Adjuntos
+    - Comentarios
+    - Historial de cambios
+5. El usuario hace clic en la pestaña "Historial"
+6. El sistema recupera todas las versiones históricas del caso de uso:
+    - Desde casos_de_uso_historicalcasodeuso (django-simple-history)
+    - Incluye cambios en detalles tradicionales/ágiles
+    - auditoria_registroactividad: Acciones contextuales (quién, cuándo, desde dónde, por qué)
+8. El sistema muestra una línea de tiempo cronológica inversa (más reciente primero):
+    - Botón "Ver detalles" para expandir
+9. El usuario puede:
+    - Filtrar por tipo de cambio o rango de fechas
+10. El usuario hace clic en "Ver detalles" de una entrada
+12. El usuario revisa los detalles
+13. El usuario cierra el modal y puede continuar navegando el historial
+
+- Muestra solo la entrada de creación con fecha, hora y creador
+
+A2. Sistema de historial no implementado
+- El sistema detecta ausencia de módulo de auditoría
+- Muestra mensaje: "El historial de cambios no está disponible en este momento"
+- Muestra solo: fecha de creación, creado por, fecha de última actualización
+- Sugiere contactar al administrador para habilitar auditoría
+
+A3. Historial muy extenso (>100 cambios)
+- El sistema detecta historial extenso
+- Muestra paginación y filtros avanzados
+- Permite exportar historial a archivo (CSV/PDF)
+
+Reglas de Negocio
+- RN-01: Solo usuarios con permisos en el proyecto pueden consultar el historial
+- RN-02: El historial debe mostrar todos los cambios relevantes, incluyendo vinculaciones y comentarios
+- RN-03: El registro en auditoría es obligatorio para trazabilidad
+- RN-04: La consulta del historial no modifica datos
+- RN-05: El historial debe ser accesible desde la vista de detalle del caso de uso
+
+Estado de Implementación
+✅ IMPLEMENTADO
+- Vista de historial en casos_de_uso/views.py
+- Integración con django-simple-history
+- Registro de auditoría
+- Permisos y validaciones
+
+Prioridad
+ALTA - Fundamental para trazabilidad y auditoría
 4. Hace clic en "Priorizar requerimientos"
-5. El sistema verifica que el usuario sea el líder del proyecto
 6. El sistema recupera todos los requerimientos del proyecto con sus detalles tradicionales
 7. El sistema muestra una tabla con:
     - Código/ID del requerimiento
@@ -139,6 +281,81 @@ ALTA - Importante para planificación y gestión de alcance
 9. CU-08: Consultar historial de requerimientos
 10. CU-09: Consultar historial de caso de uso
 11. CU-10: Registrar caso de uso
+
+---
+
+CU-10: Registrar caso de uso
+
+Descripción
+Permite crear un nuevo caso de uso en el proyecto, especificando sus características según la metodología definida (Tradicional o Ágil). El caso de uso describe una funcionalidad, proceso o interacción relevante para el sistema, y puede estar vinculado a uno o más requerimientos.
+
+Actores
+- Analista
+- Líder del proyecto
+- Desarrollador
+
+Precondiciones
+- Usuario autenticado con permisos de edición en el proyecto
+- Proyecto existente y activo
+- Metodología asignada al proyecto (Tradicional o Ágil)
+
+Postcondiciones
+- Caso de uso registrado en la base de datos (casos_de_uso_casodeuso)
+- Detalles tradicionales o ágiles almacenados según metodología
+- Caso de uso vinculado al proyecto y, opcionalmente, a requerimientos
+- Registro de actividad en auditoría
+
+Flujo Principal
+1. El usuario accede a la sección "Casos de Uso" del proyecto
+2. Hace clic en "Nuevo Caso de Uso"
+3. El sistema muestra formulario con campos según metodología:
+    - Tradicional: nombre, descripción, actor principal, precondiciones, flujo principal, flujo alternativo, postcondiciones, observaciones
+    - Ágil: nombre, descripción, historia de usuario, criterio de aceptación, responsable, estado scrum, observaciones
+    - Adjuntos: imagen, archivo, link externo (opcional)
+    - Selección de requerimientos vinculados (opcional)
+4. El usuario completa los campos obligatorios y opcionales
+5. El sistema valida los datos:
+    - Campos obligatorios completos
+    - Formato de adjuntos y links
+    - Permisos del usuario
+6. El sistema guarda el caso de uso y sus detalles en la base de datos
+7. El sistema vincula el caso de uso a los requerimientos seleccionados (si corresponde)
+8. El sistema registra la acción en auditoría
+9. El sistema muestra mensaje de éxito: "Caso de uso registrado correctamente"
+10. El sistema redirige a la vista de detalle del caso de uso
+
+Flujos Alternativos
+A1. Proyecto sin metodología
+- El sistema bloquea la creación y muestra mensaje: "Debes seleccionar Tradicional o Ágil antes de crear casos de uso"
+
+A2. Campos obligatorios incompletos
+- El sistema muestra mensaje de error y solicita corrección
+
+A3. Error al guardar en base de datos
+- El sistema muestra mensaje: "Error al guardar el caso de uso. Intenta nuevamente"
+- Registra el error en logs
+
+A4. Usuario sin permisos
+- El sistema bloquea la acción y muestra mensaje de error
+
+Reglas de Negocio
+- RN-01: Solo usuarios con permisos de edición pueden crear casos de uso
+- RN-02: Los campos obligatorios varían según metodología
+- RN-03: Un caso de uso puede estar vinculado a varios requerimientos
+- RN-04: Los adjuntos deben cumplir formato y tamaño permitido
+- RN-05: El registro en auditoría es obligatorio
+
+Estado de Implementación
+✅ IMPLEMENTADO
+- Vista de creación en casos_de_uso/views.py
+- Formularios tradicionales y ágiles en casos_de_uso/forms.py
+- Vinculación con requerimientos
+- Registro en auditoría
+
+Prioridad
+ALTA - Fundamental para modelado funcional y trazabilidad
+
+---
 12. CU-11: Definir dependencias
 13. CU-12: Comentar requerimiento
 14. CU-13: Comentar caso de uso
