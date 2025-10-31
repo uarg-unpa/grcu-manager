@@ -44,6 +44,98 @@ Documentación Actualizada
 6. CU-05: Seleccionar metodología
 7. CU-06: Registrar requerimiento
 8. CU-07: Priorizar requerimiento
+
+---
+
+CU-07: Priorizar requerimiento
+
+Descripción
+El líder del proyecto establece y modifica la prioridad de los requerimientos utilizando el método MoSCoW (Must have, Should have, Could have, Won't have). Esto permite ordenar el backlog según importancia estratégica, facilitar la toma de decisiones sobre el alcance y comunicar expectativas claras al equipo y stakeholders.
+
+Actores
+- Líder del proyecto (prioriza requerimientos)
+- Equipo de desarrollo (consulta prioridades para planificación)
+
+Precondiciones
+- Usuario autenticado como líder del proyecto
+- Proyecto con metodología Tradicional (prioridad se almacena en DetalleRequerimientoTradicional)
+- Al menos un requerimiento creado en el proyecto
+
+Postcondiciones
+- Prioridades actualizadas en tabla requerimientos_detallerequerimientotradicional
+- Campo prioridad actualizado para los requerimientos modificados
+- Cambios reflejados inmediatamente en listados y reportes
+- Registro en logs de auditoría (si está implementado)
+
+Flujo Principal
+1. El líder accede a su dashboard de proyectos
+2. Selecciona el proyecto deseado
+3. Navega a la sección "Requerimientos"
+4. Hace clic en "Priorizar requerimientos"
+5. El sistema verifica que el usuario sea el líder del proyecto
+6. El sistema recupera todos los requerimientos del proyecto con sus detalles tradicionales
+7. El sistema muestra una tabla con:
+    - Código/ID del requerimiento
+    - Nombre
+    - Tipo (Funcional/No funcional)
+    - Estado actual
+    - Selector de prioridad MoSCoW (dropdown o radio buttons)
+8. El líder revisa cada requerimiento y selecciona la prioridad MoSCoW:
+    - Must have
+    - Should have
+    - Could have
+    - Won't have
+9. El líder hace clic en "Guardar prioridades"
+10. El sistema valida los datos:
+     - Valores válidos para prioridad
+     - Permisos del usuario
+11. El sistema actualiza cada registro en la base de datos
+12. El sistema muestra mensaje de éxito: "Prioridades actualizadas correctamente"
+13. El sistema recarga la vista con las nuevas prioridades
+
+Flujos Alternativos
+A1. Usuario no es el líder del proyecto
+- El sistema muestra error: "Solo el líder del proyecto puede priorizar requerimientos"
+- Redirige al dashboard
+- Registra intento en log de seguridad
+
+A2. Proyecto sin requerimientos
+- El sistema detecta lista vacía
+- Muestra mensaje: "No hay requerimientos para priorizar"
+- Muestra botón "Crear requerimiento"
+- Permite volver al dashboard del proyecto
+
+A3. Proyecto con metodología Ágil
+- El sistema detecta metodología ágil
+- Muestra advertencia: "La priorización MoSCoW aplica principalmente a metodología tradicional"
+- Permite priorizar de todas formas (la prioridad puede existir en ágil también)
+
+A4. Error al guardar prioridad
+- El sistema captura la excepción
+- Muestra mensaje: "Error al actualizar prioridades, intente nuevamente"
+- Registra el error en logs con detalles
+- No actualiza ninguna prioridad (rollback)
+- Mantiene los valores previos
+
+Reglas de Negocio
+- RN-01: Solo el líder del proyecto puede modificar prioridades
+- RN-02: Los valores válidos son: "MUST", "SHOULD", "COULD", "WONT"
+- RN-03: Un requerimiento puede existir sin prioridad definida
+- RN-04: Las prioridades pueden cambiarse en cualquier momento
+- RN-05: No hay restricciones en la cantidad de requerimientos por nivel
+- RN-06: La priorización es independiente del estado del requerimiento
+
+Estado de Implementación
+✅ IMPLEMENTADO
+- Vista de priorización en requerimientos/views.py
+- Template requerimientos/requerimiento_priorizar.html
+- Campo prioridad en DetalleRequerimientoTradicional
+- Permisos y validaciones
+
+Prioridad
+ALTA - Importante para planificación y gestión de alcance
+
+---
 9. CU-08: Consultar historial de requerimientos
 10. CU-09: Consultar historial de caso de uso
 11. CU-10: Registrar caso de uso
