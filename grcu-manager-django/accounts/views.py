@@ -88,6 +88,12 @@ def google_login_callback(request):
     full_name = idinfo.get("name", "")
     avatar_url = idinfo.get("picture", "")
 
+    # Validar dominio permitido
+    allowed_domains = ["gmail.com", "uarg.unpa.edu.ar"]
+    if not any(email.endswith(f"@{domain}") for domain in allowed_domains):
+        messages.error(request, "Solo se permiten emails de los dominios: @gmail.com o @uarg.unpa.edu.ar")
+        return redirect("accounts:login")
+
     # Verificar si es el primer usuario (setup admin)
     if not Usuario.objects.filter(roles__nombre=Rol.ADMIN).exists():
         # Crear el usuario como administrador
