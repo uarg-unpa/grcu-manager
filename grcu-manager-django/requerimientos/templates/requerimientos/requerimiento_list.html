@@ -25,11 +25,179 @@
       text-decoration: underline !important;
       cursor: help;
     }
+
+    /* Estilos para estados de requerimientos */
+    .requerimiento-row {
+      transition: all 0.2s ease;
+    }
+
+    .requerimiento-row.estado-creado {
+      background: linear-gradient(90deg, #fff3cd 0%, #ffeaa7 100%) !important;
+      border-left: 5px solid #ffc107;
+      box-shadow: 0 2px 4px rgba(255, 193, 7, 0.1);
+      animation: pulse-bg 3s ease-in-out infinite;
+    }
+
+    .requerimiento-row.estado-creado:hover {
+      background: linear-gradient(90deg, #ffeaa7 0%, #ffd633 100%) !important;
+      box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+      transform: translateY(-1px);
+    }
+
+    @keyframes pulse-bg {
+      0%, 100% { background: linear-gradient(90deg, #fff3cd 0%, #ffeaa7 100%); }
+      50% { background: linear-gradient(90deg, #ffeaa7 0%, #fff3cd 100%); }
+    }
+
+    .requerimiento-row.estado-validado {
+      background-color: #d1ecf1 !important;
+      border-left: 4px solid #17a2b8;
+    }
+
+    .requerimiento-row.estado-priorizado {
+      background-color: #d4edda !important;
+      border-left: 4px solid #28a745;
+    }
+
+    .requerimiento-row.estado-en-proceso {
+      background-color: #f8f9fa !important;
+      border-left: 4px solid #6c757d;
+    }
+
+    .requerimiento-row.estado-terminado {
+      background-color: #e2e3e5 !important;
+      border-left: 4px solid #6c757d;
+      opacity: 0.7;
+    }
+
+    /* Badge para estado CREADO - más prominente */
+    .badge-estado-creado {
+      background: linear-gradient(45deg, #ffc107, #ff8c00);
+      color: #212529;
+      font-weight: bold;
+      font-size: 0.85em;
+      padding: 6px 12px;
+      border-radius: 20px;
+      box-shadow: 0 2px 4px rgba(255, 193, 7, 0.3);
+      animation: pulse 2s infinite;
+      position: relative;
+    }
+
+    .badge-estado-creado::after {
+      content: "⚠️";
+      margin-left: 5px;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.8; transform: scale(1.05); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    /* Botones de validación más prominentes */
+    .btn-validar-lider {
+      background: linear-gradient(45deg, #007bff, #0056b3);
+      border: none;
+      color: white;
+      font-weight: bold;
+      padding: 8px 16px;
+      border-radius: 25px;
+      box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-validar-lider::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: left 0.5s;
+    }
+
+    .btn-validar-lider:hover::before {
+      left: 100%;
+    }
+
+    .btn-validar-lider:hover {
+      background: linear-gradient(45deg, #0056b3, #004085);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0, 123, 255, 0.4);
+    }
+
+    .btn-validar-stakeholder {
+      background: linear-gradient(45deg, #17a2b8, #117a8b);
+      border: none;
+      color: white;
+      font-weight: bold;
+      padding: 8px 16px;
+      border-radius: 25px;
+      box-shadow: 0 4px 8px rgba(23, 162, 184, 0.3);
+      transition: all 0.3s ease;
+    }
+
+    .btn-validar-stakeholder:hover {
+      background: linear-gradient(45deg, #117a8b, #0d5a63);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(23, 162, 184, 0.4);
+    }
+
+    /* Indicador de requerimientos pendientes */
+    .pending-validation-alert {
+      background: linear-gradient(45deg, #ffc107, #ff8c00);
+      color: #212529;
+      padding: 15px 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      border: none;
+      box-shadow: 0 4px 12px rgba(255, 193, 7, 0.2);
+      animation: slide-in 0.5s ease-out;
+    }
+
+    @keyframes slide-in {
+      from { transform: translateY(-20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .pending-count {
+      font-size: 1.2em;
+      font-weight: bold;
+      color: #dc3545;
+    }
   </style>
 {% endblock %}
 
 {% block content %}
 <div class="container py-4">
+  {# Indicador de requerimientos pendientes de validación - solo para líderes y stakeholders #}
+  {% if proyecto %}
+    {% if is_lider or is_stakeholder %}
+      {% if pendientes_validacion > 0 %}
+        <div class="alert pending-validation-alert" role="alert">
+          <div class="d-flex align-items-center">
+            <i class="bi bi-exclamation-triangle-fill me-3 fs-4"></i>
+            <div>
+              <h5 class="alert-heading mb-1">
+                <span class="pending-count">{{ pendientes_validacion }}</span> requerimiento{{ pendientes_validacion|pluralize:"s" }} pendiente{{ pendientes_validacion|pluralize:"s" }} de validación
+              </h5>
+              <p class="mb-0">
+                {% if is_lider %}
+                  Como líder del proyecto, debes validar estos requerimientos antes de que puedan ser priorizados o utilizados en casos de uso.
+                {% else %}
+                  Como stakeholder, tu validación es crucial para asegurar que los requerimientos reflejen correctamente las necesidades del negocio.
+                {% endif %}
+              </p>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+    {% endif %}
+  {% endif %}
+  
   {# Barra de búsqueda y filtros #}
   <div class="filtros-container">
     <div class="d-flex gap-2 align-items-center flex-wrap justify-content-between w-100">
@@ -48,9 +216,11 @@
       {# Filtros opcionales #}
       <select id="filtroEstado" class="form-select" style="max-width: 180px;">
         <option value="">Todos los estados</option>
-        <option value="PENDIENTE">Pendiente</option>
-        <option value="EN_DESARROLLO">En Desarrollo</option>
-        <option value="APROBADO">Aprobado</option>
+        <option value="CREADO">Creado</option>
+        <option value="VALIDADO">Validado</option>
+        <option value="PRIORIZADO">Priorizado</option>
+        <option value="EN_PROCESO">En proceso</option>
+        <option value="TERMINADO">Terminado</option>
       </select>
       
       <select id="filtroTipo" class="form-select" style="max-width: 180px;">
@@ -88,7 +258,7 @@
         </thead>
         <tbody id="requerimientosTableBody">
           {% for req in requerimientos %}
-            <tr>
+            <tr class="requerimiento-row estado-{{ req.estado|lower }}">
               <td>
                 <a href="{% url 'requerimientos:requerimiento_detail' req.pk %}" 
                    class="fw-bold text-decoration-none req-tooltip"
@@ -98,13 +268,36 @@
                    title="<strong>{{ req.nombre }}</strong><br>
                           <small><strong>Tipo:</strong> {{ req.get_tipo_display }}</small><br>
                           <small><strong>Estado:</strong> {{ req.get_estado_display }}</small><br>
-                          <small><strong>Creado:</strong> {{ req.fecha_creacion|date:'d/m/Y' }}</small><br>
-                          {% if req.descripcion %}<small><strong>Descripción:</strong> {{ req.descripcion|truncatechars:100 }}</small>{% endif %}">
+                          <small><strong>Creado:</strong> {{ req.fecha_creacion|date:'d/m/Y' }}</small>">
                   {{ req.nombre }}
                 </a>
               </td>
               <td>{{ req.get_tipo_display }}</td>
-              <td>{{ req.get_estado_display }}</td>
+              <td>
+                {% if req.estado == 'CREADO' %}
+                  <span class="badge badge-estado-creado">
+                    <i class="bi bi-exclamation-circle-fill me-1"></i>{{ req.get_estado_display }}
+                  </span>
+                {% elif req.estado == 'VALIDADO' %}
+                  <span class="badge bg-info">
+                    <i class="bi bi-check-circle-fill me-1"></i>{{ req.get_estado_display }}
+                  </span>
+                {% elif req.estado == 'PRIORIZADO' %}
+                  <span class="badge bg-success">
+                    <i class="bi bi-flag-fill me-1"></i>{{ req.get_estado_display }}
+                  </span>
+                {% elif req.estado == 'EN_PROCESO' %}
+                  <span class="badge bg-secondary">
+                    <i class="bi bi-gear-fill me-1"></i>{{ req.get_estado_display }}
+                  </span>
+                {% elif req.estado == 'TERMINADO' %}
+                  <span class="badge bg-dark">
+                    <i class="bi bi-check-circle-fill me-1"></i>{{ req.get_estado_display }}
+                  </span>
+                {% else %}
+                  <span class="badge bg-light text-dark">{{ req.get_estado_display }}</span>
+                {% endif %}
+              </td>
               <td>{{ req.descripcion|default:'-'|truncatechars:60 }}</td>
               <td>{{ req.fecha_creacion|date:'d/m/Y' }}</td>
               <td>
@@ -123,7 +316,7 @@
                 {% endwith %}
               </td>
               <td>
-                <div class="d-flex gap-1">
+                <div class="d-flex gap-1 flex-wrap">
                   <a href="{% url 'requerimientos:requerimiento_detail' req.pk %}" 
                      class="btn btn-outline-success btn-sm btn-action-req" 
                      title="Ver Detalle">
@@ -143,11 +336,33 @@
                     <i class="bi bi-trash"></i>
                   </a>
                   {% endif %}
-                  {% comment %} Solo mostrar botones de casos de uso para requerimientos FUNCIONALES {% endcomment %}
-                  {% if req.tipo == 'FUNCIONAL' %}
+                  
+                  {# Botones de validación para requerimientos CREADO #}
+                  {% if req.estado == 'CREADO' %}
+                    {% if user == req.proyecto.lider %}
+                      <a href="{% url 'requerimientos:requerimiento_validar_lider_proyecto' req.proyecto.id %}" 
+                         class="btn btn-validar-lider btn-sm btn-action-req" 
+                         title="Validar como líder">
+                        <i class="bi bi-check-circle-fill"></i> Validar
+                      </a>
+                    {% endif %}
+                    
+                    {# Verificar si el usuario es stakeholder del proyecto #}
+                    {% load roles_tags %}
+                    {% if user|es_stakeholder:req.proyecto %}
+                      <a href="{% url 'requerimientos:requerimiento_validar_cliente_proyecto' req.proyecto.id %}" 
+                         class="btn btn-validar-stakeholder btn-sm btn-action-req" 
+                         title="Validar como stakeholder">
+                        <i class="bi bi-person-check-fill"></i> Validar
+                      </a>
+                    {% endif %}
+                  {% endif %}
+                  
+                  {# Solo mostrar botones de casos de uso para requerimientos FUNCIONALES VALIDADOS #}
+                  {% if req.tipo == 'FUNCIONAL' and req.estado == 'VALIDADO' %}
                   {% with casos=req.casos_relacionados.all %}
                     {% if casos|length == 0 %}
-                      <a href="{% url 'casos_de_uso:caso_de_uso_create' req.proyecto.id %}?requerimiento_id={{ req.id }}" 
+                      <a href="{% url 'casos_de_uso:caso_de_uso_create_con_requerimiento' req.proyecto.id req.id %}" 
                          class="btn btn-outline-primary btn-sm btn-action-req" 
                          title="Crear Caso de Uso">
                         <i class="bi bi-diagram-3-fill"></i>
@@ -158,7 +373,7 @@
                         <i class="bi bi-link"></i>
                       </a>
                     {% else %}
-                      <a href="{% url 'casos_de_uso:caso_de_uso_create' req.proyecto.id %}?requerimiento_id={{ req.id }}" 
+                      <a href="{% url 'casos_de_uso:caso_de_uso_create_con_requerimiento' req.proyecto.id req.id %}" 
                          class="btn btn-outline-info btn-sm btn-action-req" 
                          title="Agregar Otro Caso de Uso">
                         <i class="bi bi-plus-circle"></i>

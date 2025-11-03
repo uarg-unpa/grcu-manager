@@ -1,0 +1,234 @@
+{% extends "core/base.html" %}
+
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'requerimientos/css/discusion_styles.css' %}?v=1.0">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Información del requerimiento -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-file-earmark-text me-2"></i>
+                        {{ requerimiento.nombre }}
+                        <span class="badge bg-{{ requerimiento.estado|lower }} ms-2">{{ requerimiento.get_estado_display }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2"><strong>Descripción:</strong> {{ requerimiento.descripcion|default:"Sin descripción" }}</p>
+                    <p class="mb-2"><strong>Tipo:</strong> {{ requerimiento.get_tipo_display }}</p>
+                    <p class="mb-2"><strong>Creado por:</strong> {{ requerimiento.creado_por.nombre }}</p>
+                    <p class="mb-0"><strong>Fecha de creación:</strong> {{ requerimiento.fecha_creacion|date:"d/m/Y H:i" }}</p>
+                    
+                    {% if requerimiento.validado_por %}
+                    <hr>
+                    <p class="mb-1"><strong>Validado por:</strong> {{ requerimiento.validado_por.nombre }} ({{ requerimiento.get_tipo_validador_display }})</p>
+                    <p class="mb-0"><strong>Fecha de validación:</strong> {{ requerimiento.fecha_validacion|date:"d/m/Y H:i" }}</p>
+                    {% endif %}
+                    
+                    {% if requerimiento.requiere_discusion %}
+                    <div class="alert alert-warning mt-3">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>Este requerimiento requiere discusión adicional.</strong>
+                        {% if requerimiento.motivo_rechazo %}
+                        <br><small><strong>Motivo del último rechazo:</strong> {{ requerimiento.motivo_rechazo }}</small>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Hilo de comentarios -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">
+                        <i class="bi bi-chat-dots me-2"></i>
+                        Discusión ({{ total_comentarios }} comentario{{ total_comentarios|pluralize }})
+                    </h6>
+                    <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#nuevoComentario">
+                        <i class="bi bi-plus-circle me-1"></i>Agregar Comentario
+                    </button>
+                </div>
+                
+                <!-- Formulario para nuevo comentario -->
+                <div class="collapse" id="nuevoComentario">
+                    <div class="card-body border-bottom">
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label for="comentario" class="form-label">Nuevo comentario:</label>
+                                <textarea name="comentario" id="comentario" class="form-control" rows="3" 
+                                          placeholder="Escribe tu comentario aquí..." required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-send me-1"></i>Enviar Comentario
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Lista de comentarios -->
+                <div class="card-body">
+                    {% if comentarios_hilo %}
+                        {% for hilo in comentarios_hilo %}
+                        <div class="comentario-principal mb-4">
+                            <!-- Comentario principal -->
+                            <div class="d-flex">
+                                <div class="avatar-circle me-3">
+                                    {% if hilo.autor_info.avatar %}
+                                        <img src="{{ hilo.autor_info.avatar }}" alt="Avatar" class="avatar-img">
+                                    {% else %}
+                                        {{ hilo.autor_info.nombre|first|upper }}
+                                    {% endif %}
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <strong>{{ hilo.autor_info.nombre }}</strong>
+                                            {% if hilo.autor_info.rol_principal %}
+                                                <span class="badge bg-{{ hilo.autor_info.rol_principal|lower|slugify }} ms-2">{{ hilo.autor_info.rol_principal }}</span>
+                                            {% endif %}
+                                            <span class="badge bg-secondary ms-1">{{ hilo.comentario.get_tipo_accion_display }}</span>
+                                        </div>
+                                        <small class="text-muted">{{ hilo.comentario.fecha_creacion|date:"d/m/Y H:i" }}</small>
+                                    </div>
+                                    <div class="comentario-contenido mt-2">
+                                        {{ hilo.comentario.comentario|linebreaks }}
+                                    </div>
+                                    <div class="mt-2">
+                                        <button class="btn btn-sm btn-outline-secondary" type="button" 
+                                                data-bs-toggle="collapse" data-bs-target="#respuestas-{{ hilo.comentario.pk }}">
+                                            <i class="bi bi-reply me-1"></i>Responder
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- Formulario de respuesta colapsable -->
+                                    <div class="collapse mt-3" id="respuestas-{{ hilo.comentario.pk }}">
+                                        <div class="respuesta-form">
+                                            <form method="post">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="comentario_padre" value="{{ hilo.comentario.pk }}">
+                                                <div class="input-group">
+                                                    <textarea name="comentario" class="form-control" rows="2" 
+                                                              placeholder="Escribe tu respuesta..." required></textarea>
+                                                    <button class="btn btn-outline-primary" type="submit">
+                                                        <i class="bi bi-send"></i>
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Respuestas -->
+                            {% if hilo.respuestas %}
+                                <div class="respuestas mt-3 ms-5">
+                                    {% for respuesta in hilo.respuestas %}
+                                    <div class="respuesta-item mb-3">
+                                        <div class="d-flex">
+                                            <div class="avatar-circle-sm me-3">
+                                                {% if respuesta.autor_info.avatar %}
+                                                    <img src="{{ respuesta.autor_info.avatar }}" alt="Avatar" class="avatar-img-sm">
+                                                {% else %}
+                                                    {{ respuesta.autor_info.nombre|first|upper }}
+                                                {% endif %}
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <div class="d-flex justify-content-between align-items-start">
+                                                    <div>
+                                                        <strong>{{ respuesta.autor_info.nombre }}</strong>
+                                                        {% if respuesta.autor_info.rol_principal %}
+                                                            <span class="badge bg-{{ respuesta.autor_info.rol_principal|lower|slugify }} ms-2">{{ respuesta.autor_info.rol_principal }}</span>
+                                                        {% endif %}
+                                                        <span class="badge bg-info ms-1">{{ respuesta.comentario.get_tipo_accion_display }}</span>
+                                                    </div>
+                                                    <small class="text-muted">{{ respuesta.comentario.fecha_creacion|date:"d/m/Y H:i" }}</small>
+                                                </div>
+                                                <div class="comentario-contenido mt-1">
+                                                    {{ respuesta.comentario.comentario|linebreaks }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center text-muted py-4">
+                            <i class="bi bi-chat-dots fs-1 mb-3"></i>
+                            <p class="mb-0">Aún no hay comentarios en esta discusión.</p>
+                            <small>¡Sé el primero en comentar!</small>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Panel lateral con acciones -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-gear me-2"></i>Acciones</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'requerimientos:requerimiento_detail' requerimiento.pk %}" class="btn btn-outline-primary">
+                            <i class="bi bi-eye me-1"></i>Ver Detalles
+                        </a>
+                        
+                        {% if user == proyecto.lider or user == requerimiento.creado_por %}
+                        <a href="{% url 'requerimientos:requerimiento_update' requerimiento.pk %}" class="btn btn-outline-warning">
+                            <i class="bi bi-pencil me-1"></i>Editar Requerimiento
+                        </a>
+                        {% endif %}
+                        
+                        {% if requerimiento.estado == 'VALIDADO' and user == proyecto.lider %}
+                        <a href="{% url 'requerimientos:requerimiento_priorizar' %}?proyecto_id={{ proyecto.id }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-flag me-1"></i>Priorizar
+                        </a>
+                        {% endif %}
+                        
+                        <a href="{% url 'requerimientos:requerimiento_list' %}?proyecto_id={{ proyecto.id }}" class="btn btn-outline-info">
+                            <i class="bi bi-list me-1"></i>Ver Todos
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Información del proyecto -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-diagram-3 me-2"></i>Proyecto</h6>
+                </div>
+                <div class="card-body">
+                    <h6>{{ proyecto.nombre }}</h6>
+                    <p class="mb-1">{{ proyecto.descripcion|truncatechars:100 }}</p>
+                    <small class="text-muted">Metodología: {{ proyecto.get_metodologia_display }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-expand textarea
+document.querySelectorAll('textarea').forEach(textarea => {
+    textarea.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = this.scrollHeight + 'px';
+    });
+});
+</script>
+{% endblock %}

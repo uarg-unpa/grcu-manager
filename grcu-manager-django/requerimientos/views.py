@@ -4,7 +4,7 @@ from .models import Requerimiento
 from proyectos.models import Proyecto
 from django.contrib.auth.decorators import login_required
 from .forms import RequerimientoForm, RequerimientoTradicionalForm, RequerimientoAgilForm
-from requerimientos.models import DetalleRequerimientoTradicional, DetalleRequerimientoAgil
+from requerimientos.models import DetalleRequerimientoTradicional, DetalleRequerimientoAgil, ComentarioValidacion
 from django.utils import timezone
 from django.http import JsonResponse
 from django.contrib import messages
@@ -34,13 +34,42 @@ def requerimiento_list(request, proyecto_id=None):
             if primer_proyecto:
                 proyecto_id = primer_proyecto.pk
 
+    # Inicializar variables
+    es_stakeholder = False
+    
     if proyecto_id:
         proyecto = get_object_or_404(Proyecto, id=proyecto_id)
-        requerimientos = Requerimiento.objects.filter(proyecto=proyecto).select_related('proyecto')
+        
+        # Filtrar requerimientos según el rol del usuario
+        es_lider = request.user == proyecto.lider
+        es_participante = proyecto.participantes.filter(id=request.user.id).exists()
+        
+        # Verificar si es stakeholder
+        try:
+            from roles.models import Rol
+            from proyectos.models import ParticipacionProyecto
+            stakeholder_rol = Rol.objects.get(nombre='Stakeholder')
+            es_stakeholder = ParticipacionProyecto.objects.filter(
+                usuario=request.user,
+                proyecto=proyecto,
+                rol=stakeholder_rol
+            ).exists()
+        except:
+            pass
+        
+        if es_stakeholder:
+            # Stakeholders solo ven requerimientos pendientes de validación
+            requerimientos = Requerimiento.objects.filter(
+                proyecto=proyecto,
+                estado='CREADO'
+            ).select_related('proyecto')
+        else:
+            # Líderes y desarrolladores ven todos los requerimientos
+            requerimientos = Requerimiento.objects.filter(proyecto=proyecto).select_related('proyecto')
         
         # Estadísticas adicionales para líderes
         stats = None
-        if request.user == proyecto.lider:
+        if es_lider:
             from casos_de_uso.models import CasoDeUso
             from requerimientos.models import RequerimientoCaso
             
@@ -76,8 +105,11 @@ def requerimiento_list(request, proyecto_id=None):
         "requerimientos": requerimientos,
         "proyecto": proyecto,
         "stats": stats,
-        "is_lider": proyecto and request.user == proyecto.lider if proyecto else False,
+        "is_lider": proyecto and request.user == proyecto.lider,
+        "is_stakeholder": es_stakeholder,
         "page_title": page_title,
+        # Agregar conteo de requerimientos pendientes de validación
+        "pendientes_validacion": Requerimiento.objects.filter(proyecto=proyecto, estado='CREADO').count() if proyecto else 0,
     }
     return render(request, "requerimientos/requerimiento_list.html", context)
 
@@ -143,7 +175,7 @@ def requerimiento_create(request, proyecto_id=None):
                 nombre=form.cleaned_data['nombre'],
                 descripcion=form.cleaned_data.get('descripcion', ''),
                 tipo=form.cleaned_data['tipo'],
-                estado=form.cleaned_data['estado'],
+                estado='CREADO',  # Forzar estado inicial como CREADO
                 proyecto=proyecto,
                 creado_por=request.user,
                 imagen=form.cleaned_data.get('imagen'),
@@ -172,9 +204,6 @@ def requerimiento_create(request, proyecto_id=None):
                     historia_usuario=form.cleaned_data.get('historia_usuario', ''),
                     criterio_aceptacion=form.cleaned_data.get('criterio_aceptacion', ''),
                     puntos_estimados=form.cleaned_data.get('puntos_estimados'),
-                    sprint_asignado=form.cleaned_data.get('sprint_asignado', ''),
-                    responsable=form.cleaned_data.get('responsable', ''),
-                    estado_scrum=form.cleaned_data.get('estado_scrum', ''),
                     observaciones=form.cleaned_data.get('observaciones', '')
                 )
                 messages.success(request, f'✅ User Story "{requerimiento.nombre}" creada exitosamente.')
@@ -234,15 +263,29 @@ def requerimiento_priorizar(request, proyecto_id=None):
     if request.user != proyecto.lider:
         return render(request, "requerimientos/requerimiento_priorizar.html", {"proyecto": None})
 
-    requerimientos = Requerimiento.objects.filter(proyecto=proyecto).select_related('detalle_tradicional')
+    # Obtener requerimientos validados que pueden ser priorizados
+    requerimientos = Requerimiento.objects.filter(
+        proyecto=proyecto,
+        estado='VALIDADO'
+    ).select_related('detalle_tradicional', 'detalle_agil')
 
     if request.method == 'POST':
         for req in requerimientos:
             prioridad = request.POST.get(f'prioridad_{req.pk}')
-            if req.detalle_tradicional:
-                if prioridad and req.detalle_tradicional.prioridad != prioridad:
+            # Actualizar prioridad según el tipo de detalle que exista
+            if req.detalle_tradicional and prioridad:
+                if req.detalle_tradicional.prioridad != prioridad:
                     req.detalle_tradicional.prioridad = prioridad
                     req.detalle_tradicional.save()
+                    # Cambiar estado a PRIORIZADO
+                    req.estado = 'PRIORIZADO'
+                    req.save()
+            elif req.detalle_agil and prioridad:
+                # Para metodología ágil, la priorización se maneja diferente
+                # Solo cambiar el estado a PRIORIZADO sin modificar campos específicos
+                if req.estado != 'PRIORIZADO':
+                    req.estado = 'PRIORIZADO'
+                    req.save()
         return redirect(f"{reverse('requerimientos:requerimiento_priorizar')}?proyecto_id={proyecto.pk}")
 
     context = {
@@ -554,6 +597,7 @@ def requerimiento_comparar_versiones(request, pk):
 def relacionar_casos_existentes(request, pk):
     """
     Vista para mostrar casos de uso existentes del proyecto y permitir relacionarlos con un requerimiento.
+    Solo permite relacionar si el requerimiento está VALIDADO.
     """
     requerimiento = get_object_or_404(Requerimiento, pk=pk)
     proyecto = requerimiento.proyecto
@@ -566,6 +610,15 @@ def relacionar_casos_existentes(request, pk):
         messages.error(
             request,
             'No tienes permiso para relacionar casos de uso con este requerimiento.'
+        )
+        return redirect('requerimientos:requerimiento_detail', pk=pk)
+
+    # REGLA DE ORO: Solo requerimientos VALIDADOS pueden tener casos de uso
+    if requerimiento.estado != 'VALIDADO':
+        messages.error(
+            request,
+            f'No se pueden asignar casos de uso a un requerimiento en estado "{requerimiento.get_estado_display()}". '
+            'El requerimiento debe estar VALIDADO primero.'
         )
         return redirect('requerimientos:requerimiento_detail', pk=pk)
 
@@ -708,9 +761,6 @@ def requerimiento_update(request, pk):
                 detalle.historia_usuario = form.cleaned_data.get('historia_usuario', '')
                 detalle.criterio_aceptacion = form.cleaned_data.get('criterio_aceptacion', '')
                 detalle.puntos_estimados = form.cleaned_data.get('puntos_estimados')
-                detalle.sprint_asignado = form.cleaned_data.get('sprint_asignado', '')
-                detalle.responsable = form.cleaned_data.get('responsable', '')
-                detalle.estado_scrum = form.cleaned_data.get('estado_scrum', '')
                 detalle.observaciones = form.cleaned_data.get('observaciones', '')
                 detalle.save()
             
@@ -751,9 +801,6 @@ def requerimiento_update(request, pk):
                         'historia_usuario': detalle.historia_usuario,
                         'criterio_aceptacion': detalle.criterio_aceptacion,
                         'puntos_estimados': detalle.puntos_estimados,
-                        'sprint_asignado': detalle.sprint_asignado,
-                        'responsable': detalle.responsable,
-                        'estado_scrum': detalle.estado_scrum,
                         'observaciones': detalle.observaciones,
                     })
             except DetalleRequerimientoAgil.DoesNotExist:
@@ -801,3 +848,286 @@ def requerimiento_delete(request, pk):
         'page_title': f'Eliminar Requerimiento: {requerimiento.nombre}',
     }
     return render(request, 'requerimientos/requerimiento_confirm_delete.html', context)
+
+
+# ============================================================================
+# VISTAS DE VALIDACIÓN
+# ============================================================================
+
+@login_required
+def requerimiento_validar_cliente(request, proyecto_id=None):
+    """
+    Vista para que clientes/stakeholders validen requerimientos.
+    Solo muestra requerimientos en estado 'CREADO' que necesitan validación.
+    """
+    # Determinar el proyecto
+    if proyecto_id:
+        proyecto = get_object_or_404(Proyecto, id=proyecto_id)
+    else:
+        proyecto_id = request.GET.get('proyecto_id')
+        if not proyecto_id:
+            messages.error(request, 'Debe especificar un proyecto para validar requerimientos.')
+            return redirect('dashboards:cliente_dashboard')
+        else:
+            proyecto = get_object_or_404(Proyecto, id=proyecto_id)
+
+    # Verificar que el usuario sea stakeholder del proyecto
+    from proyectos.models import ParticipacionProyecto
+    from roles.models import Rol
+    try:
+        stakeholder_rol = Rol.objects.get(nombre='Stakeholder')
+        es_stakeholder = ParticipacionProyecto.objects.filter(
+            usuario=request.user,
+            proyecto=proyecto,
+            rol=stakeholder_rol
+        ).exists()
+    except Rol.DoesNotExist:
+        es_stakeholder = False
+    
+    if not es_stakeholder:
+        messages.error(request, 'No tienes permiso para validar requerimientos de este proyecto.')
+        return redirect('dashboards:cliente_dashboard')
+
+    # Obtener requerimientos pendientes de validación (estado CREADO)
+    requerimientos = Requerimiento.objects.filter(
+        proyecto=proyecto,
+        estado='CREADO'
+    ).select_related('detalle_tradicional', 'detalle_agil', 'creado_por')
+
+    if request.method == 'POST':
+        # Procesar validaciones
+        for req in requerimientos:
+            accion = request.POST.get(f'accion_{req.pk}')
+            if accion == 'validar':
+                # Validar el requerimiento
+                req.estado = 'VALIDADO'
+                req.validado_por = request.user
+                req.fecha_validacion = timezone.now()
+                req.tipo_validador = 'CLIENTE'
+                req.save()
+                messages.success(request, f'✅ Requerimiento "{req.nombre}" validado exitosamente.')
+            elif accion == 'rechazar':
+                # Rechazar el requerimiento (volver a estado CREADO o marcar para revisión)
+                # Por ahora, solo cambiamos el estado a CREADO para que se pueda editar
+                req.estado = 'CREADO'
+                req.save()
+                messages.info(request, f'ℹ️ Requerimiento "{req.nombre}" marcado para revisión.')
+
+        return redirect(f"{reverse('requerimientos:requerimiento_validar_cliente_proyecto', args=[proyecto.pk])}")
+
+    context = {
+        'proyecto': proyecto,
+        'requerimientos': requerimientos,
+        'page_title': f'{proyecto.nombre} - Validación de Requerimientos',
+    }
+    return render(request, 'requerimientos/requerimiento_validar_cliente.html', context)
+
+
+@login_required
+def requerimiento_validar_lider(request, proyecto_id=None):
+    """
+    Vista para que líderes validen requerimientos.
+    Solo muestra requerimientos en estado 'CREADO' que necesitan validación.
+    """
+    # Determinar el proyecto
+    if proyecto_id:
+        proyecto = get_object_or_404(Proyecto, id=proyecto_id)
+    else:
+        proyecto_id = request.GET.get('proyecto_id')
+        if not proyecto_id:
+            # Si no se especifica proyecto, tomar el primer proyecto del líder
+            proyecto = Proyecto.objects.filter(lider=request.user).first()
+            if not proyecto:
+                messages.error(request, 'No tienes proyectos asignados como líder.')
+                return redirect('dashboards:lider_dashboard')
+        else:
+            proyecto = get_object_or_404(Proyecto, id=proyecto_id)
+
+    # Verificar que el usuario sea líder del proyecto
+    if request.user != proyecto.lider:
+        messages.error(request, 'Solo el líder del proyecto puede validar requerimientos.')
+        return redirect('dashboards:lider_dashboard')
+
+    # Obtener requerimientos pendientes de validación (estado CREADO)
+    requerimientos = Requerimiento.objects.filter(
+        proyecto=proyecto,
+        estado='CREADO'
+    ).select_related('detalle_tradicional', 'detalle_agil', 'creado_por')
+
+    if request.method == 'POST':
+        # Procesar validaciones
+        for req in requerimientos:
+            accion = request.POST.get(f'accion_{req.pk}')
+            comentario = request.POST.get(f'comentario_{req.pk}', '').strip()
+            
+            if accion == 'validar':
+                # Validar el requerimiento
+                req.estado = 'VALIDADO'
+                req.validado_por = request.user
+                req.fecha_validacion = timezone.now()
+                req.tipo_validador = 'LIDER'
+                req.requiere_discusion = False
+                req.save()
+                
+                # Crear comentario si se proporcionó
+                if comentario:
+                    ComentarioValidacion.objects.create(
+                        requerimiento=req,
+                        autor=request.user,
+                        comentario=comentario,
+                        tipo_accion='VALIDAR'
+                    )
+                
+                messages.success(request, f'✅ Requerimiento "{req.nombre}" validado exitosamente.')
+                
+            elif accion == 'rechazar':
+                # Rechazar el requerimiento (volver a estado CREADO para edición)
+                req.estado = 'CREADO'
+                req.requiere_discusion = True
+                req.motivo_rechazo = comentario if comentario else 'Rechazado sin comentario específico'
+                req.ultimo_rechazado_por = request.user
+                req.fecha_ultimo_rechazo = timezone.now()
+                req.save()
+                
+                # Crear comentario de rechazo
+                ComentarioValidacion.objects.create(
+                    requerimiento=req,
+                    autor=request.user,
+                    comentario=comentario if comentario else 'Requerimiento rechazado para revisión',
+                    tipo_accion='RECHAZAR'
+                )
+                
+                messages.info(request, f'ℹ️ Requerimiento "{req.nombre}" rechazado para revisión.')
+
+        return redirect(f"{reverse('requerimientos:requerimiento_validar_lider_proyecto', args=[proyecto.pk])}")
+
+    context = {
+        'proyecto': proyecto,
+        'requerimientos': requerimientos,
+        'page_title': f'{proyecto.nombre} - Validación de Requerimientos',
+    }
+    return render(request, 'requerimientos/requerimiento_validar_lider.html', context)
+
+
+# ============================================================================
+# VISTAS DE DISCUSIÓN Y COMENTARIOS
+# ============================================================================
+
+@login_required
+def requerimiento_discusion(request, pk):
+    """
+    Vista para ver y participar en la discusión de validación de un requerimiento.
+    Permite ver todos los comentarios y agregar respuestas.
+    """
+    requerimiento = get_object_or_404(Requerimiento, pk=pk)
+    proyecto = requerimiento.proyecto
+
+    # Verificar permisos: solo participantes del proyecto
+    es_lider = request.user == proyecto.lider
+    es_participante = proyecto.participantes.filter(id=request.user.id).exists()
+    es_stakeholder = False
+    
+    # Verificar si es stakeholder
+    try:
+        from roles.models import Rol
+        from proyectos.models import ParticipacionProyecto
+        stakeholder_rol = Rol.objects.get(nombre='Stakeholder')
+        es_stakeholder = ParticipacionProyecto.objects.filter(
+            usuario=request.user,
+            proyecto=proyecto,
+            rol=stakeholder_rol
+        ).exists()
+    except:
+        pass
+    
+    if not (es_lider or es_participante or es_stakeholder):
+        messages.error(request, 'No tienes permiso para ver la discusión de este requerimiento.')
+        return redirect('requerimientos:requerimiento_detail', pk=pk)
+
+    # Obtener comentarios ordenados por fecha con información completa del autor
+    comentarios = ComentarioValidacion.objects.filter(
+        requerimiento=requerimiento
+    ).select_related('autor', 'comentario_padre').prefetch_related('autor__roles').order_by('fecha_creacion')
+
+    if request.method == 'POST':
+        comentario_texto = request.POST.get('comentario', '').strip()
+        comentario_padre_id = request.POST.get('comentario_padre')
+        
+        if comentario_texto:
+            # Determinar el tipo de acción basado en el contexto
+            tipo_accion = 'RESPUESTA'
+            if not comentario_padre_id and requerimiento.estado == 'CREADO':
+                tipo_accion = 'ACLARACION'
+            
+            comentario_padre = None
+            if comentario_padre_id:
+                try:
+                    comentario_padre = ComentarioValidacion.objects.get(
+                        pk=comentario_padre_id,
+                        requerimiento=requerimiento
+                    )
+                except ComentarioValidacion.DoesNotExist:
+                    pass
+            
+            # Crear el comentario
+            ComentarioValidacion.objects.create(
+                requerimiento=requerimiento,
+                autor=request.user,
+                comentario=comentario_texto,
+                tipo_accion=tipo_accion,
+                comentario_padre=comentario_padre
+            )
+            
+            messages.success(request, '✅ Comentario agregado exitosamente.')
+            return redirect('requerimientos:requerimiento_discusion', pk=pk)
+        else:
+            messages.error(request, 'El comentario no puede estar vacío.')
+
+    # Organizar comentarios en hilos con información completa del autor
+    comentarios_hilo = []
+    comentarios_raiz = comentarios.filter(comentario_padre__isnull=True)
+    
+    for comentario in comentarios_raiz:
+        # Obtener roles del autor como lista de nombres
+        roles_autor = list(comentario.autor.roles.values_list('nombre', flat=True))
+        rol_principal = roles_autor[0] if roles_autor else 'Sin rol'
+        
+        hilo = {
+            'comentario': comentario,
+            'autor_info': {
+                'nombre': comentario.autor.nombre,
+                'email': comentario.autor.email,
+                'avatar': comentario.autor.avatar,
+                'roles': roles_autor,
+                'rol_principal': rol_principal,
+            },
+            'respuestas': []
+        }
+        
+        # Agregar información del autor a cada respuesta
+        for respuesta in comentarios.filter(comentario_padre=comentario):
+            roles_respuesta = list(respuesta.autor.roles.values_list('nombre', flat=True))
+            rol_respuesta = roles_respuesta[0] if roles_respuesta else 'Sin rol'
+            
+            hilo['respuestas'].append({
+                'comentario': respuesta,
+                'autor_info': {
+                    'nombre': respuesta.autor.nombre,
+                    'email': respuesta.autor.email,
+                    'avatar': respuesta.autor.avatar,
+                    'roles': roles_respuesta,
+                    'rol_principal': rol_respuesta,
+                }
+            })
+        
+        comentarios_hilo.append(hilo)
+
+    context = {
+        'requerimiento': requerimiento,
+        'proyecto': proyecto,
+        'comentarios_hilo': comentarios_hilo,
+        'total_comentarios': comentarios.count(),
+        'page_title': f'{proyecto.nombre} - Discusión: {requerimiento.nombre}',
+    }
+    
+    return render(request, 'requerimientos/requerimiento_discusion.html', context)

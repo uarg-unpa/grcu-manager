@@ -16,6 +16,14 @@
             <div class="row">
                 <div class="col-md-6">
                     <p><strong><i class="bi bi-folder"></i> Proyecto:</strong> {{ caso.proyecto }}</p>
+                    {% if caso.requerimiento %}
+                    <p><strong><i class="bi bi-file-earmark-text"></i> Requerimiento asociado:</strong>
+                        <a href="{% url 'requerimientos:requerimiento_detail' caso.requerimiento.pk %}" class="text-decoration-none">
+                            {{ caso.requerimiento.nombre }}
+                        </a>
+                        <span class="badge bg-{{ caso.requerimiento.estado|lower }}">{{ caso.requerimiento.get_estado_display }}</span>
+                    </p>
+                    {% endif %}
                     <p><strong><i class="bi bi-person"></i> Creado por:</strong> {{ caso.creado_por }}</p>
                     <p><strong><i class="bi bi-calendar"></i> Fecha de creación:</strong> {{ caso.fecha_creacion|date:"d/m/Y H:i" }}</p>
                 </div>

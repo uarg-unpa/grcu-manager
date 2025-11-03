@@ -430,8 +430,9 @@
                     <label for="estado_req">Estado de Requerimiento</label>
                     <select name="estado_req" id="estado_req" class="form-select">
                         <option value="">Todos</option>
-                        <option value="PENDIENTE" {% if filtro_estado_req == 'PENDIENTE' %}selected{% endif %}>Pendiente</option>
+                        <option value="CREADO" {% if filtro_estado_req == 'CREADO' %}selected{% endif %}>Creado</option>
                         <option value="EN_PROGRESO" {% if filtro_estado_req == 'EN_PROGRESO' %}selected{% endif %}>En Progreso</option>
+                        <option value="VALIDADO" {% if filtro_estado_req == 'VALIDADO' %}selected{% endif %}>Validado</option>
                         <option value="COMPLETADO" {% if filtro_estado_req == 'COMPLETADO' %}selected{% endif %}>Completado</option>
                     </select>
                 </div>
@@ -485,10 +486,12 @@
                         </span>
                     </td>
                     <td>
-                        {% if fila.requerimiento.estado == 'PENDIENTE' %}
-                            <span class="badge-estado badge-pendiente">Pendiente</span>
+                        {% if fila.requerimiento.estado == 'CREADO' %}
+                            <span class="badge-estado badge-pendiente">Creado</span>
                         {% elif fila.requerimiento.estado == 'EN_PROGRESO' %}
                             <span class="badge-estado badge-en-progreso">En Progreso</span>
+                        {% elif fila.requerimiento.estado == 'VALIDADO' %}
+                            <span class="badge-estado badge-completado">Validado</span>
                         {% else %}
                             <span class="badge-estado badge-completado">Completado</span>
                         {% endif %}

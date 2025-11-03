@@ -65,6 +65,7 @@
           <tr>
             <th><i class="bi bi-hash me-1"></i> ID</th>
             <th><i class="bi bi-diagram-3 me-1"></i> Nombre</th>
+            <th><i class="bi bi-file-earmark-text me-1"></i> Requerimiento</th>
             <th><i class="bi bi-card-text me-1"></i> Descripción</th>
             <th><i class="bi bi-eye me-1"></i> Acciones</th>
           </tr>
@@ -81,10 +82,23 @@
                  data-bs-html="true"
                  title="<strong>{{ cu.nombre }}</strong><br>
                         <small><strong>Proyecto:</strong> {{ cu.proyecto.nombre }}</small><br>
+                        {% if cu.requerimiento %}<small><strong>Requerimiento:</strong> {{ cu.requerimiento.nombre }}</small><br>{% endif %}
                         <small><strong>Creado:</strong> {{ cu.fecha_creacion|date:'d/m/Y' }}</small><br>
                         {% if cu.descripcion %}<small><strong>Descripción:</strong> {{ cu.descripcion|truncatechars:100 }}</small>{% endif %}">
                 {{ cu.nombre }}
               </a>
+            </td>
+            <td>
+              {% if cu.requerimiento %}
+                <a href="{% url 'requerimientos:requerimiento_detail' cu.requerimiento.pk %}" 
+                   class="text-decoration-none">
+                  {{ cu.requerimiento.nombre }}
+                </a>
+                <br>
+                <small class="badge bg-{{ cu.requerimiento.estado|lower }}">{{ cu.requerimiento.get_estado_display }}</small>
+              {% else %}
+                <span class="text-muted">Sin requerimiento</span>
+              {% endif %}
             </td>
             <td>{{ cu.descripcion|truncatechars:60 }}</td>
             <td>
@@ -113,7 +127,7 @@
           </tr>
           {% empty %}
           <tr>
-            <td colspan="4">
+            <td colspan="5">
               <div class="empty-state-caso">
                 <i class="bi bi-inbox"></i>
                 <p class="mb-0">No hay casos de uso disponibles.</p>

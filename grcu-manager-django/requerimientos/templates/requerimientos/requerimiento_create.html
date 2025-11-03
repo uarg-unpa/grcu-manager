@@ -106,6 +106,9 @@
                             Detalles Tradicionales
                         </div>
                         
+                        <!-- Prioridad se asigna después de validación -->
+                        {% comment %} REMOVIDO: La prioridad se asigna en la fase de priorización {% endcomment %}
+                        {% comment %}
                         <!-- Prioridad (MoSCoW) -->
                         <div class="mb-3">
                             <label for="{{ form.prioridad.id_for_label }}" class="form-label required-field">
@@ -119,6 +122,7 @@
                                 <div class="text-danger small mt-1">{{ form.prioridad.errors.0 }}</div>
                             {% endif %}
                         </div>
+                        {% endcomment %}
                         
                         <div class="row">
                             <!-- Fuente -->

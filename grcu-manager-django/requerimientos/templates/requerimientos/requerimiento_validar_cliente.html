@@ -1,0 +1,103 @@
+{% extends "core/base.html" %}
+
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'requerimientos/css/priorizar_styles.css' %}?v=1.0">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    {% if proyecto %}
+    <div class="mb-3">
+        <span class="badge-proyecto"><i class="bi bi-diagram-3 me-1"></i> Proyecto: {{ proyecto.nombre }}</span>
+    </div>
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle me-2"></i>
+        Como stakeholder del proyecto, puedes validar o rechazar los requerimientos pendientes.
+        Los requerimientos validados podrán ser priorizados por el líder del proyecto.
+    </div>
+    <form method="post" class="card priorizar-card">
+        {% csrf_token %}
+        <div class="table-responsive">
+        <table class="table table-bordered align-middle mb-0">
+            <thead>
+                <tr>
+                    <th><i class="bi bi-file-earmark-text me-1"></i> Requerimiento</th>
+                    <th><i class="bi bi-card-text me-1"></i> Descripción</th>
+                    <th><i class="bi bi-person me-1"></i> Creado por</th>
+                    <th><i class="bi bi-info-circle me-1"></i> Estado</th>
+                    <th><i class="bi bi-check-circle me-1"></i> Acción</th>
+                    <th><i class="bi bi-chat-left-text me-1"></i> Comentario</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for req in requerimientos %}
+                <tr>
+                    <td>{{ req.nombre }}</td>
+                    <td>{{ req.descripcion|truncatechars:60 }}</td>
+                    <td>{{ req.creado_por.get_full_name|default:req.creado_por.username }}</td>
+                    <td>
+                        {% if req.detalle_tradicional and req.detalle_tradicional.observaciones %}
+                            {{ req.detalle_tradicional.observaciones }}
+                        {% elif req.detalle_agil and req.detalle_agil.observaciones %}
+                            {{ req.detalle_agil.observaciones }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if req.requiere_discusion %}
+                            <span class="badge bg-warning text-dark">
+                                <i class="bi bi-chat-dots me-1"></i>Requiere Discusión
+                            </span>
+                        {% endif %}
+                        {% if req.comentarios_validacion.exists %}
+                            <a href="{% url 'requerimientos:requerimiento_discusion' req.pk %}" 
+                               class="badge bg-info text-white ms-1" 
+                               title="Ver discusión">
+                                <i class="bi bi-chat me-1"></i>{{ req.comentarios_validacion.count }} comentario(s)
+                            </a>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="btn-group" role="group">
+                            <input type="radio" class="btn-check" name="accion_{{ req.pk }}" id="validar_{{ req.pk }}" value="validar" autocomplete="off">
+                            <label class="btn btn-outline-success btn-sm" for="validar_{{ req.pk }}">
+                                <i class="bi bi-check-circle me-1"></i> Validar
+                            </label>
+
+                            <input type="radio" class="btn-check" name="accion_{{ req.pk }}" id="rechazar_{{ req.pk }}" value="rechazar" autocomplete="off">
+                            <label class="btn btn-outline-danger btn-sm" for="rechazar_{{ req.pk }}">
+                                <i class="bi bi-x-circle me-1"></i> Rechazar
+                            </label>
+                        </div>
+                    </td>
+                    <td>
+                        <textarea name="comentario_{{ req.pk }}" 
+                                  class="form-control form-control-sm" 
+                                  rows="2" 
+                                  placeholder="Comentario opcional sobre la validación..."></textarea>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="text-center">No hay requerimientos pendientes de validación.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% if requerimientos %}
+        <div class="text-end p-3">
+            <button type="submit" class="btn btn-success">
+                <i class="bi bi-save me-1"></i> Aplicar Validaciones
+            </button>
+        </div>
+        {% endif %}
+    </form>
+    {% else %}
+        <div class="alert alert-info">No tienes proyectos asignados como stakeholder.</div>
+    {% endif %}
+</div>
+{% endblock %}

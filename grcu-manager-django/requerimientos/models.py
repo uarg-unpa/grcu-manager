@@ -3,6 +3,7 @@ from proyectos.models import Proyecto
 from accounts.models import Usuario
 from simple_history.models import HistoricalRecords
 from typing import TYPE_CHECKING
+from django.conf import settings
 
 # Type hints para Pylance
 if TYPE_CHECKING:
@@ -16,15 +17,33 @@ class Requerimiento(models.Model):
         ("NO_FUNCIONAL", "No funcional"),
     ]
     ESTADO_CHOICES = [
-        ("PENDIENTE", "Pendiente"),
-        ("EN_PROGRESO", "En progreso"),
-        ("COMPLETADO", "Completado"),
+        ("CREADO", "Creado"),
+        ("VALIDADO", "Validado"),
+        ("PRIORIZADO", "Priorizado"),
+        ("EN_PROCESO", "En proceso"),
+        ("TERMINADO", "Terminado"),
     ]
     nombre = models.CharField(max_length=255)
     descripcion = models.TextField(blank=True)
     tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
-    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default="PENDIENTE")
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default="CREADO")
     proyecto = models.ForeignKey(Proyecto, on_delete=models.CASCADE, related_name="requerimientos")
+    
+    # Campos para validación
+    validado_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, blank=True, related_name='requerimientos_validados')
+    fecha_validacion = models.DateTimeField(null=True, blank=True)
+    TIPO_VALIDADOR_CHOICES = [
+        ("CLIENTE", "Cliente/Stakeholder"),
+        ("LIDER", "Líder de proyecto"),
+    ]
+    tipo_validador = models.CharField(max_length=20, choices=TIPO_VALIDADOR_CHOICES, null=True, blank=True)
+    
+    # Campos para manejo de rechazos y discusiones
+    requiere_discusion = models.BooleanField(default=False, help_text='Indica si el requerimiento necesita discusión adicional')
+    motivo_rechazo = models.TextField(blank=True, help_text='Motivo del último rechazo si aplica')
+    ultimo_rechazado_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, blank=True, related_name='requerimientos_rechazados')
+    fecha_ultimo_rechazo = models.DateTimeField(null=True, blank=True)
+    
     creado_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, blank=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
@@ -80,9 +99,6 @@ class DetalleRequerimientoAgil(models.Model):
     historia_usuario = models.TextField(blank=True)
     criterio_aceptacion = models.TextField(blank=True)
     puntos_estimados = models.PositiveIntegerField(null=True, blank=True)
-    sprint_asignado = models.CharField(max_length=100, blank=True)
-    responsable = models.CharField(max_length=100, blank=True)
-    estado_scrum = models.CharField(max_length=100, blank=True)
     observaciones = models.TextField(blank=True)
 
     def __str__(self):
@@ -103,3 +119,58 @@ class RequerimientoCaso(models.Model):
     def __str__(self):
         # usar .pk para evitar advertencias del analizador estático (pylance)
         return f"Req {self.requerimiento.pk} <-> CU {self.caso_de_uso.pk}"
+
+
+# ============================================================================
+# MODELOS PARA VALIDACIÓN Y COMENTARIOS
+# ============================================================================
+
+class ComentarioValidacion(models.Model):
+    """
+    Modelo para comentarios y discusiones durante el proceso de validación de requerimientos.
+    Permite hilos de conversación entre validadores, líderes y desarrolladores.
+    """
+    TIPO_ACCION_CHOICES = [
+        ("VALIDAR", "Validar"),
+        ("RECHAZAR", "Rechazar"),
+        ("RESPUESTA", "Respuesta"),
+        ("ACLARACION", "Aclaraación"),
+    ]
+
+    requerimiento = models.ForeignKey(Requerimiento, on_delete=models.CASCADE, related_name='comentarios_validacion')
+    autor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='comentarios_validacion')
+    comentario = models.TextField(help_text='Comentario o explicación sobre la validación/rechazo')
+    tipo_accion = models.CharField(max_length=20, choices=TIPO_ACCION_CHOICES, help_text='Tipo de acción que representa este comentario')
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    
+    # Para respuestas/hilos de conversación
+    comentario_padre = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='respuestas', help_text='Comentario padre si es una respuesta')
+    
+    # Metadata adicional
+    es_respuesta = models.BooleanField(default=False, help_text='Indica si este comentario es una respuesta a otro')
+    nivel_respuesta = models.PositiveIntegerField(default=0, help_text='Nivel de anidación en el hilo de conversación')
+    
+    # ⚡ HISTORIAL DE VERSIONES
+    history = HistoricalRecords()
+    
+    class Meta:
+        ordering = ['fecha_creacion']
+        verbose_name = 'Comentario de Validación'
+        verbose_name_plural = 'Comentarios de Validación'
+    
+    def __str__(self):
+        return f"{self.autor.nombre} - {self.get_tipo_accion_display()} - {self.requerimiento.nombre[:30]}"
+    
+    def save(self, *args, **kwargs):
+        # Calcular si es respuesta y nivel
+        if self.comentario_padre:
+            self.es_respuesta = True
+            self.nivel_respuesta = self.comentario_padre.nivel_respuesta + 1
+        else:
+            self.es_respuesta = False
+            self.nivel_respuesta = 0
+        super().save(*args, **kwargs)
+    
+    # Type hints para Pylance
+    if TYPE_CHECKING:
+        def get_tipo_accion_display(self) -> str: ...

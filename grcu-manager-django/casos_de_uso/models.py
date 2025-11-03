@@ -1,12 +1,14 @@
 from django.db import models
 from proyectos.models import Proyecto
 from accounts.models import Usuario
+from requerimientos.models import Requerimiento
 from simple_history.models import HistoricalRecords
 
 class CasoDeUso(models.Model):
     nombre = models.CharField(max_length=255)
     descripcion = models.TextField(blank=True)
     proyecto = models.ForeignKey(Proyecto, on_delete=models.CASCADE, related_name="casos_de_uso")
+    requerimiento = models.ForeignKey(Requerimiento, on_delete=models.SET_NULL, null=True, blank=True, related_name="casos_de_uso")
     creado_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, blank=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)

@@ -11,6 +11,11 @@ urlpatterns = [
     path('<int:pk>/editar/', views.requerimiento_update, name='requerimiento_update'),
     path('<int:pk>/eliminar/', views.requerimiento_delete, name='requerimiento_delete'),
     path('priorizar/', views.requerimiento_priorizar, name='requerimiento_priorizar'),
+    path('validar/cliente/', views.requerimiento_validar_cliente, name='requerimiento_validar_cliente'),
+    path('validar/cliente/<int:proyecto_id>/', views.requerimiento_validar_cliente, name='requerimiento_validar_cliente_proyecto'),
+    path('validar/lider/', views.requerimiento_validar_lider, name='requerimiento_validar_lider'),
+    path('validar/lider/<int:proyecto_id>/', views.requerimiento_validar_lider, name='requerimiento_validar_lider_proyecto'),
+    path('<int:pk>/discusion/', views.requerimiento_discusion, name='requerimiento_discusion'),
     path('buscar/', views.buscar_requerimientos_ajax, name='buscar_requerimientos_ajax'),
     # Relacionar casos de uso existentes
     path('<int:pk>/relacionar-casos/', views.relacionar_casos_existentes, name='relacionar_casos_existentes'),

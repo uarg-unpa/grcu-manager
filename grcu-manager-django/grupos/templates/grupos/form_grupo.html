@@ -24,7 +24,7 @@
         {% csrf_token %}
         
         <!-- Campo oculto para almacenar los IDs de integrantes seleccionados -->
-        <input type="hidden" name="integrantes_seleccionados" id="integrantes_seleccionados" value="{{ integrantes_ids_json|default:'[]' }}">;
+        <input type="hidden" name="integrantes_seleccionados" id="integrantes_seleccionados" value="{{ integrantes_ids_json|default:'[]' }}">
 
         <div class="mb-3">
             <label for="id_nombre">Nombre del Grupo</label>

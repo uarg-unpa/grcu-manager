@@ -45,14 +45,6 @@ class RequerimientoTradicionalForm(forms.Form):
         initial='FUNCIONAL'
     )
     
-    estado = forms.ChoiceField(
-        choices=Requerimiento.ESTADO_CHOICES,
-        required=True,
-        widget=forms.Select(attrs={'class': 'form-select'}),
-        label='Estado',
-        initial='PENDIENTE'
-    )
-    
     # Campos específicos del DetalleRequerimientoTradicional
     PRIORIDAD_MOSCOW = [
         ('', '-- Seleccionar prioridad --'),
@@ -64,10 +56,10 @@ class RequerimientoTradicionalForm(forms.Form):
     
     prioridad = forms.ChoiceField(
         choices=PRIORIDAD_MOSCOW,
-        required=True,
+        required=False,  # La prioridad se asigna en la fase de priorización
         widget=forms.Select(attrs={'class': 'form-select'}),
         label='Prioridad (MoSCoW)',
-        help_text='Método MoSCoW de priorización'
+        help_text='La prioridad se asigna después de la validación del requerimiento'
     )
     
     fuente = forms.CharField(
@@ -183,14 +175,6 @@ class RequerimientoAgilForm(forms.Form):
         initial='FUNCIONAL'
     )
     
-    estado = forms.ChoiceField(
-        choices=Requerimiento.ESTADO_CHOICES,
-        required=True,
-        widget=forms.Select(attrs={'class': 'form-select'}),
-        label='Estado',
-        initial='PENDIENTE'
-    )
-    
     # Campos específicos del DetalleRequerimientoAgil
     historia_usuario = forms.CharField(
         required=True,
@@ -233,43 +217,6 @@ class RequerimientoAgilForm(forms.Form):
         widget=forms.Select(attrs={'class': 'form-select'}),
         label='Story Points',
         help_text='Estimación de esfuerzo (Fibonacci)'
-    )
-    
-    sprint_asignado = forms.CharField(
-        max_length=100,
-        required=False,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Ej: Sprint 1, Sprint 2024-01'
-        }),
-        label='Sprint Asignado'
-    )
-    
-    responsable = forms.CharField(
-        max_length=100,
-        required=False,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Nombre del desarrollador responsable'
-        }),
-        label='Responsable'
-    )
-    
-    ESTADO_SCRUM_CHOICES = [
-        ('', '-- Seleccionar estado --'),
-        ('BACKLOG', 'Product Backlog'),
-        ('TODO', 'To Do'),
-        ('IN_PROGRESS', 'In Progress'),
-        ('IN_REVIEW', 'In Review'),
-        ('DONE', 'Done')
-    ]
-    
-    estado_scrum = forms.ChoiceField(
-        choices=ESTADO_SCRUM_CHOICES,
-        required=False,
-        widget=forms.Select(attrs={'class': 'form-select'}),
-        label='Estado Scrum',
-        initial='BACKLOG'
     )
     
     observaciones = forms.CharField(

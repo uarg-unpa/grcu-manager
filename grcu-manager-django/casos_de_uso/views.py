@@ -3,6 +3,7 @@ from django.urls import reverse
 from .models import CasoDeUso, DetalleCasoDeUsoTradicional, DetalleCasoDeUsoAgil
 from .forms import CasoDeUsoUnificadoForm
 from proyectos.models import Proyecto
+from requerimientos.models import Requerimiento
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.db.models import Q
@@ -225,14 +226,39 @@ def caso_de_uso_delete(request, pk):
 
 
 @login_required
-def caso_de_uso_create(request, proyecto_id=None):
+def caso_de_uso_create(request, proyecto_id=None, requerimiento_id=None):
     """
     Vista para crear un caso de uso. Utiliza el formulario unificado.
+    Si se proporciona requerimiento_id, valida que el requerimiento esté VALIDADO.
     """
     proyecto = None
+    requerimiento = None
+    
     if proyecto_id:
         from proyectos.models import Proyecto
         proyecto = get_object_or_404(Proyecto, id=proyecto_id)
+    
+    if requerimiento_id:
+        requerimiento = get_object_or_404(Requerimiento, id=requerimiento_id)
+        
+        # Validar que el requerimiento pertenezca al proyecto
+        if proyecto and requerimiento.proyecto != proyecto:
+            messages.error(request, 'El requerimiento no pertenece a este proyecto.')
+            return redirect('requerimientos:requerimiento_detail', pk=requerimiento_id)
+        
+        # Aplicar la regla de oro: el requerimiento debe estar VALIDADO
+        if requerimiento.estado != 'VALIDADO':
+            estado_display = dict(Requerimiento.ESTADO_CHOICES).get(requerimiento.estado, requerimiento.estado)
+            messages.error(
+                request,
+                f'No se puede crear un caso de uso para un requerimiento en estado "{estado_display}". '
+                'El requerimiento debe estar VALIDADO primero.'
+            )
+            return redirect('requerimientos:requerimiento_detail', pk=requerimiento_id)
+        
+        # Si no hay proyecto especificado, usar el del requerimiento
+        if not proyecto:
+            proyecto = requerimiento.proyecto
 
     if request.method == 'POST':
         form = CasoDeUsoUnificadoForm(request.POST, request.FILES)
@@ -244,7 +270,8 @@ def caso_de_uso_create(request, proyecto_id=None):
                 proyecto=proyecto,
                 creado_por=request.user,
                 imagen=form.cleaned_data.get('imagen'),
-                link_externo=form.cleaned_data.get('link_externo', '')
+                link_externo=form.cleaned_data.get('link_externo', ''),
+                requerimiento=requerimiento  # Asociar con el requerimiento si existe
             )
 
             # Determinar la metodología del proyecto
@@ -287,6 +314,7 @@ def caso_de_uso_create(request, proyecto_id=None):
     contexto = {
         'form': form,
         'proyecto': proyecto,
+        'requerimiento': requerimiento,
     }
     return render(request, 'casos_de_uso/crear.html', contexto)
 

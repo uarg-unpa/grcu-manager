@@ -1,0 +1,132 @@
+/* Estilos para la página de discusión de requerimientos */
+
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #007bff;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.avatar-circle-sm {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: #6c757d;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.avatar-img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.avatar-img-sm {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.comentario-principal {
+    border-left: 3px solid #007bff;
+    padding-left: 15px;
+    margin-left: 10px;
+}
+
+.respuesta-item {
+    border-left: 2px solid #6c757d;
+    padding-left: 10px;
+    margin-left: 10px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    padding: 10px;
+}
+
+.comentario-contenido {
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+.respuesta-form {
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    padding: 10px;
+}
+
+/* Estilos para badges de roles */
+.badge-admin {
+    background-color: #dc3545 !important;
+}
+
+.badge-líder {
+    background-color: #28a745 !important;
+}
+
+.badge-desarrollador {
+    background-color: #007bff !important;
+}
+
+.badge-stakeholder {
+    background-color: #ffc107 !important;
+    color: #212529 !important;
+}
+
+.badge-sin-rol {
+    background-color: #6c757d !important;
+}
+
+/* Estilos para el formulario de respuesta */
+.input-group textarea {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.input-group .btn {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+/* Animaciones suaves */
+.collapse {
+    transition: all 0.3s ease-in-out;
+}
+
+/* Estilos responsive */
+@media (max-width: 768px) {
+    .avatar-circle {
+        width: 35px;
+        height: 35px;
+        font-size: 16px;
+    }
+
+    .avatar-circle-sm {
+        width: 28px;
+        height: 28px;
+        font-size: 12px;
+    }
+
+    .comentario-principal {
+        margin-left: 5px;
+        padding-left: 10px;
+    }
+
+    .respuesta-item {
+        margin-left: 5px;
+        padding-left: 8px;
+    }
+}

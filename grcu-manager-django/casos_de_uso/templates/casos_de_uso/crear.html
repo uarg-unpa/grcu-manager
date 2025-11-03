@@ -1,10 +1,16 @@
 {% extends "core/base.html" %}
 {% load static %}
 
-{% block title %}{{ page_title }}{% endblock %}
+{% block title %}
+    {% if requerimiento %}
+        Crear Caso de Uso para {{ requerimiento.nombre }}
+    {% else %}
+        Crear Caso de Uso
+    {% endif %}
+{% endblock %}
 
 {% block extra_css %}
-  <link rel="stylesheet" href="{% static 'requerimientos/css/requerimiento_create_styles.css' %}?v=1.0">
+  <link rel="stylesheet" href="{% static 'casos_de_uso/css/caso_de_uso_create_styles.css' %}?v=1.0">
 {% endblock %}
 
 {% block content %}

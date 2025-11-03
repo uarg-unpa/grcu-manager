@@ -34,11 +34,19 @@
                     <td>
                         <select name="prioridad_{{ req.pk }}" class="form-select">
                             {% for val, label in MOSCOW_CHOICES %}
-                                <option value="{{ val }}" {% if req.detalle_tradicional and req.detalle_tradicional.prioridad == val %}selected{% endif %}>{{ label }}</option>
+                                <option value="{{ val }}" {% if req.detalle_tradicional and req.detalle_tradicional.prioridad == val or req.detalle_agil and req.detalle_agil.prioridad == val %}selected{% endif %}>{{ label }}</option>
                             {% endfor %}
                         </select>
                     </td>
-                    <td>{{ req.detalle_tradicional.observaciones|default:"-" }}</td>
+                    <td>
+                        {% if req.detalle_tradicional and req.detalle_tradicional.observaciones %}
+                            {{ req.detalle_tradicional.observaciones }}
+                        {% elif req.detalle_agil and req.detalle_agil.observaciones %}
+                            {{ req.detalle_agil.observaciones }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
                 </tr>
                 {% empty %}
                 <tr><td colspan="4" class="text-center">No hay requerimientos para priorizar.</td></tr>
