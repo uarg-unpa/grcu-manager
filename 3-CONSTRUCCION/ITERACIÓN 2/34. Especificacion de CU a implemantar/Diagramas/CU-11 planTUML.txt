@@ -1,0 +1,73 @@
+@startuml
+
+actor "Usuario (Líder/Desarrollador)" as Usuario #purple
+boundary InterfazUsuario
+boundary PDetalleElemento
+boundary PRelacionarElementos
+boundary MensajeSistema
+control ValidadorPermisos
+control ManejadorDependencias
+control ManejadorTrazabilidad
+database BD
+
+== Flujo principal ==
+Usuario -> InterfazUsuario: 1) Accede al detalle de un Requerimiento/Caso de Uso
+InterfazUsuario -> PDetalleElemento: Mostrar detalle
+Usuario -> PDetalleElemento: 2) Click "Relacionar elementos"
+
+PDetalleElemento -> ValidadorPermisos: Verificar permisos de edición
+ValidadorPermisos -> BD: SELECT rol_usuario, permisos
+BD --> ValidadorPermisos: OK
+ValidadorPermisos --> PDetalleElemento: Autorizado
+
+PDetalleElemento -> PRelacionarElementos: 3) Mostrar lista de elementos disponibles
+PRelacionarElementos -> ManejadorDependencias: Obtener elementos del mismo proyecto
+ManejadorDependencias -> BD: SELECT * FROM requerimientos/casos WHERE proyecto_id=...
+BD --> ManejadorDependencias: Lista de elementos
+ManejadorDependencias --> PRelacionarElementos: Mostrar lista de selección
+
+Usuario -> PRelacionarElementos: 4) Selecciona elementos y confirma
+PRelacionarElementos -> ManejadorDependencias: 5) Validar que no existan relaciones previas
+ManejadorDependencias -> BD: SELECT * FROM dependencias WHERE (req_id, cu_id)=...
+BD --> ManejadorDependencias: No existe
+
+ManejadorDependencias -> BD: 6) INSERT INTO dependencias (req_id, cu_id)
+BD --> ManejadorDependencias: OK
+
+ManejadorDependencias -> ManejadorTrazabilidad: 7) Actualizar matriz de trazabilidad
+ManejadorTrazabilidad -> BD: UPDATE matriz_trazabilidad (dependencia nueva)
+BD --> ManejadorTrazabilidad: OK
+
+ManejadorDependencias -> BD: 8) INSERT auditoria_registroactividad
+BD --> ManejadorDependencias: OK
+
+ManejadorDependencias --> MensajeSistema: 9) "Dependencia creada correctamente"
+ManejadorDependencias --> PRelacionarElementos: Refrescar vista actualizada
+
+== Alternativos ==
+alt A1) Relación ya existente
+  ManejadorDependencias -> BD: SELECT * FROM dependencias
+  BD --> ManejadorDependencias: Registro existente
+  ManejadorDependencias --> MensajeSistema: "La relación ya existe"
+end
+
+alt A2) Usuario sin permisos
+  ValidadorPermisos -> BD: SELECT permisos
+  BD --> ValidadorPermisos: No autorizado
+  ValidadorPermisos --> MensajeSistema: "No tienes permisos para definir dependencias"
+  MensajeSistema -> InterfazUsuario: Redirigir al dashboard
+end
+
+alt A3) Proyecto sin elementos disponibles
+  ManejadorDependencias -> BD: SELECT elementos
+  BD --> ManejadorDependencias: Lista vacía
+  ManejadorDependencias --> MensajeSistema: "No hay elementos disponibles para relacionar"
+end
+
+alt A4) Error al guardar dependencia
+  ManejadorDependencias -> BD: INSERT dependencia
+  BD --> ManejadorDependencias: Excepción
+  ManejadorDependencias --> MensajeSistema: "Error al crear dependencia, intente nuevamente"
+end
+
+@enduml

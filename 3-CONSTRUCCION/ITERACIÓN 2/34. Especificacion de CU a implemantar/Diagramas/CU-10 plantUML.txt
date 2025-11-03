@@ -1,0 +1,86 @@
+@startuml
+
+
+actor "Usuario (Líder/Dev/Cliente/Admin)" as Usuario #purple
+boundary InterfazUsuario
+boundary PDetalleCasoDeUso
+boundary PTabHistorialCU
+boundary ModalDetalleHistorialCU
+boundary MensajeSistema
+control ManejadorCasosDeUso
+control ManejadorHistorialCU
+control ValidadorPermisos
+database BD
+
+== Flujo principal ==
+Usuario -> InterfazUsuario: 1) Accede a lista de Casos de Uso
+InterfazUsuario -> PDetalleCasoDeUso: 2-3) Selecciona "Ver detalle"
+PDetalleCasoDeUso -> ManejadorCasosDeUso: Cargar datos del caso
+ManejadorCasosDeUso -> BD: SELECT caso_de_uso by id
+BD --> ManejadorCasosDeUso: Datos
+ManejadorCasosDeUso --> PDetalleCasoDeUso: Render con pestañas
+
+Usuario -> PDetalleCasoDeUso: 5) Click pestaña "Historial"
+PDetalleCasoDeUso -> ManejadorHistorialCU: 6) Traer historial (history + auditoría)
+ManejadorHistorialCU -> BD: SELECT * FROM casos_de_uso_historicalcasodeuso
+ManejadorHistorialCU -> BD: SELECT * FROM historical_detalle_trad/agil
+ManejadorHistorialCU -> BD: SELECT * FROM auditoria_registroactividad WHERE cu_id=...
+BD --> ManejadorHistorialCU: Versiones + auditoría
+ManejadorHistorialCU --> PTabHistorialCU: Línea de tiempo (descendente)
+PTabHistorialCU --> Usuario: 8) Mostrar historial (acciones, fecha, usuario, “Ver detalles”)
+
+== Ver detalles de una entrada ==
+Usuario -> PTabHistorialCU: 10) Click "Ver detalles"
+PTabHistorialCU -> ValidadorPermisos: Verificar visibilidad completa
+ValidadorPermisos -> BD: SELECT permisos del usuario
+BD --> ValidadorPermisos: Permitido / Limitado
+
+alt Permiso completo
+  PTabHistorialCU -> ManejadorHistorialCU: Cargar versiones A/B
+  ManejadorHistorialCU -> BD: SELECT versión(es)
+  BD --> ManejadorHistorialCU: Datos
+  ManejadorHistorialCU --> ModalDetalleHistorialCU: Mostrar tabla "Antes → Después"
+  ModalDetalleHistorialCU --> Usuario: 12-13) Revisa y cierra
+else Permiso limitado
+  PTabHistorialCU --> Usuario: Mostrar resumen “Campo X modificado por Y el Z”
+  PTabHistorialCU -> MensajeSistema: “Permisos limitados”
+end
+
+== Alternativos ==
+alt A1) Caso de uso sin historial (solo creación)
+  ManejadorHistorialCU -> BD: SELECT history (count=1)
+  BD --> ManejadorHistorialCU: Solo creación
+  ManejadorHistorialCU --> PTabHistorialCU: “Sin historial de cambios”
+end
+
+alt A2) Historial no disponible
+  ManejadorHistorialCU -> BD: error / tabla no disponible
+  ManejadorHistorialCU --> PTabHistorialCU: Info básica (creación / última actualización)
+  PTabHistorialCU -> MensajeSistema: “Historial no disponible. Contacte al admin.”
+end
+
+alt A3) Historial extenso (>100 cambios)
+  PTabHistorialCU -> ManejadorHistorialCU: Solicitar página 1 (20 ítems)
+  ManejadorHistorialCU -> BD: SELECT ... LIMIT 20 OFFSET 0
+  BD --> ManejadorHistorialCU: Página
+  ManejadorHistorialCU --> PTabHistorialCU: Paginación + filtros por fecha/tipo
+  opt Exportar
+    PTabHistorialCU -> ManejadorHistorialCU: Generar export CSV/PDF
+    ManejadorHistorialCU -> BD: SELECT según filtros
+    BD --> ManejadorHistorialCU: Datos
+    ManejadorHistorialCU -> MensajeSistema: “Archivo disponible”
+  end
+end
+
+alt A4) Error al cargar historial
+  ManejadorHistorialCU -> BD: SELECT history/auditoria
+  BD --> ManejadorHistorialCU: Excepción
+  ManejadorHistorialCU --> PTabHistorialCU: Mostrar botón “Reintentar”
+  PTabHistorialCU -> MensajeSistema: “Error al cargar el historial. Intenta nuevamente.”
+end
+
+' Registro opcional de consulta
+PTabHistorialCU -> ManejadorHistorialCU: (opcional) registrar consulta
+ManejadorHistorialCU -> BD: INSERT auditoria_registroactividad (CONSULTA_HISTORIAL_CU)
+
+@enduml
