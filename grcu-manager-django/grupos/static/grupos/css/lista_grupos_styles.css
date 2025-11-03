@@ -1,29 +1,34 @@
-.grupo-lista-btn-warning {
-    display: inline-block;
-    padding: 8px 18px;
-    background: #f7b731;
+/* --- Botones modernos con hover --- */
+.grupo-btn-edit, .grupo-btn-delete {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 2px solid transparent;
+    position: relative;
+    overflow: hidden;
+    margin: 0 2px;
+}
+
+.grupo-btn-edit {
+    color: #ffc107;
+    border-color: #ffc107;
+}
+
+.grupo-btn-edit:hover {
     color: #fff;
-    border-radius: 8px;
-    font-weight: 500;
-    text-decoration: none;
-    margin-right: 8px;
-    transition: background 0.2s;
+    background: linear-gradient(135deg, #ffc107, #e0a800);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
 }
-.grupo-lista-btn-warning:hover {
-    background: #e2a800;
+
+.grupo-btn-delete {
+    color: #dc3545;
+    border-color: #dc3545;
 }
-.grupo-lista-btn-danger {
-    display: inline-block;
-    padding: 8px 18px;
-    background: #e74c3c;
+
+.grupo-btn-delete:hover {
     color: #fff;
-    border-radius: 8px;
-    font-weight: 500;
-    text-decoration: none;
-    transition: background 0.2s;
-}
-.grupo-lista-btn-danger:hover {
-    background: #c0392b;
+    background: linear-gradient(135deg, #dc3545, #c82333);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
 }
 .grupo-lista-vacio {
     color: #a0a4b8;
@@ -47,12 +52,18 @@
 }
 
 .grupo-lista-container {
+    width: 100%;
     padding: 32px 24px !important;
     padding: 32px 24px;
     background: #fff;
     border-radius: 16px;
     box-shadow: 0 2px 16px rgba(68, 76, 138, 0.08);
     transition: max-width 0.2s;
+}
+
+.grupo-lista-acciones {
+    text-align: right;
+    margin-bottom: 15px;
 }
 
 .grupo-lista-tabla {
@@ -65,35 +76,25 @@
 .grupo-lista-tabla th,
 .grupo-lista-tabla td {
     padding: 14px 18px;
-    text-align: left;
+    text-align: center;
 }
 
 .grupo-lista-tabla th {
-    background: #f5f6fa;
+    background: #444c8a;
+    color: white;
     font-weight: 600;
     border-bottom: 2px solid #eaeaea;
+    text-align: center;
 }
 
 .grupo-lista-tabla tr {
     border-bottom: 1px solid #f0f0f0;
 }
 
+.grupo-lista-tabla tr:hover {
+    background: #f4f6ff;
+}
+
 .grupo-lista-tabla tr:last-child {
     border-bottom: none;
-}
-
-.grupo-lista-btn-crear {
-    display: inline-block;
-    margin-bottom: 18px;
-    padding: 10px 22px;
-    background: #3b5bdb;
-    color: #fff;
-    border-radius: 8px;
-    font-weight: 500;
-    text-decoration: none;
-    transition: background 0.2s;
-}
-
-.grupo-lista-btn-crear:hover {
-    background: #274c9b;
 }

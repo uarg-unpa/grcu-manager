@@ -10,13 +10,11 @@
 
 {% block content %}
 
-<div class="usuario-lista-container container-fluid">
+<div class="usuario-lista-container">
 
     <div class="usuario-lista-acciones">
         <input type="search" id="usuariosSearchInput" placeholder="Buscar por nombre o email" class="form-control form-control-sm d-inline-block me-2" style="width:220px;" />
-        <a href="{% url 'usuarios:crear' %}" class="usuario-lista-btn-crear">
-            <i class="bi bi-plus-circle"></i> Añadir Usuario
-        </a>
+        <a href="{% url 'usuarios:crear' %}" class="btn btn-sm btn-success">Nuevo Usuario</a>
     </div>
 
     <table class="usuario-lista-tabla">
@@ -69,11 +67,11 @@
 
                 <!-- Acciones -->
                 <td>
-                    <a href="{% url 'usuarios:editar' usuario.id %}" class="usuario-lista-btn-warning" title="Editar" data-bs-toggle="tooltip">
-                        <i class="bi bi-pencil"></i>
+                    <a href="{% url 'usuarios:editar' usuario.id %}" class="btn btn-sm btn-outline-warning usuario-btn-edit" title="Editar usuario" data-bs-toggle="tooltip">
+                        <i class="bi bi-person-gear"></i>
                     </a>
-                    <a href="{% url 'usuarios:eliminar' usuario.id %}" class="usuario-lista-btn-danger" title="Eliminar" data-bs-toggle="tooltip">
-                        <i class="bi bi-trash"></i>
+                    <a href="{% url 'usuarios:eliminar' usuario.id %}" class="btn btn-sm btn-outline-danger usuario-btn-delete" title="Eliminar usuario" data-bs-toggle="tooltip">
+                        <i class="bi bi-person-dash"></i>
                     </a>
                 </td>
             </tr>

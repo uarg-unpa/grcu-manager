@@ -1,4 +1,5 @@
 .usuario-lista-container {
+    width: 100%;
     padding: 20px;
     background: #ffffff;
     border-radius: 12px;
@@ -13,23 +14,9 @@
     text-align: center;
 }
 
-/* --- Botón crear --- */
 .usuario-lista-acciones {
     margin-bottom: 15px;
     text-align: right;
-}
-
-.usuario-lista-btn-crear {
-    background-color: #444c8a;
-    color: #fff;
-    padding: 8px 14px;
-    border-radius: 8px;
-    text-decoration: none;
-    font-weight: 500;
-}
-
-.usuario-lista-btn-crear:hover {
-    background-color: #363c70;
 }
 
 /* --- Tabla --- */
@@ -105,33 +92,37 @@
     font-size: 0.9rem;
 }
 
-/* Botones de acción */
-.usuario-lista-btn-warning,
-.usuario-lista-btn-danger {
-    display: inline-block;
-    padding: 6px 10px;
+/* --- Botones modernos con hover --- */
+.usuario-btn-edit, .usuario-btn-delete {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 2px solid transparent;
+    position: relative;
+    overflow: hidden;
     margin: 0 2px;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    text-decoration: none;
+}
+
+.usuario-btn-edit {
+    color: #ffc107;
+    border-color: #ffc107;
+}
+
+.usuario-btn-edit:hover {
     color: #fff;
-    transition: background 0.2s;
+    background: linear-gradient(135deg, #ffc107, #e0a800);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
 }
 
-.usuario-lista-btn-warning {
-    background-color: #ffb347;
+.usuario-btn-delete {
+    color: #dc3545;
+    border-color: #dc3545;
 }
 
-.usuario-lista-btn-warning:hover {
-    background-color: #e09e34;
-}
-
-.usuario-lista-btn-danger {
-    background-color: #e74c3c;
-}
-
-.usuario-lista-btn-danger:hover {
-    background-color: #c0392b;
+.usuario-btn-delete:hover {
+    color: #fff;
+    background: linear-gradient(135deg, #dc3545, #c82333);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
 }
 
 /* --- Fila vacía --- */

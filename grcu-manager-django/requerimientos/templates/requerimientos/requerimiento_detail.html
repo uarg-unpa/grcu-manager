@@ -127,6 +127,10 @@
                         <i class="bi bi-trash"></i> Eliminar
                     </a>
                     {% endif %}
+                    <a href="{% url 'requerimientos:requerimiento_discusion' requerimiento.pk %}" 
+                       class="btn btn-info me-2">
+                        <i class="bi bi-chat-dots"></i> Discusión
+                    </a>
                     <a href="{% url 'requerimientos:requerimiento_historial' requerimiento.pk %}" 
                        class="btn btn-info text-white">
                         <i class="bi bi-clock-history"></i> Ver Historial

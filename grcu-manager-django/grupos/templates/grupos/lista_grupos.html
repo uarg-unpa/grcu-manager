@@ -7,9 +7,9 @@
 {% endblock %}
 
 {% block content %}
-<div class="grupo-lista-container container-fluid">
+<div class="grupo-lista-container">
     <div class="grupo-lista-acciones">
-        <a href="{% url 'grupos:crear_grupo' %}" class="grupo-lista-btn-crear">Nuevo Grupo</a>
+        <a href="{% url 'grupos:crear_grupo' %}" class="btn btn-sm btn-success">Nuevo Grupo</a>
     </div>
     {% if grupos %}
     <table class="grupo-lista-tabla">
@@ -48,8 +48,8 @@
                     {% endif %}
                 </td>
                 <td>
-                    <a href="{% url 'grupos:editar_grupo' grupo.id %}" class="grupo-lista-btn-warning" title="Editar" data-bs-toggle="tooltip"><i class="bi bi-pencil-square"></i></a>
-                    <a href="{% url 'grupos:eliminar_grupo' grupo.id %}" class="grupo-lista-btn-danger" title="Eliminar" data-bs-toggle="tooltip"><i class="bi bi-trash"></i></a>
+                    <a href="{% url 'grupos:editar_grupo' grupo.id %}" class="btn btn-sm btn-outline-warning grupo-btn-edit" title="Editar grupo" data-bs-toggle="tooltip"><i class="bi bi-people-fill"></i></a>
+                    <a href="{% url 'grupos:eliminar_grupo' grupo.id %}" class="btn btn-sm btn-outline-danger grupo-btn-delete" title="Eliminar grupo" data-bs-toggle="tooltip"><i class="bi bi-x-circle-fill"></i></a>
                 </td>
             </tr>
             {% endfor %}

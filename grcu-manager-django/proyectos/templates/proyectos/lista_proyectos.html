@@ -51,14 +51,14 @@
                 </td>
                 <td>{{ proyecto.fecha_creacion|date:"d/m/Y H:i" }}</td>
                 <td>
-                    <a href="{% url 'proyectos:proyecto_detail_admin' proyecto.id %}" class="btn btn-sm btn-outline-secondary" title="Ver" data-bs-toggle="tooltip">
-                        <i class="bi bi-eye"></i>
+                    <a href="{% url 'proyectos:proyecto_detail_admin' proyecto.id %}" class="btn btn-sm btn-outline-primary proyecto-btn-view" title="Ver detalles" data-bs-toggle="tooltip">
+                        <i class="bi bi-eye-fill"></i>
                     </a>
-                    <a href="{% url 'proyectos:editar_proyecto' proyecto.id %}" class="btn btn-sm btn-warning" title="Editar" data-bs-toggle="tooltip">
-                        <i class="bi bi-pencil-square"></i>
+                    <a href="{% url 'proyectos:editar_proyecto' proyecto.id %}" class="btn btn-sm btn-outline-warning proyecto-btn-edit" title="Editar proyecto" data-bs-toggle="tooltip">
+                        <i class="bi bi-gear-fill"></i>
                     </a>
-                    <a href="{% url 'proyectos:eliminar_proyecto' proyecto.id %}" class="btn btn-sm btn-danger" title="Eliminar" data-bs-toggle="tooltip">
-                        <i class="bi bi-trash"></i>
+                    <a href="{% url 'proyectos:eliminar_proyecto' proyecto.id %}" class="btn btn-sm btn-outline-danger proyecto-btn-delete" title="Eliminar proyecto" data-bs-toggle="tooltip">
+                        <i class="bi bi-trash3-fill"></i>
                     </a>
                 </td>
             </tr>

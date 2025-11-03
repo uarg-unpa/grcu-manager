@@ -1,6 +1,6 @@
 /* --- Contenedor principal --- */
 .proyecto-lista-container {
-    max-width: 1100px;
+    width: 100%;
     margin: 40px auto;
     padding: 20px;
     background: #ffffff;
@@ -70,7 +70,7 @@
     font-size: 0.9rem;
     text-decoration: none;
     color: #fff;
-    transition: background 0.2s;
+    transition: all 0.3s ease;
 }
 
 .proyecto-lista-btn-warning {
@@ -87,6 +87,50 @@
 
 .proyecto-lista-btn-danger:hover {
     background-color: #c0392b;
+}
+
+/* --- Botones modernos con hover --- */
+.proyecto-btn-view, .proyecto-btn-edit, .proyecto-btn-delete {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 2px solid transparent;
+    position: relative;
+    overflow: hidden;
+}
+
+.proyecto-btn-view {
+    color: #007bff;
+    border-color: #007bff;
+}
+
+.proyecto-btn-view:hover {
+    color: #fff;
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
+.proyecto-btn-edit {
+    color: #ffc107;
+    border-color: #ffc107;
+}
+
+.proyecto-btn-edit:hover {
+    color: #fff;
+    background: linear-gradient(135deg, #ffc107, #e0a800);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+}
+
+.proyecto-btn-delete {
+    color: #dc3545;
+    border-color: #dc3545;
+}
+
+.proyecto-btn-delete:hover {
+    color: #fff;
+    background: linear-gradient(135deg, #dc3545, #c82333);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
 }
 
 /* --- Fila vacía --- */

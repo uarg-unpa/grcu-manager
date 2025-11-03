@@ -600,26 +600,172 @@ def exportar_matriz(request, proyecto_id, formato):
         try:
             from reportlab.lib import colors  # type: ignore[import-untyped]
             from reportlab.lib.pagesizes import A4, landscape  # type: ignore[import-untyped]
-            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer  # type: ignore[import-untyped]
-            from reportlab.lib.styles import getSampleStyleSheet  # type: ignore[import-untyped]
-            from reportlab.lib.units import cm  # type: ignore[import-untyped]
+            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak, Image  # type: ignore[import-untyped]
+            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle  # type: ignore[import-untyped]
+            from reportlab.lib.units import cm, inch  # type: ignore[import-untyped]
+            from reportlab.lib.enums import TA_CENTER, TA_LEFT  # type: ignore[import-untyped]
             from io import BytesIO
+            from django.db.models import Count
+            from django.conf import settings
+            import os
+            
+            # Calcular métricas del proyecto
+            total_reqs = requerimientos.count()
+            total_casos = casos.count()
+            
+            # Requerimientos por estado
+            reqs_por_estado = requerimientos.values('estado').annotate(count=Count('id'))
+            estado_counts = {item['estado']: item['count'] for item in reqs_por_estado}
+            
+            # Trazabilidad
+            reqs_con_casos = requerimientos.annotate(casos_count=Count('relaciones_casos')).filter(casos_count__gt=0).count()
+            casos_con_reqs = casos.annotate(reqs_count=Count('relaciones_requerimientos')).filter(reqs_count__gt=0).count()
+            
+            reqs_huerfanos = total_reqs - reqs_con_casos
+            casos_huerfanos = total_casos - casos_con_reqs
+            
+            cobertura_reqs = round((reqs_con_casos / total_reqs * 100), 1) if total_reqs > 0 else 0
+            cobertura_casos = round((casos_con_reqs / total_casos * 100), 1) if total_casos > 0 else 0
             
             buffer = BytesIO()
-            doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), topMargin=1*cm, bottomMargin=1*cm)
+            doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=1*cm, bottomMargin=1*cm, leftMargin=1*cm, rightMargin=1*cm)
             elements = []
             styles = getSampleStyleSheet()
             
-            # Título
-            title = Paragraph(f"<b>Matriz de Trazabilidad</b><br/>{proyecto.nombre}", styles['Title'])
-            elements.append(title)
+            # Estilos personalizados
+            title_style = ParagraphStyle(
+                'CustomTitle',
+                parent=styles['Title'],
+                fontSize=18,
+                spaceAfter=20,
+                alignment=TA_CENTER,
+                textColor=colors.HexColor('#2c3e50')
+            )
+            
+            subtitle_style = ParagraphStyle(
+                'CustomSubtitle',
+                parent=styles['Heading2'],
+                fontSize=14,
+                spaceAfter=15,
+                textColor=colors.HexColor('#34495e')
+            )
+            
+            normal_style = ParagraphStyle(
+                'CustomNormal',
+                parent=styles['Normal'],
+                fontSize=10,
+                spaceAfter=8
+            )
+            
+            # === PORTADA ===
+            # Crear fila superior con logos: GRCU izquierda, Grupo derecha
+            try:
+                from reportlab.platypus import Image, Table, TableStyle
+                import os
+
+                # Logo GRCU (izquierda)
+                logo_grcu = None
+                logo_path = os.path.join(settings.BASE_DIR, 'accounts', 'static', 'accounts', 'img', 'logo_grcu_manager.png')
+                if os.path.exists(logo_path):
+                    # Logo GRCU: 1920x544px → relación de aspecto = 1920/544 ≈ 3.53
+                    # Para height=2.5cm, width = 2.5cm * 3.53 ≈ 8.825cm
+                    logo_grcu = Image(logo_path, width=8.825*cm, height=2.5*cm)
+                    logo_grcu.hAlign = 'LEFT'
+
+                # Logo del grupo (derecha)
+                logo_grupo = None
+                if proyecto.grupo:
+                    grupo_logo_path = os.path.join(settings.MEDIA_ROOT, 'grupos', 'logos', 'LOGO_EQUIPO.jpg')
+                    if os.path.exists(grupo_logo_path):
+                        # Logo 4Bytes: 784x184px → relación de aspecto = 784/184 ≈ 4.26
+                        # Para height=2cm, width = 2cm * 4.26 ≈ 8.52cm
+                        logo_grupo = Image(grupo_logo_path, width=8.52*cm, height=2*cm)
+                        logo_grupo.hAlign = 'RIGHT'
+
+                # Crear tabla con los dos logos
+                if logo_grcu or logo_grupo:
+                    # Crear celdas para la tabla
+                    left_cell = logo_grcu if logo_grcu else ""
+                    right_cell = logo_grupo if logo_grupo else ""
+
+                    # Tabla con dos columnas: logo GRCU | logo grupo
+                    logos_table = Table([[left_cell, right_cell]], colWidths=[9*cm, 9*cm])
+                    logos_table.setStyle(TableStyle([
+                        ('ALIGN', (0, 0), (0, 0), 'LEFT'),   # Logo GRCU alineado a la izquierda
+                        ('ALIGN', (1, 0), (1, 0), 'RIGHT'),  # Logo grupo alineado a la derecha
+                        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                    ]))
+                    elements.append(logos_table)
+                    elements.append(Spacer(1, 0.5*cm))
+
+            except Exception as e:
+                # Si hay error con los logos, continuar sin ellos
+                pass
+
+            # Título principal centrado
+            main_title = Paragraph("<b>GRCU Manager</b><br/>Sistema de Gestión de Requerimientos", title_style)
+            elements.append(main_title)
             elements.append(Spacer(1, 0.5*cm))
             
-            # Construir tabla
+            # Información del proyecto (sin líder, solo grupo)
+            project_info = []
+            
+            project_info.append(Paragraph(f"""
+            <b>Proyecto:</b> {proyecto.nombre}<br/>
+            <b>Grupo:</b> {proyecto.grupo.nombre if hasattr(proyecto, 'grupo') and proyecto.grupo else 'Sin grupo asignado'}<br/>
+            <b>Fecha de Generación:</b> {datetime.now().strftime('%d/%m/%Y %H:%M')}<br/>
+            <b>Metodología:</b> {proyecto.get_metodologia_display() if hasattr(proyecto, 'metodologia') else 'No definida'}
+            """, normal_style))
+            
+            for element in project_info:
+                elements.append(element)
+            
+            elements.append(Spacer(1, 1*cm))
+            
+            # === RESUMEN EJECUTIVO ===
+            elements.append(Paragraph("<b>RESUMEN EJECUTIVO</b>", subtitle_style))
+            
+            summary_data = [
+                ['Métrica', 'Valor', 'Descripción'],
+                ['Total de Requerimientos', str(total_reqs), 'Requerimientos registrados en el proyecto'],
+                ['Total de Casos de Uso', str(total_casos), 'Casos de uso definidos'],
+                ['Requerimientos Creados', str(estado_counts.get('CREADO', 0)), 'Pendientes de validación'],
+                ['Requerimientos en Progreso', str(estado_counts.get('EN_PROGRESO', 0)), 'En desarrollo activo'],
+                ['Requerimientos Validados', str(estado_counts.get('VALIDADO', 0)), 'Aprobados para implementación'],
+                ['Requerimientos Completados', str(estado_counts.get('COMPLETADO', 0)), 'Finalizados'],
+                ['Cobertura de Requerimientos', f'{cobertura_reqs}%', f'{reqs_con_casos}/{total_reqs} con casos de uso'],
+                ['Cobertura de Casos de Uso', f'{cobertura_casos}%', f'{casos_con_reqs}/{total_casos} con requerimientos'],
+                ['Requerimientos Huérfanos', str(reqs_huerfanos), 'Sin casos de uso asociados'],
+                ['Casos de Uso Huérfanos', str(casos_huerfanos), 'Sin requerimientos asociados']
+            ]
+            
+            summary_table = Table(summary_data, colWidths=[4*cm, 2*cm, 8*cm])
+            summary_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#34495e')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 10),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+                ('FONTSIZE', (0, 1), (-1, -1), 9),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ]))
+            
+            elements.append(summary_table)
+            elements.append(Spacer(1, 1*cm))
+            
+            # === MATRIZ DE TRAZABILIDAD ===
+            elements.append(Paragraph("<b>MATRIZ DE TRAZABILIDAD</b>", subtitle_style))
+            elements.append(Paragraph("Relación entre Requerimientos y Casos de Uso", normal_style))
+            elements.append(Spacer(1, 0.5*cm))
+            
+            # Construir tabla de matriz
             data = []
             
             # Encabezado
-            encabezado = ['Requerimiento', 'Tipo', 'Estado']
+            encabezado = ['Requerimiento', 'Estado']
             for caso in casos:
                 encabezado.append(f'CU-{caso.pk}')
             data.append(encabezado)
@@ -630,41 +776,125 @@ def exportar_matriz(request, proyecto_id, formato):
                     req.relaciones_casos.values_list('caso_de_uso_id', flat=True)  # type: ignore[attr-defined]
                 )
                 
+                # Verificar si el requerimiento es huérfano
+                es_req_huerfano = len(casos_relacionados_ids) == 0
+                
                 fila = [
-                    f'REQ-{req.pk}',
-                    req.get_tipo_display(),  # type: ignore[attr-defined]
+                    f'REQ-{req.pk}\n{req.nombre}',
                     req.get_estado_display()  # type: ignore[attr-defined]
                 ]
                 
                 for caso in casos:
+                    # Verificar si el caso es huérfano
+                    casos_del_caso = caso.relaciones_requerimientos.values_list('requerimiento_id', flat=True)  # type: ignore[attr-defined]
+                    es_caso_huerfano = len(casos_del_caso) == 0
+                    
                     if caso.pk in casos_relacionados_ids:
                         fila.append('✓')
+                    elif es_req_huerfano or es_caso_huerfano:
+                        fila.append('⚠')  # Indicador de huérfano
                     else:
                         fila.append('')
                 
                 data.append(fila)
             
-            # Crear tabla
-            table = Table(data)
+            # Crear tabla con mejor formato
+            col_widths = [3*cm, 2*cm] + [1.2*cm] * len(casos)
+            table = Table(data, colWidths=col_widths)
             table.setStyle(TableStyle([
+                # Header styling
                 ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#4472C4')),
-                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
                 ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                ('FONTSIZE', (0, 0), (-1, 0), 10),
-                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                ('FONTSIZE', (0, 0), (-1, 0), 9),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
+                
+                # Data rows
+                ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+                ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+                ('ALIGN', (0, 1), (-1, -1), 'CENTER'),
                 ('FONTSIZE', (0, 1), (-1, -1), 8),
+                ('VALIGN', (0, 1), (-1, -1), 'MIDDLE'),
+                
+                # Grid
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+                
+                # Special styling for checkmarks (green)
+                ('BACKGROUND', (2, 1), (-1, -1), colors.HexColor('#d5f4e6')),
+                ('TEXTCOLOR', (2, 1), (-1, -1), colors.HexColor('#27ae60')),
+                ('FONTNAME', (2, 1), (-1, -1), 'Helvetica-Bold'),
+                
+                # Special styling for warnings (red/orange)
+                ('BACKGROUND', (2, 1), (-1, -1), colors.HexColor('#ffebee')),
+                ('TEXTCOLOR', (2, 1), (-1, -1), colors.HexColor('#e74c3c')),
+                ('FONTNAME', (2, 1), (-1, -1), 'Helvetica-Bold'),
             ]))
             
+            # Aplicar estilos específicos para celdas huérfanas
+            for row_idx, req in enumerate(requerimientos, 1):
+                casos_relacionados_ids = set(
+                    req.relaciones_casos.values_list('caso_de_uso_id', flat=True)  # type: ignore[attr-defined]
+                )
+                es_req_huerfano = len(casos_relacionados_ids) == 0
+                
+                for col_idx, caso in enumerate(casos, 2):
+                    casos_del_caso = caso.relaciones_requerimientos.values_list('requerimiento_id', flat=True)  # type: ignore[attr-defined]
+                    es_caso_huerfano = len(casos_del_caso) == 0
+                    
+                    if caso.pk in casos_relacionados_ids:
+                        # Verde para relaciones existentes
+                        table.setStyle(TableStyle([
+                            ('BACKGROUND', (col_idx, row_idx), (col_idx, row_idx), colors.HexColor('#d5f4e6')),
+                            ('TEXTCOLOR', (col_idx, row_idx), (col_idx, row_idx), colors.HexColor('#27ae60')),
+                        ]))
+                    elif es_req_huerfano or es_caso_huerfano:
+                        # Rojo para huérfanos
+                        table.setStyle(TableStyle([
+                            ('BACKGROUND', (col_idx, row_idx), (col_idx, row_idx), colors.HexColor('#ffebee')),
+                            ('TEXTCOLOR', (col_idx, row_idx), (col_idx, row_idx), colors.HexColor('#e74c3c')),
+                        ]))
+            
             elements.append(table)
+            elements.append(Spacer(1, 1*cm))
+            
+            # === RECOMENDACIONES ===
+            elements.append(Paragraph("<b>RECOMENDACIONES</b>", subtitle_style))
+            
+            recomendaciones = []
+            
+            if cobertura_reqs < 80:
+                recomendaciones.append("• Mejorar la cobertura de requerimientos vinculando más casos de uso")
+            if cobertura_casos < 80:
+                recomendaciones.append("• Aumentar la cobertura de casos de uso asignando más requerimientos")
+            if reqs_huerfanos > 0:
+                recomendaciones.append(f"• Revisar {reqs_huerfanos} requerimiento(s) huérfano(s) sin casos de uso asociados")
+            if casos_huerfanos > 0:
+                recomendaciones.append(f"• Revisar {casos_huerfanos} caso(s) de uso huérfano(s) sin requerimientos asociados")
+            if estado_counts.get('CREADO', 0) > total_reqs * 0.3:
+                recomendaciones.append("• Avanzar los requerimientos en estado 'Creado' hacia 'En Progreso'")
+            
+            if not recomendaciones:
+                recomendaciones.append("• El proyecto muestra una buena trazabilidad general")
+            
+            for rec in recomendaciones:
+                elements.append(Paragraph(rec, normal_style))
+            
+            elements.append(Spacer(1, 1*cm))
+            
+            # === PIE DE PÁGINA ===
+            footer_text = Paragraph("""
+            <b>GRCU Manager</b> - Universidad Nacional de la Patagonia Austral<br/>
+            <i>Reporte generado automáticamente • Sistema de Gestión de Requerimientos y Casos de Uso</i>
+            """, ParagraphStyle('Footer', parent=styles['Normal'], fontSize=8, alignment=TA_CENTER, textColor=colors.grey))
+            elements.append(footer_text)
+            
             doc.build(elements)
             
             # Retornar PDF
             buffer.seek(0)
             response = HttpResponse(buffer.read(), content_type='application/pdf')
-            response['Content-Disposition'] = f'attachment; filename="matriz_trazabilidad_{proyecto.nombre}_{datetime.now().strftime("%Y%m%d")}.pdf"'
+            response['Content-Disposition'] = f'attachment; filename="reporte_proyecto_{proyecto.nombre}_{datetime.now().strftime("%Y%m%d")}.pdf"'
             
             return response
             
