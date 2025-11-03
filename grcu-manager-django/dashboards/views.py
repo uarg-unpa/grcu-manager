@@ -140,6 +140,11 @@ def lider_dashboard(request):
         reqs_relacionados = requerimientos.count() - reqs_huerfanos.count()
         casos_relacionados = casos_de_uso.count() - casos_huerfanos.count()
 
+        # Calcular métricas adicionales de requerimientos por estado
+        reqs_sin_validar = requerimientos.filter(estado='CREADO').count()
+        reqs_completados = requerimientos.filter(estado__in=['TERMINADO', 'COMPLETADO']).count()
+        reqs_sin_completar = requerimientos.count() - reqs_completados
+
         dashboard_data.append({
             "proyecto": proyecto,
             "integrantes": integrantes,
@@ -153,6 +158,9 @@ def lider_dashboard(request):
             "total_huerfanos": total_huerfanos,
             "reqs_relacionados": reqs_relacionados,
             "casos_relacionados": casos_relacionados,
+            "reqs_sin_validar": reqs_sin_validar,
+            "reqs_completados": reqs_completados,
+            "reqs_sin_completar": reqs_sin_completar,
             "necesita_metodologia": proyecto.necesita_metodologia(),  # ⚡ NUEVO
             "puede_cambiar_metodologia": proyecto.puede_cambiar_metodologia(),  # ⚡ NUEVO
         })

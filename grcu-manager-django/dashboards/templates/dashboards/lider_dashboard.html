@@ -2,6 +2,73 @@
 {% load static %}
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'dashboards/css/lider_dashboard_styles.css' %}?v=2.1">
+    <style>
+        /* Estilo único para tarjetas métricas */
+        .metric-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            height: 100%;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+        }
+
+        .metric-icon {
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+        }
+
+        .metric-card:hover .metric-icon {
+            opacity: 1;
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin: 0.5rem 0;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Efecto especial para huérfanos */
+        .huerfanos-card {
+            background: linear-gradient(135deg, #fff5f5 0%, #fef2f2 100%);
+            border: 1px solid #fecaca;
+            animation: gentle-pulse 3s ease-in-out infinite;
+        }
+
+        .huerfanos-card:hover {
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+        }
+
+        @keyframes gentle-pulse {
+            0%, 100% {
+                box-shadow: 0 2px 8px rgba(220, 53, 69, 0.1);
+            }
+            50% {
+                box-shadow: 0 4px 12px rgba(220, 53, 69, 0.15);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .metric-value {
+                font-size: 2rem;
+            }
+        }
+    </style>
 {% endblock %}
 {% block extra_js %}
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -153,63 +220,75 @@
                 </div>
                 {% endif %}
                 
-                {% comment %} Botones de acción rápida {% endcomment %}
-                <div class="d-flex gap-2 mb-3 flex-wrap">
-                    {% if not data.necesita_metodologia %}
-                        <a href="{% url 'requerimientos:requerimiento_create_proyecto' data.proyecto.id %}" 
-                           class="btn btn-primary">
-                            <i class="bi bi-plus-circle me-2"></i>
-                            {% if data.proyecto.metodologia == 'AGIL' %}
-                                Crear User Story
-                            {% else %}
-                                Crear Requerimiento
-                            {% endif %}
-                        </a>
-                        <a href="{% url 'casos_de_uso:caso_de_uso_create' data.proyecto.id %}" 
-                           class="btn btn-success">
-                            <i class="bi bi-plus-circle me-2"></i>
-                            Crear Caso de Uso
-                        </a>
-                    {% endif %}
-                    <a href="{% url 'requerimientos:requerimiento_list' %}?proyecto_id={{ data.proyecto.id }}" 
-                       class="btn btn-outline-secondary">
-                        <i class="bi bi-list-ul me-2"></i>Ver Todos los Requerimientos
-                    </a>
-                    <a href="{% url 'casos_de_uso:caso_de_uso_list' data.proyecto.id %}" 
-                       class="btn btn-outline-info">
-                        <i class="bi bi-diagram-3 me-2"></i>Ver Casos de Uso
-                    </a>
-                </div>
-                
                 <div class="row mb-3">
                     <div class="col-md-4">
-                        <div class="card text-bg-light mb-3">
-                            <div class="card-body">
-                                <h6 class="card-title">
-                                    <i class="bi bi-list-check me-2"></i> Requerimientos
-                                </h6>
-                                <h3 class="card-text">{{ data.requerimientos|length }}</h3>
+                        <div class="card metric-card mb-3">
+                            <div class="card-body text-center">
+                                <div class="metric-icon text-primary mb-2">
+                                    <i class="bi bi-list-check-fill fs-1"></i>
+                                </div>
+                                <h3 class="metric-value">{{ data.requerimientos|length }}</h3>
+                                <p class="metric-label text-muted mb-0">Requerimientos</p>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="card text-bg-light mb-3">
-                            <div class="card-body">
-                                <h6 class="card-title">
-                                    <i class="bi bi-diagram-3 me-2"></i> Casos de Uso
-                                </h6>
-                                <h3 class="card-text">{{ data.casos_de_uso|length }}</h3>
+                        <div class="card metric-card mb-3">
+                            <div class="card-body text-center">
+                                <div class="metric-icon text-info mb-2">
+                                    <i class="bi bi-diagram-3-fill fs-1"></i>
+                                </div>
+                                <h3 class="metric-value">{{ data.casos_de_uso|length }}</h3>
+                                <p class="metric-label text-muted mb-0">Casos de Uso</p>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="card text-bg-light mb-3">
-                            <div class="card-body">
-                                <h6 class="card-title">
-                                    <i class="bi bi-exclamation-triangle me-2"></i> Huérfanos
-                                </h6>
-                                <span class="text-danger">Reqs: {{ data.reqs_huerfanos|length }}</span><br>
-                                <span class="text-danger">CUs: {{ data.casos_huerfanos|length }}</span>
+                        <div class="card metric-card huerfanos-card mb-3">
+                            <div class="card-body text-center">
+                                <div class="metric-icon text-danger mb-2">
+                                    <i class="bi bi-exclamation-triangle-fill fs-1"></i>
+                                </div>
+                                <h3 class="metric-value">{{ data.total_huerfanos }}</h3>
+                                <p class="metric-label text-muted mb-1">Huérfanos</p>
+                                <small class="text-muted">
+                                    Reqs: {{ data.reqs_huerfanos|length }} | CUs: {{ data.casos_huerfanos|length }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <div class="card metric-card mb-3">
+                            <div class="card-body text-center">
+                                <div class="metric-icon text-warning mb-2">
+                                    <i class="bi bi-clock-fill fs-1"></i>
+                                </div>
+                                <h3 class="metric-value">{{ data.reqs_sin_validar }}</h3>
+                                <p class="metric-label text-muted mb-0">Sin Validar</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card metric-card mb-3">
+                            <div class="card-body text-center">
+                                <div class="metric-icon text-success mb-2">
+                                    <i class="bi bi-check-circle-fill fs-1"></i>
+                                </div>
+                                <h3 class="metric-value">{{ data.reqs_completados }}</h3>
+                                <p class="metric-label text-muted mb-0">Completados</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card metric-card mb-3">
+                            <div class="card-body text-center">
+                                <div class="metric-icon text-secondary mb-2">
+                                    <i class="bi bi-hourglass-split fs-1"></i>
+                                </div>
+                                <h3 class="metric-value">{{ data.reqs_sin_completar }}</h3>
+                                <p class="metric-label text-muted mb-0">Sin Completar</p>
                             </div>
                         </div>
                     </div>
