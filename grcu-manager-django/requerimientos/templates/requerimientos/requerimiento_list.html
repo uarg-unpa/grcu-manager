@@ -31,14 +31,14 @@
       transition: all 0.2s ease;
     }
 
-    .requerimiento-row.estado-creado {
+    .requerimiento-row.estado-borrador {
       background: linear-gradient(90deg, #fff3cd 0%, #ffeaa7 100%) !important;
       border-left: 5px solid #ffc107;
       box-shadow: 0 2px 4px rgba(255, 193, 7, 0.1);
       animation: pulse-bg 3s ease-in-out infinite;
     }
 
-    .requerimiento-row.estado-creado:hover {
+    .requerimiento-row.estado-borrador:hover {
       background: linear-gradient(90deg, #ffeaa7 0%, #ffd633 100%) !important;
       box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
       transform: translateY(-1px);
@@ -70,8 +70,8 @@
       opacity: 0.7;
     }
 
-    /* Badge para estado CREADO - más prominente */
-    .badge-estado-creado {
+    /* Badge para estado BORRADOR - más prominente */
+    .badge-estado-borrador {
       background: linear-gradient(45deg, #ffc107, #ff8c00);
       color: #212529;
       font-weight: bold;
@@ -83,8 +83,8 @@
       position: relative;
     }
 
-    .badge-estado-creado::after {
-      content: "⚠️";
+    .badge-estado-borrador::after {
+      content: "📝";
       margin-left: 5px;
     }
 
@@ -274,7 +274,7 @@
       {# Filtros opcionales #}
       <select id="filtroEstado" class="form-select" style="max-width: 180px;">
         <option value="">Todos los estados</option>
-        <option value="CREADO">Creado</option>
+        <option value="BORRADOR">Borrador</option>
         <option value="VALIDADO">Validado</option>
         <option value="PRIORIZADO">Priorizado</option>
         <option value="EN_PROCESO">En proceso</option>
@@ -285,6 +285,7 @@
         <option value="">Todos los tipos</option>
         <option value="FUNCIONAL">Funcional</option>
         <option value="NO_FUNCIONAL">No Funcional</option>
+        <option value="SISTEMA">Sistema</option>
       </select>
       </div>
       
@@ -334,9 +335,9 @@
               </td>
               <td>{{ req.get_tipo_display }}</td>
               <td>
-                {% if req.estado == 'CREADO' %}
-                  <span class="badge badge-estado-creado">
-                    <i class="bi bi-exclamation-circle-fill me-1"></i>{{ req.get_estado_display }}
+                {% if req.estado == 'BORRADOR' %}
+                  <span class="badge badge-estado-borrador">
+                    <i class="bi bi-file-earmark-text me-1"></i>{{ req.get_estado_display }}
                   </span>
                 {% elif req.estado == 'VALIDADO' %}
                   <span class="badge bg-info">
@@ -428,8 +429,8 @@
                   </a>
                   {% endif %}
                   
-                  {# Botones de validación para requerimientos CREADO #}
-                  {% if req.estado == 'CREADO' %}
+                  {# Botones de validación para requerimientos BORRADOR #}
+                  {% if req.estado == 'BORRADOR' %}
                     {% if user == req.proyecto.lider %}
                       <a href="{% url 'requerimientos:requerimiento_validar_lider_proyecto' req.proyecto.id %}" 
                          class="btn btn-validar-lider btn-sm btn-action-req" 

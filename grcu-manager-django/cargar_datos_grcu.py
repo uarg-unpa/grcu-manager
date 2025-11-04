@@ -31,7 +31,7 @@ def cargar_datos():
     # 1. Obtener o crear el proyecto GRCU
     try:
         proyecto = Proyecto.objects.get(nombre__icontains="GRCU")
-        print(f"✓ Proyecto encontrado: {proyecto.nombre} (ID: {proyecto.id})")
+        print(f"✓ Proyecto encontrado: {proyecto.nombre} (ID: {proyecto.pk})")
     except Proyecto.DoesNotExist:
         print("✗ No se encontró el proyecto GRCU. Creando uno nuevo...")
         # Obtener primer usuario para asignar como líder
@@ -47,7 +47,7 @@ def cargar_datos():
             lider=usuario,
             creado_por=usuario
         )
-        print(f"✓ Proyecto creado: {proyecto.nombre} (ID: {proyecto.id})")
+        print(f"✓ Proyecto creado: {proyecto.nombre} (ID: {proyecto.pk})")
     
     # Obtener usuario para asignar como creador
     usuario = proyecto.lider or Usuario.objects.first()
@@ -93,7 +93,7 @@ def cargar_datos():
             defaults={
                 'descripcion': descripcion,
                 'tipo': 'FUNCIONAL',
-                'estado': 'CREADO',
+                'estado': 'BORRADOR',
                 'creado_por': usuario,
             }
         )
@@ -142,7 +142,7 @@ def cargar_datos():
             defaults={
                 'descripcion': descripcion,
                 'tipo': 'NO_FUNCIONAL',
-                'estado': 'CREADO',
+                'estado': 'BORRADOR',
                 'creado_por': usuario,
             }
         )
@@ -164,7 +164,53 @@ def cargar_datos():
         
         requerimientos_no_funcionales.append(req)
     
-    # 4. Crear 12 casos de uso
+    # 4. Crear 5 requerimientos de sistema
+    print("\n" + "=" * 80)
+    print("CREANDO 5 REQUERIMIENTOS DE SISTEMA (RS-01 a RS-05)")
+    print("=" * 80)
+    
+    requerimientos_sistema = []
+    descripciones_rs = [
+        "El sistema debe estar implementado en Django 5.x con Python 3.11 o superior",
+        "El sistema debe utilizar PostgreSQL como base de datos principal",
+        "El sistema debe implementar autenticación mediante Django AllAuth",
+        "El sistema debe ser desplegable en contenedores Docker",
+        "El sistema debe utilizar Bootstrap 5 para la interfaz de usuario",
+    ]
+    
+    for i in range(1, 6):
+        nombre = f"RS-{i:02d}"
+        descripcion = descripciones_rs[i-1]
+        
+        req, created = Requerimiento.objects.get_or_create(
+            nombre=nombre,
+            proyecto=proyecto,
+            defaults={
+                'descripcion': descripcion,
+                'tipo': 'SISTEMA',
+                'estado': 'BORRADOR',
+                'creado_por': usuario,
+            }
+        )
+        
+        if created:
+            # Crear detalle tradicional
+            DetalleRequerimientoTradicional.objects.create(
+                requerimiento_padre=req,
+                prioridad='ALTA' if i <= 3 else 'MEDIA',
+                fuente='Arquitectura Técnica',
+                categoria='Infraestructura' if i <= 2 else 'Plataforma',
+                fecha_compromiso=date(2025, 12, 31),
+                estado_validacion='Pendiente',
+                observaciones=f'Requerimiento de sistema {i} del sistema GRCU'
+            )
+            print(f"  ✓ Creado: {nombre} - {descripcion[:60]}...")
+        else:
+            print(f"  → Ya existe: {nombre}")
+        
+        requerimientos_sistema.append(req)
+    
+    # 5. Crear 12 casos de uso
     print("\n" + "=" * 80)
     print("CREANDO 12 CASOS DE USO (CU-01 a CU-12)")
     print("=" * 80)
@@ -264,7 +310,9 @@ def cargar_datos():
     print(f"✓ Proyecto: {proyecto.nombre}")
     print(f"✓ Requerimientos Funcionales: {len(requerimientos_funcionales)}")
     print(f"✓ Requerimientos No Funcionales: {len(requerimientos_no_funcionales)}")
-    print(f"✓ Total Requerimientos: {len(requerimientos_funcionales) + len(requerimientos_no_funcionales)}")
+    print(f"✓ Requerimientos de Sistema: {len(requerimientos_sistema)}")
+    total_reqs = len(requerimientos_funcionales) + len(requerimientos_no_funcionales) + len(requerimientos_sistema)
+    print(f"✓ Total Requerimientos: {total_reqs}")
     print(f"✓ Casos de Uso: {len(casos_de_uso)}")
     print(f"✓ Relaciones creadas: {relaciones_creadas}")
     print(f"✓ Casos de Uso huérfanos: 5 (CU-08 a CU-12)")

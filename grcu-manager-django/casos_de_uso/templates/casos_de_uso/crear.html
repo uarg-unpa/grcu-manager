@@ -80,6 +80,12 @@
                                     {{ form.descripcion.label }}
                                 </label>
                                 {{ form.descripcion }}
+                                <div class="form-text d-flex justify-content-between align-items-center">
+                                    <span>
+                                        <i class="bi bi-info-circle"></i> Descripción general del caso de uso
+                                    </span>
+                                    <span id="descripcion-contador" class="badge bg-secondary">0 / 2500</span>
+                                </div>
                                 {% if form.descripcion.errors %}
                                     <div class="text-danger small mt-1">{{ form.descripcion.errors.0 }}</div>
                                 {% endif %}
@@ -174,6 +180,18 @@
                                     <label for="{{ form.imagen.id_for_label }}" class="form-label">
                                         <i class="bi bi-image"></i> {{ form.imagen.label }}
                                     </label>
+                                    
+                                    {% if is_edit and imagen_existente %}
+                                        <div class="alert alert-info mb-2">
+                                            <i class="bi bi-info-circle"></i> <strong>Imagen actual:</strong>
+                                            <a href="{{ imagen_existente.url }}" target="_blank" class="text-decoration-none">
+                                                Ver imagen <i class="bi bi-box-arrow-up-right"></i>
+                                            </a>
+                                            <br>
+                                            <small class="text-muted">Si subes una nueva imagen, reemplazará la actual</small>
+                                        </div>
+                                    {% endif %}
+                                    
                                     {{ form.imagen }}
                                     {% if form.imagen.help_text %}
                                         <div class="help-text">{{ form.imagen.help_text }}</div>
@@ -229,4 +247,66 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // ===== Control de límite de caracteres en Descripción =====
+    const descripcionTextarea = document.querySelector('textarea[name="descripcion"]');
+    const descripcionContador = document.getElementById('descripcion-contador');
+    const maxCaracteres = 2500;
+    
+    if (descripcionTextarea && descripcionContador) {
+        // Función para actualizar el contador
+        function actualizarContador() {
+            const longitudActual = descripcionTextarea.value.length;
+            descripcionContador.textContent = `${longitudActual} / ${maxCaracteres}`;
+            
+            // Cambiar color según el progreso
+            if (longitudActual >= maxCaracteres) {
+                descripcionContador.classList.remove('bg-secondary', 'bg-warning');
+                descripcionContador.classList.add('bg-danger');
+            } else if (longitudActual >= maxCaracteres * 0.9) {
+                descripcionContador.classList.remove('bg-secondary', 'bg-danger');
+                descripcionContador.classList.add('bg-warning');
+            } else {
+                descripcionContador.classList.remove('bg-warning', 'bg-danger');
+                descripcionContador.classList.add('bg-secondary');
+            }
+        }
+        
+        // Función para prevenir exceso de caracteres
+        function controlarLimite(e) {
+            const longitudActual = descripcionTextarea.value.length;
+            
+            // Permitir teclas especiales (backspace, delete, arrows, etc.)
+            const teclasPermitidas = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab'];
+            
+            if (longitudActual >= maxCaracteres && !teclasPermitidas.includes(e.key) && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+                return false;
+            }
+        }
+        
+        // Función para truncar si se pega texto que excede el límite
+        function controlarPegado(e) {
+            setTimeout(() => {
+                if (descripcionTextarea.value.length > maxCaracteres) {
+                    descripcionTextarea.value = descripcionTextarea.value.substring(0, maxCaracteres);
+                    actualizarContador();
+                }
+            }, 10);
+        }
+        
+        // Agregar event listeners
+        descripcionTextarea.addEventListener('input', actualizarContador);
+        descripcionTextarea.addEventListener('keydown', controlarLimite);
+        descripcionTextarea.addEventListener('paste', controlarPegado);
+        
+        // Actualizar contador al cargar
+        actualizarContador();
+    }
+});
+</script>
 {% endblock %}

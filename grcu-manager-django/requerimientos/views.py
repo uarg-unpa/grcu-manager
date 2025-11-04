@@ -61,7 +61,7 @@ def requerimiento_list(request, proyecto_id=None):
             # Stakeholders solo ven requerimientos pendientes de validación
             requerimientos = Requerimiento.objects.filter(
                 proyecto=proyecto,
-                estado='CREADO'
+                estado='BORRADOR'
             ).select_related('proyecto').annotate(
                 num_comentarios=Count('comentarios_validacion', distinct=True)
             )
@@ -119,7 +119,7 @@ def requerimiento_list(request, proyecto_id=None):
         "is_stakeholder": es_stakeholder,
         "page_title": page_title,
         # Agregar conteo de requerimientos pendientes de validación
-        "pendientes_validacion": Requerimiento.objects.filter(proyecto=proyecto, estado='CREADO').count() if proyecto else 0,
+        "pendientes_validacion": Requerimiento.objects.filter(proyecto=proyecto, estado='BORRADOR').count() if proyecto else 0,
         "MOSCOW_CHOICES": [
             ("MUST", "Crítico"),
             ("SHOULD", "Importante"),
@@ -216,7 +216,7 @@ def requerimiento_create(request, proyecto_id=None):
     es_agil = proyecto.metodologia == 'AGIL'
     
     if request.method == 'POST':
-        # Instanciar el formulario apropiado
+        # Instanciar el formulario apropiado con datos POST y archivos
         if es_tradicional:
             form = RequerimientoTradicionalForm(request.POST, request.FILES)
         elif es_agil:
@@ -231,7 +231,7 @@ def requerimiento_create(request, proyecto_id=None):
                 nombre=form.cleaned_data['nombre'],
                 descripcion=form.cleaned_data.get('descripcion', ''),
                 tipo=form.cleaned_data['tipo'],
-                estado='CREADO',  # Forzar estado inicial como CREADO
+                estado='BORRADOR',  # Forzar estado inicial como BORRADOR
                 proyecto=proyecto,
                 creado_por=request.user,
                 imagen=form.cleaned_data.get('imagen'),
@@ -266,12 +266,47 @@ def requerimiento_create(request, proyecto_id=None):
             
             # Redirigir al dashboard del líder
             return redirect('dashboards:lider_dashboard')
+        else:
+            # Si el formulario no es válido, se mantendrá con los datos POST
+            # Los valores ingresados se conservarán para que el usuario los corrija
+            messages.error(request, 'Por favor, corrige los errores del formulario.')
     else:
-        # GET: Instanciar formulario vacío
+        # GET: Generar nombre automático según tipo más frecuente del proyecto
+        initial_data = {}
+        
+        # Analizar qué tipo de requerimiento es más común para sugerir el siguiente
+        # Contar requerimientos por tipo en el proyecto
+        from django.db.models import Count
+        tipos_count = Requerimiento.objects.filter(proyecto=proyecto).values('tipo').annotate(
+            count=Count('tipo')
+        ).order_by('-count')
+        
+        # Determinar el tipo sugerido (el más común, o FUNCIONAL por defecto)
+        tipo_sugerido = tipos_count[0]['tipo'] if tipos_count else 'FUNCIONAL'
+        
+        # Generar nombre automático basado en el tipo
+        # RF-01 para FUNCIONAL, RNF-01 para NO_FUNCIONAL, RS-01 para SISTEMA
+        prefijos = {
+            'FUNCIONAL': 'RF',
+            'NO_FUNCIONAL': 'RNF',
+            'SISTEMA': 'RS'
+        }
+        
+        for tipo_key, prefijo in prefijos.items():
+            count = Requerimiento.objects.filter(proyecto=proyecto, tipo=tipo_key).count()
+            nuevo_num = count + 1
+            initial_data[f'nombre_sugerido_{tipo_key.lower()}'] = f'{prefijo}-{nuevo_num:02d}'
+        
+        # Nombre por defecto según el tipo más común
+        prefijo_default = prefijos.get(tipo_sugerido, 'RF')
+        count_default = Requerimiento.objects.filter(proyecto=proyecto, tipo=tipo_sugerido).count()
+        initial_data['nombre'] = f'{prefijo_default}-{count_default + 1:02d}'
+        
+        # Instanciar formulario con datos iniciales
         if es_tradicional:
-            form = RequerimientoTradicionalForm()
+            form = RequerimientoTradicionalForm(initial=initial_data)
         elif es_agil:
-            form = RequerimientoAgilForm()
+            form = RequerimientoAgilForm(initial=initial_data)
         else:
             messages.error(request, 'Metodología no reconocida.')
             return redirect('dashboards:lider_dashboard')
@@ -319,13 +354,20 @@ def requerimiento_priorizar(request, proyecto_id=None):
     if request.user != proyecto.lider:
         return render(request, "requerimientos/requerimiento_priorizar.html", {"proyecto": None})
 
-    # Obtener todos los requerimientos del proyecto para priorizar
+    # Obtener requerimientos del proyecto que estén VALIDADOS (listos para priorizar)
+    # Los requerimientos en estado BORRADOR no pueden priorizarse
     requerimientos = Requerimiento.objects.filter(
         proyecto=proyecto
+    ).exclude(
+        estado='BORRADOR'
     ).select_related('detalle_tradicional', 'detalle_agil')
 
     if request.method == 'POST':
         for req in requerimientos:
+            # Solo permitir priorizar requerimientos validados
+            if req.estado == 'BORRADOR':
+                continue
+                
             prioridad = request.POST.get(f'prioridad_{req.pk}')
             if prioridad:
                 detalle_actualizado = False
@@ -381,6 +423,36 @@ def requerimiento_priorizar(request, proyecto_id=None):
     }
     return render(request, "requerimientos/requerimiento_priorizar.html", context)
 
+
+@login_required
+def obtener_siguiente_numero_requerimiento(request):
+    """Endpoint AJAX para obtener el siguiente número de requerimiento según el tipo"""
+    proyecto_id = request.GET.get('proyecto_id', '').strip()
+    tipo = request.GET.get('tipo', 'FUNCIONAL').strip()
+    
+    if not proyecto_id:
+        return JsonResponse({'error': 'Se requiere proyecto_id'}, status=400)
+    
+    # Definir prefijos según tipo
+    prefijos = {
+        'FUNCIONAL': 'RF',
+        'NO_FUNCIONAL': 'RNF',
+        'SISTEMA': 'RS'
+    }
+    
+    prefijo = prefijos.get(tipo, 'RF')
+    
+    # Contar requerimientos del mismo tipo en el proyecto
+    count = Requerimiento.objects.filter(proyecto_id=proyecto_id, tipo=tipo).count()
+    siguiente_numero = count + 1
+    siguiente_nombre = f'{prefijo}-{siguiente_numero:02d}'
+    
+    return JsonResponse({
+        'siguiente_nombre': siguiente_nombre,
+        'tipo': tipo,
+        'prefijo': prefijo,
+        'numero': siguiente_numero
+    })
 
 @login_required
 def buscar_requerimientos_ajax(request):
@@ -802,7 +874,7 @@ def requerimiento_update(request, pk):
     es_agil = proyecto.metodologia == 'AGIL'
     
     if request.method == 'POST':
-        # Instanciar el formulario apropiado
+        # Instanciar el formulario apropiado con datos POST y archivos
         if es_tradicional:
             form = RequerimientoTradicionalForm(request.POST, request.FILES)
         elif es_agil:
@@ -851,14 +923,18 @@ def requerimiento_update(request, pk):
             
             messages.success(request, f'✅ Requerimiento "{requerimiento.nombre}" actualizado exitosamente.')
             return redirect('requerimientos:requerimiento_detail', pk=pk)
+        else:
+            # Si el formulario no es válido, se mantendrá con los datos POST
+            # Agregar mensaje de error
+            messages.error(request, 'Por favor, corrige los errores del formulario.')
     else:
         # GET: Cargar datos existentes en el formulario
-        initial_data = {
+        from typing import Any, Dict
+        initial_data: Dict[str, Any] = {
             'nombre': requerimiento.nombre,
             'descripcion': requerimiento.descripcion,
             'tipo': requerimiento.tipo,
             'estado': requerimiento.estado,
-            'imagen': requerimiento.imagen,
             'link_externo': requerimiento.link_externo,
         }
         
@@ -902,6 +978,7 @@ def requerimiento_update(request, pk):
         'es_tradicional': es_tradicional,
         'es_agil': es_agil,
         'page_title': f'Editar Requerimiento: {requerimiento.nombre}',
+        'imagen_existente': requerimiento.imagen,  # Para mostrar la imagen actual
     }
     return render(request, 'requerimientos/requerimiento_edit.html', context)
 
@@ -973,10 +1050,10 @@ def requerimiento_validar_cliente(request, proyecto_id=None):
         messages.error(request, 'No tienes permiso para validar requerimientos de este proyecto.')
         return redirect('dashboards:cliente_dashboard')
 
-    # Obtener requerimientos pendientes de validación (estado CREADO)
+    # Obtener requerimientos pendientes de validación (estado BORRADOR)
     requerimientos = Requerimiento.objects.filter(
         proyecto=proyecto,
-        estado='CREADO'
+        estado='BORRADOR'
     ).select_related('detalle_tradicional', 'detalle_agil', 'creado_por')
 
     if request.method == 'POST':
@@ -1033,10 +1110,10 @@ def requerimiento_validar_lider(request, proyecto_id=None):
         messages.error(request, 'Solo el líder del proyecto puede validar requerimientos.')
         return redirect('dashboards:lider_dashboard')
 
-    # Obtener requerimientos pendientes de validación (estado CREADO)
+    # Obtener requerimientos pendientes de validación (estado BORRADOR)
     requerimientos = Requerimiento.objects.filter(
         proyecto=proyecto,
-        estado='CREADO'
+        estado='BORRADOR'
     ).select_related('detalle_tradicional', 'detalle_agil', 'creado_por')
 
     if request.method == 'POST':
@@ -1141,7 +1218,7 @@ def requerimiento_discusion(request, pk):
         if comentario_texto:
             # Determinar el tipo de acción basado en el contexto
             tipo_accion = 'RESPUESTA'
-            if not comentario_padre_id and requerimiento.estado == 'CREADO':
+            if not comentario_padre_id and requerimiento.estado == 'BORRADOR':
                 tipo_accion = 'ACLARACION'
             
             comentario_padre = None

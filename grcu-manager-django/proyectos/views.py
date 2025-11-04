@@ -333,8 +333,12 @@ def matriz_trazabilidad(request, proyecto_id):
     solo_huerfanos = request.GET.get('solo_huerfanos') == 'true'
     solo_sin_cubrir = request.GET.get('solo_sin_cubrir') == 'true'
     
-    # Obtener requerimientos con filtros (excluir NO FUNCIONALES)
-    requerimientos_qs = Requerimiento.objects.filter(proyecto=proyecto, tipo='FUNCIONAL')
+    # Obtener requerimientos con filtros (excluir NO FUNCIONALES y BORRADOR)
+    # Solo se muestran requerimientos VALIDADOS o en estados posteriores
+    requerimientos_qs = Requerimiento.objects.filter(
+        proyecto=proyecto, 
+        tipo='FUNCIONAL'
+    ).exclude(estado='BORRADOR')
     
     if tipo_req:
         requerimientos_qs = requerimientos_qs.filter(tipo=tipo_req)
@@ -475,7 +479,10 @@ def exportar_matriz(request, proyecto_id, formato):
         return redirect("dashboards:lider_dashboard")
     
     # Obtener datos
-    requerimientos = Requerimiento.objects.filter(proyecto=proyecto).prefetch_related(
+    # Solo se exportan requerimientos VALIDADOS o en estados posteriores
+    requerimientos = Requerimiento.objects.filter(proyecto=proyecto).exclude(
+        estado='BORRADOR'
+    ).prefetch_related(
         'relaciones_casos__caso_de_uso'
     ).order_by('id')
     

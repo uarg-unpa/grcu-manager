@@ -15,9 +15,10 @@ class Requerimiento(models.Model):
     TIPO_CHOICES = [
         ("FUNCIONAL", "Funcional"),
         ("NO_FUNCIONAL", "No funcional"),
+        ("SISTEMA", "Sistema"),
     ]
     ESTADO_CHOICES = [
-        ("CREADO", "Creado"),
+        ("BORRADOR", "Borrador"),
         ("VALIDADO", "Validado"),
         ("PRIORIZADO", "Priorizado"),
         ("EN_PROCESO", "En proceso"),
@@ -26,7 +27,7 @@ class Requerimiento(models.Model):
     nombre = models.CharField(max_length=255)
     descripcion = models.TextField(blank=True)
     tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
-    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default="CREADO")
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default="BORRADOR")
     proyecto = models.ForeignKey(Proyecto, on_delete=models.CASCADE, related_name="requerimientos")
     
     # Campos para validación
