@@ -1,7 +1,7 @@
 @startuml
 
 
-actor "Usuario (Líder/Cliente/Stakeholder)" as Usuario #purple
+actor "Usuario (Cliente/Dev/Líder)" as Usuario #purple
 boundary InterfazUsuario
 boundary PListaRequerimientos
 boundary PDetalleRequerimiento
@@ -17,15 +17,12 @@ Usuario -> InterfazUsuario: 1) Accede a lista de requerimientos
 InterfazUsuario -> PListaRequerimientos: Mostrar lista del proyecto
 Usuario -> PListaRequerimientos: 2) Selecciona requerimiento
 PListaRequerimientos -> PDetalleRequerimiento: Mostrar detalle seleccionado
-Usuario -> PDetalleRequerimiento: 3) Click "Validar requerimiento"
+Usuario -> PDetalleRequerimiento: 3) Click "Validar"
 
-PDetalleRequerimiento -> ValidadorPermisos: 4) Verificar permisos y criterios
+PDetalleRequerimiento -> ValidadorPermisos: 4) Verificar permisos
 ValidadorPermisos -> BD: SELECT permisos(usuario, proyecto)
 BD --> ValidadorPermisos: OK
-ValidadorPermisos -> ManejadorRequerimientos: Consultar criterios de aceptación
-ManejadorRequerimientos -> BD: SELECT criterios FROM detalle_requerimiento
-BD --> ManejadorRequerimientos: criterios completos
-ValidadorPermisos --> PFormularioValidacion: Permitir validación
+ValidadorPermisos --> PFormularioValidacion: Autorizado
 
 PFormularioValidacion -> Usuario: 5) Mostrar formulario (comentarios, adjuntos)
 Usuario -> PFormularioValidacion: 6) Confirma validación
@@ -36,33 +33,22 @@ BD --> ManejadorValidacion: OK
 ManejadorValidacion -> BD: INSERT auditoria_registroactividad (VALIDACION_REQUERIMIENTO)
 BD --> ManejadorValidacion: OK
 
-ManejadorValidacion --> MensajeSistema: 9) "Requerimiento validado correctamente"
-ManejadorValidacion --> PDetalleRequerimiento: 10) Recargar con nuevo estado
+ManejadorValidacion --> MensajeSistema: 8) "Requerimiento validado exitosamente"
+ManejadorValidacion --> PDetalleRequerimiento: 9) Recargar vista con nuevo estado
 
 == Alternativos ==
-alt A1) Usuario sin permisos
-  ValidadorPermisos -> BD: SELECT rol
-  BD --> ValidadorPermisos: No autorizado
-  ValidadorPermisos --> MensajeSistema: "No tienes permisos para validar este requerimiento"
-end
-
-alt A2) Requerimiento ya validado
+alt 7a) Requerimiento ya validado
   ManejadorRequerimientos -> BD: SELECT estado FROM requerimiento
   BD --> ManejadorRequerimientos: estado='VALIDADO'
   ManejadorRequerimientos --> MensajeSistema: "Este requerimiento ya ha sido validado"
+  note right: El CU finaliza
 end
 
-alt A3) Criterios de aceptación incompletos
-  ManejadorRequerimientos -> BD: SELECT criterios FROM detalle_requerimiento
-  BD --> ManejadorRequerimientos: Faltan criterios
-  ManejadorRequerimientos --> MensajeSistema: "Faltan criterios de aceptación"
-  MensajeSistema -> PDetalleRequerimiento: Permitir volver y completar
-end
-
-alt A4) Error al registrar validación
+alt 6a) Error al registrar validación
   ManejadorValidacion -> BD: UPDATE requerimiento SET estado='VALIDADO'
   BD --> ManejadorValidacion: Excepción
   ManejadorValidacion --> MensajeSistema: "Error al validar el requerimiento, intente nuevamente"
+  note right: Se registra error en logs y el CU finaliza
 end
 
 @enduml

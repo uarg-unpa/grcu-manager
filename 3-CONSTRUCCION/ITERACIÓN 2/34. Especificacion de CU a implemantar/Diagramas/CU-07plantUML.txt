@@ -1,0 +1,73 @@
+@startuml
+
+
+actor "Líder del proyecto" as Lider #purple
+boundary InterfazUsuario
+boundary PPriorizarRequerimientos
+boundary MensajeSistema
+control ValidadorPermisos
+control ValidadorReglas
+control ManejadorRequerimientos
+control ManejadorPriorizacion
+database BD
+
+== Flujo principal ==
+Lider -> InterfazUsuario: 1) Accede al dashboard
+InterfazUsuario -> PPriorizarRequerimientos: 2-3) Selecciona proyecto y "Priorizar requerimientos"
+
+PPriorizarRequerimientos -> ValidadorPermisos: Verificar que es líder del proyecto
+ValidadorPermisos -> BD: SELECT proyecto.lider = usuario
+BD --> ValidadorPermisos: OK
+ValidadorPermisos --> PPriorizarRequerimientos: Autorizado
+
+PPriorizarRequerimientos -> ManejadorRequerimientos: 4) Obtener requerimientos del proyecto
+ManejadorRequerimientos -> BD: SELECT id, nombre, descripcion, prioridad, estado_validacion
+BD --> ManejadorRequerimientos: Lista (con estado_validacion)
+ManejadorRequerimientos --> PPriorizarRequerimientos: 5) Render tabla (Nombre, Descripción, Prioridad MoSCoW, Comentario)
+
+Lider -> PPriorizarRequerimientos: 6) Selecciona prioridades y escribe comentarios
+Lider -> PPriorizarRequerimientos: 7) Click "Guardar Priorización"
+
+PPriorizarRequerimientos -> ValidadorPermisos: 8) Revalidar permisos
+ValidadorPermisos -> BD: SELECT rol/permisos
+BD --> ValidadorPermisos: OK
+ValidadorPermisos --> PPriorizarRequerimientos: OK
+
+PPriorizarRequerimientos -> ValidadorReglas: 8) Verificar precondición "Requerimiento validado"
+ValidadorReglas -> BD: CHECK estado_validacion = 'VALIDADO' (para cada req seleccionado)
+BD --> ValidadorReglas: OK (todos validados)
+ValidadorReglas --> PPriorizarRequerimientos: OK
+
+PPriorizarRequerimientos -> ManejadorPriorizacion: 9) Actualizar prioridades (transacción)
+ManejadorPriorizacion -> BD: BEGIN
+ManejadorPriorizacion -> BD: UPDATE requerimiento SET prioridad_moscow=?, comentario_priorizacion=? ...
+ManejadorPriorizacion -> BD: INSERT auditoria_registroactividad (PRIORIZACION_MOSCOW, lote)
+BD --> ManejadorPriorizacion: OK
+ManejadorPriorizacion -> BD: COMMIT
+ManejadorPriorizacion --> PPriorizarRequerimientos: Exitoso
+
+PPriorizarRequerimientos --> MensajeSistema: 10) "Prioridades actualizadas correctamente"
+PPriorizarRequerimientos -> ManejadorRequerimientos: 11) Recargar lista con nuevas prioridades
+ManejadorRequerimientos -> BD: SELECT *
+BD --> ManejadorRequerimientos: Lista actualizada
+ManejadorRequerimientos --> PPriorizarRequerimientos: Mostrar actualización
+
+== Alternativos ==
+alt 4a) Proyecto sin requerimientos
+  ManejadorRequerimientos -> BD: SELECT *
+  BD --> ManejadorRequerimientos: []
+  ManejadorRequerimientos --> PPriorizarRequerimientos: Lista vacía
+  PPriorizarRequerimientos --> MensajeSistema: "No hay requerimientos para priorizar"
+  note right: El CU finaliza
+end
+
+alt 7a) Error al guardar prioridad
+  ManejadorPriorizacion -> BD: BEGIN/UPDATE/INSERT
+  BD --> ManejadorPriorizacion: Excepción
+  ManejadorPriorizacion -> BD: ROLLBACK
+  ManejadorPriorizacion --> PPriorizarRequerimientos: Falla
+  PPriorizarRequerimientos --> MensajeSistema: "Error al actualizar prioridades, intente nuevamente"
+  note right: Se registran detalles en logs\nNo se actualiza ninguna prioridad
+end
+
+@enduml
