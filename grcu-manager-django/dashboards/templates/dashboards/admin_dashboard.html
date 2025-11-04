@@ -10,38 +10,96 @@
   transform: translateY(-2px);
   transition: all 0.3s ease;
 }
+
+.card {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.bg-gradient-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.text-white-50 {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.badge.bg-white {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  color: #495057 !important;
+}
+
+/* Alturas iguales para todas las tarjetas */
+.card {
+  border-radius: 12px;
+  overflow: hidden;
+  height: 320px; /* Altura fija para todas las tarjetas */
+  display: flex;
+  flex-direction: column;
+}
+
+.card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1199.98px) {
+  .col-xl-3 {
+    flex: 0 0 33.333333%;
+    max-width: 33.333333%;
+  }
+}
+
+@media (max-width: 991.98px) {
+  .col-lg-4, .col-xl-3 {
+    flex: 0 0 50%;
+    max-width: 50%;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .col-lg-4, .col-xl-3 {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+  
+  .card {
+    height: auto; /* Altura automática en móviles */
+    min-height: 280px;
+  }
+}
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="container-fluid mt-4 px-4">
 
   <!-- Métricas -->
   <div class="row mb-4">
     <!-- Tarjeta Usuarios -->
-    <div class="col-md-4">
-      <div class="card bg-white text-dark mb-3 shadow" style="border: 1px solid #e0e0e0;">
-        <div class="card-body text-center">
+    <div class="col-lg-4 col-xl-3">
+      <div class="card bg-gradient-primary text-white mb-3 shadow hover-shadow" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="card-body text-center d-flex flex-column justify-content-center">
           <h5 class="card-title"><i class="bi bi-person"></i> Usuarios</h5>
-          <p class="card-text display-6">{{ total_usuarios }}</p>
+          <p class="card-text display-6 mb-3">{{ total_usuarios }}</p>
 
-          <canvas id="usuariosRolesChart" width="90" height="90"
-                  style="width: 90px; height: 90px; margin: 0 auto 10px; display: block;"
-                  data-labels='{{ usuarios_roles_labels_json|safe }}'
-                  data-values='{{ usuarios_roles_values_json|safe }}'
-                  data-type="doughnut"
-                  data-colors='["#007bff", "#28a745", "#ffc107", "#6c757d"]'></canvas>
+          <div class="chart-container mb-3">
+            <canvas id="usuariosRolesChart" width="90" height="90"
+                    style="width: 90px; height: 90px; margin: 0 auto; display: block;"
+                    data-labels='{{ usuarios_roles_labels_json|safe }}'
+                    data-values='{{ usuarios_roles_values_json|safe }}'
+                    data-type="doughnut"
+                    data-colors='["rgba(255,255,255,0.8)", "rgba(255,255,255,0.6)", "rgba(255,255,255,0.4)", "rgba(255,255,255,0.2)"]'></canvas>
+          </div>
 
-          <div class="d-flex justify-content-center flex-wrap gap-2 mt-2">
+          <div class="d-flex justify-content-center flex-wrap gap-1">
             {% for label in usuarios_roles_labels %}
-              <span class="badge"
-                style="background-color:
-                      {% if forloop.counter0 == 0 %}#007bff
-                      {% elif forloop.counter0 == 1 %}#28a745
-                      {% elif forloop.counter0 == 2 %}#ffc107
-                      {% elif forloop.counter0 == 3 %}#6c757d
-                      {% else %}#adb5bd{% endif %};
-                      color: #fff; font-size: 1em; min-width: 100px; text-align: center;">
+              <span class="badge bg-white text-primary"
+                style="font-size: 0.85em; min-width: 80px; text-align: center; border: 1px solid rgba(255,255,255,0.3);">
                 {{ label }}
               </span>
             {% endfor %}
@@ -51,27 +109,25 @@
     </div>
 
     <!-- Tarjeta Proyectos -->
-    <div class="col-md-4">
-      <div class="card bg-white text-dark mb-3 shadow" style="border: 1px solid #e0e0e0;">
-        <div class="card-body text-center">
+    <div class="col-lg-4 col-xl-3">
+      <div class="card bg-gradient-primary text-white mb-3 shadow hover-shadow" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="card-body text-center d-flex flex-column justify-content-center">
           <h5 class="card-title"><i class="bi bi-kanban"></i> Proyectos</h5>
-          <p class="card-text display-6">{{ total_proyectos }}</p>
+          <p class="card-text display-6 mb-3">{{ total_grupos }}</p>
 
-          <canvas id="proyectosEstadoChart" width="90" height="90"
-                  style="width: 90px; height: 90px; margin: 0 auto 10px; display: block;"
-                  data-labels='{{ proyectos_estado_labels_json|safe }}'
-                  data-values='{{ proyectos_estado_values_json|safe }}'
-                  data-type="doughnut"
-                  data-colors='["#17a2b8", "#adb5bd"]'></canvas>
+          <div class="chart-container mb-3">
+            <canvas id="proyectosEstadoChart" width="90" height="90"
+                    style="width: 90px; height: 90px; margin: 0 auto; display: block;"
+                    data-labels='{{ proyectos_estado_labels_json|safe }}'
+                    data-values='{{ proyectos_estado_values_json|safe }}'
+                    data-type="doughnut"
+                    data-colors='["rgba(255,255,255,0.8)", "rgba(255,255,255,0.4)"]'></canvas>
+          </div>
 
-          <div class="d-flex justify-content-center flex-wrap gap-2 mt-2">
+          <div class="d-flex justify-content-center flex-wrap gap-1">
             {% for label in proyectos_estado_labels %}
-              <span class="badge"
-                style="background-color:
-                      {% if forloop.counter0 == 0 %}#17a2b8
-                      {% elif forloop.counter0 == 1 %}#adb5bd
-                      {% else %}#6c757d{% endif %};
-                      color: #fff; font-size: 1em; min-width: 100px; text-align: center;">
+              <span class="badge bg-white text-primary"
+                style="font-size: 0.85em; min-width: 80px; text-align: center; border: 1px solid rgba(255,255,255,0.3);">
                 {{ label }}
               </span>
             {% endfor %}
@@ -81,31 +137,99 @@
     </div>
 
     <!-- Tarjeta Grupos -->
-    <div class="col-md-4">
-      <div class="card bg-white text-dark mb-3 shadow" style="border: 1px solid #e0e0e0;">
-        <div class="card-body text-center">
+    <div class="col-lg-4 col-xl-3">
+      <div class="card bg-gradient-primary text-white mb-3 shadow hover-shadow" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="card-body text-center d-flex flex-column justify-content-center">
           <h5 class="card-title"><i class="bi bi-people"></i> Grupos</h5>
-          <p class="card-text display-6">{{ total_grupos }}</p>
+          <p class="card-text display-6 mb-3">{{ total_grupos }}</p>
 
-          <canvas id="gruposEstadoChart" width="90" height="90"
-                  style="width: 90px; height: 90px; margin: 0 auto 10px; display: block;"
-                  data-labels='{{ grupos_estado_labels_json|safe }}'
-                  data-values='{{ grupos_estado_values_json|safe }}'
-                  data-type="doughnut"
-                  data-colors='["#20c997", "#dc3545"]'></canvas>
+          <div class="chart-container mb-3">
+            <canvas id="gruposEstadoChart" width="90" height="90"
+                    style="width: 90px; height: 90px; margin: 0 auto; display: block;"
+                    data-labels='{{ grupos_estado_labels_json|safe }}'
+                    data-values='{{ grupos_estado_values_json|safe }}'
+                    data-type="doughnut"
+                    data-colors='["rgba(255,255,255,0.8)", "rgba(255,255,255,0.4)"]'></canvas>
+          </div>
 
-          <div class="d-flex justify-content-center flex-wrap gap-2 mt-2">
+          <div class="d-flex justify-content-center flex-wrap gap-1">
             {% for label in grupos_estado_labels %}
-              <span class="badge"
-                style="background-color:
-                      {% if forloop.counter0 == 0 %}#20c997
-                      {% elif forloop.counter0 == 1 %}#dc3545
-                      {% else %}#6c757d{% endif %};
-                      color: #fff; font-size: 1em; min-width: 100px; text-align: center;">
+              <span class="badge bg-white text-primary"
+                style="font-size: 0.85em; min-width: 80px; text-align: center; border: 1px solid rgba(255,255,255,0.3);">
                 {{ label }}
               </span>
             {% endfor %}
           </div>
+        </div>
+      </div>
+    </div>    <!-- Tarjeta Resumen General -->
+    <div class="col-lg-12 col-xl-3">
+      <div class="card bg-gradient-primary text-white mb-3 shadow hover-shadow" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="card-body text-center d-flex flex-column justify-content-center">
+          <h5 class="card-title"><i class="bi bi-bar-chart-line"></i> Proyectos Más Activos</h5>
+          <p class="card-text small mb-3 text-white-50">(Últimos 10 días)</p>
+
+          <div class="chart-container mb-3">
+            <canvas id="proyectosActivosChart" width="90" height="90"
+                    style="width: 90px; height: 90px; margin: 0 auto; display: block;"
+                    data-labels='{{ proyectos_activos_labels_json|safe }}'
+                    data-values='{{ proyectos_activos_values_json|safe }}'
+                    data-type="doughnut"
+                    data-colors='["rgba(255,255,255,0.9)", "rgba(255,255,255,0.7)", "rgba(255,255,255,0.5)", "rgba(255,255,255,0.3)"]'></canvas>
+          </div>
+
+          <div class="d-flex justify-content-center flex-wrap gap-1">
+            {% for label in proyectos_activos_labels %}
+              <span class="badge bg-white text-primary"
+                style="font-size: 0.75em; min-width: 70px; text-align: center; border: 1px solid rgba(255,255,255,0.3);">
+                {{ label|truncatechars:12 }}
+              </span>
+            {% endfor %}
+          </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Métricas adicionales -->
+  <div class="row mb-4">
+    <!-- Usuarios sin grupos -->
+    <div class="col-lg-4 col-xl-3">
+      <div class="card bg-gradient-primary text-white mb-3 shadow hover-shadow" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="card-body text-center d-flex flex-column justify-content-center">
+          <h5 class="card-title"><i class="bi bi-person-dash"></i> Usuarios sin Grupos</h5>
+          <p class="card-text display-6 mb-0">{{ usuarios_sin_grupos }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Proyectos sin grupo -->
+    <div class="col-lg-4 col-xl-3">
+      <div class="card bg-gradient-primary text-white mb-3 shadow hover-shadow" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="card-body text-center d-flex flex-column justify-content-center">
+          <h5 class="card-title"><i class="bi bi-folder-x"></i> Proyectos sin Grupo</h5>
+          <p class="card-text display-6 mb-0">{{ proyectos_sin_grupo }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Proyectos sin requerimientos -->
+    <div class="col-lg-4 col-xl-3">
+      <div class="card bg-gradient-primary text-white mb-3 shadow hover-shadow" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="card-body text-center d-flex flex-column justify-content-center">
+          <h5 class="card-title"><i class="bi bi-file-earmark-x"></i> Sin Requerimientos</h5>
+          <p class="card-text display-6 mb-0">{{ proyectos_sin_requerimientos }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Proyectos actuales -->
+    <div class="col-lg-4 col-xl-3">
+      <div class="card bg-gradient-primary text-white mb-3 shadow hover-shadow" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="card-body text-center d-flex flex-column justify-content-center">
+          <h5 class="card-title"><i class="bi bi-calendar-check"></i> Proyectos Actuales</h5>
+          <p class="card-text display-6 mb-0">{{ proyectos_actuales }}</p>
         </div>
       </div>
     </div>
@@ -117,36 +241,39 @@
   <!-- Últimas acciones del admin (Django Admin logs) -->
   <div class="row mb-4">
     <div class="col-12">
-      <div class="card shadow-sm">
-        <div class="card-header bg-light">
+      <div class="card shadow-sm hover-shadow" style="border-radius: 12px;">
+        <div class="card-header bg-gradient-primary text-white" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
           <h6 class="mb-0">
             <i class="bi bi-clock-history"></i> Últimas Acciones Administrativas
           </h6>
         </div>
-        <div class="card-body">
+        <div class="card-body p-0">
           {% if ultimas_acciones %}
           <div class="table-responsive">
-            <table class="table table-sm table-hover mb-0">
+            <table class="table table-hover mb-0" style="border-radius: 0 0 12px 12px; overflow: hidden;">
               <thead class="table-light">
                 <tr>
-                  <th>Fecha</th>
-                  <th>Usuario</th>
-                  <th>Acción</th>
+                  <th class="border-0 ps-4"><i class="bi bi-calendar-event"></i> Fecha</th>
+                  <th class="border-0"><i class="bi bi-person"></i> Usuario</th>
+                  <th class="border-0 pe-4"><i class="bi bi-activity"></i> Acción</th>
                 </tr>
               </thead>
               <tbody>
                 {% for accion in ultimas_acciones %}
                 <tr>
-                  <td><small>{{ accion.action_time|date:"d/m H:i" }}</small></td>
+                  <td class="ps-4"><small class="text-muted">{{ accion.action_time|date:"d/m H:i" }}</small></td>
                   <td><small>{{ accion.user }}</small></td>
-                  <td><small>{{ accion.get_change_message }}</small></td>
+                  <td class="pe-4"><small>{{ accion.get_change_message }}</small></td>
                 </tr>
                 {% endfor %}
               </tbody>
             </table>
           </div>
           {% else %}
-          <p class="text-muted mb-0 text-center">No hay acciones administrativas registradas</p>
+          <div class="p-4 text-center">
+            <i class="bi bi-info-circle text-muted" style="font-size: 2rem;"></i>
+            <p class="text-muted mb-0 mt-2">No hay acciones administrativas registradas</p>
+          </div>
           {% endif %}
         </div>
       </div>

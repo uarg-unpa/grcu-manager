@@ -48,10 +48,10 @@ class RequerimientoTradicionalForm(forms.Form):
     # Campos específicos del DetalleRequerimientoTradicional
     PRIORIDAD_MOSCOW = [
         ('', '-- Seleccionar prioridad --'),
-        ('MUST', 'Must have (Debe tener)'),
-        ('SHOULD', 'Should have (Debería tener)'),
-        ('COULD', 'Could have (Podría tener)'),
-        ('WONT', "Won't have (No tendrá por ahora)")
+        ('MUST', 'Crítico'),
+        ('SHOULD', 'Importante'),
+        ('COULD', 'Deseable'),
+        ('WONT', 'Descartado')
     ]
     
     prioridad = forms.ChoiceField(

@@ -22,6 +22,10 @@ import json
 from accounts.models import Usuario
 from proyectos.models import Proyecto
 from grupos.models import Grupo
+from requerimientos.models import Requerimiento
+from casos_de_uso.models import CasoDeUso
+from django.utils import timezone
+from datetime import timedelta
 
 @login_required
 def admin_dashboard(request):
@@ -33,6 +37,67 @@ def admin_dashboard(request):
     total_grupos = Grupo.objects.count()
     grupos_activos = Grupo.objects.filter(activo=True).count()
     grupos_inactivos = Grupo.objects.filter(activo=False).count()
+
+    # Nuevas métricas solicitadas
+    usuarios_sin_grupos = Usuario.objects.exclude(grupos__isnull=False).distinct().count()
+    proyectos_sin_grupo = Proyecto.objects.filter(grupo__isnull=True).count()
+    proyectos_sin_requerimientos = Proyecto.objects.annotate(
+        num_requerimientos=Count('requerimientos')
+    ).filter(num_requerimientos=0).count()
+    
+    # Proyectos actuales (creados en el año actual)
+    from django.utils import timezone
+    anio_actual = timezone.now().year
+    proyectos_actuales = Proyecto.objects.filter(fecha_creacion__year=anio_actual).count()
+
+    # Calcular proyectos más activos en los últimos 10 días
+    fecha_limite = timezone.now() - timedelta(days=10)
+    
+    # Contar actividad por proyecto (requerimientos creados/modificados)
+    proyectos_requerimientos = (
+        Requerimiento.objects.filter(
+            proyecto__activo=True,
+            fecha_creacion__gte=fecha_limite
+        )
+        .values('proyecto__nombre')
+        .annotate(actividad=Count('id'))
+        .order_by('-actividad')[:4]
+    )
+    
+    # Contar actividad por proyecto (casos de uso creados/modificados)
+    proyectos_casos = (
+        CasoDeUso.objects.filter(
+            proyecto__activo=True,
+            fecha_creacion__gte=fecha_limite
+        )
+        .values('proyecto__nombre')
+        .annotate(actividad=Count('id'))
+        .order_by('-actividad')[:4]
+    )
+    
+    # Combinar y sumar actividades por proyecto
+    actividad_proyectos = {}
+    for item in proyectos_requerimientos:
+        nombre = item['proyecto__nombre']
+        actividad_proyectos[nombre] = actividad_proyectos.get(nombre, 0) + item['actividad']
+    
+    for item in proyectos_casos:
+        nombre = item['proyecto__nombre']
+        actividad_proyectos[nombre] = actividad_proyectos.get(nombre, 0) + item['actividad']
+    
+    # Obtener los 4 proyectos más activos
+    proyectos_mas_activos = sorted(actividad_proyectos.items(), key=lambda x: x[1], reverse=True)[:4]
+    
+    # Preparar datos para el gráfico de dona
+    if proyectos_mas_activos:
+        proyectos_activos_labels = [proyecto[0] for proyecto in proyectos_mas_activos]
+        proyectos_activos_values = [proyecto[1] for proyecto in proyectos_mas_activos]
+    else:
+        proyectos_activos_labels = ["Sin actividad"]
+        proyectos_activos_values = [0]
+    
+    proyectos_activos_labels_json = json.dumps(proyectos_activos_labels)
+    proyectos_activos_values_json = json.dumps(proyectos_activos_values)
 
     # Roles esperados
     roles_labels = ["Admin", "Líder", "Desarrollador", "Visitante"]
@@ -69,6 +134,10 @@ def admin_dashboard(request):
         "total_usuarios": total_usuarios,
         "total_proyectos": total_proyectos,
         "total_grupos": total_grupos,
+        "usuarios_sin_grupos": usuarios_sin_grupos,
+        "proyectos_sin_grupo": proyectos_sin_grupo,
+        "proyectos_sin_requerimientos": proyectos_sin_requerimientos,
+        "proyectos_actuales": proyectos_actuales,
         "usuarios_roles_labels": roles_labels,
         "usuarios_roles_labels_json": roles_labels_json,
         "usuarios_roles_values_json": usuarios_por_rol_json,
@@ -78,6 +147,9 @@ def admin_dashboard(request):
         "grupos_estado_labels": grupos_estado_labels,
         "grupos_estado_labels_json": grupos_estado_labels_json,
         "grupos_estado_values_json": grupos_estado_values_json,
+        "proyectos_activos_labels": proyectos_activos_labels,
+        "proyectos_activos_labels_json": proyectos_activos_labels_json,
+        "proyectos_activos_values_json": proyectos_activos_values_json,
         "ultimas_acciones": ultimas_acciones,
         "page_title": "Panel de Administración",
     }

@@ -19,8 +19,9 @@ class UsuarioCrearForm(forms.ModelForm):
         email = self.cleaned_data.get("email")
         if not email:
             raise ValidationError("El email es obligatorio.")
-        if not email.lower().endswith("@gmail.com"):
-            raise ValidationError("Solo se permiten correos de Gmail.")
+        allowed_domains = ["gmail.com", "uarg.unpa.edu.ar"]
+        if not any(email.lower().endswith(f"@{domain}") for domain in allowed_domains):
+            raise ValidationError("Solo se permiten emails de los dominios: @gmail.com o @uarg.unpa.edu.ar")
         return email
 
 
@@ -39,7 +40,8 @@ class UsuarioEditarForm(forms.ModelForm):
         email = self.cleaned_data.get("email")
         if not email:
             raise ValidationError("El email es obligatorio.")
-        if not email.lower().endswith("@gmail.com"):
-            raise ValidationError("Solo se permiten correos de Gmail.")
+        allowed_domains = ["gmail.com", "uarg.unpa.edu.ar"]
+        if not any(email.lower().endswith(f"@{domain}") for domain in allowed_domains):
+            raise ValidationError("Solo se permiten emails de los dominios: @gmail.com o @uarg.unpa.edu.ar")
         return email
 

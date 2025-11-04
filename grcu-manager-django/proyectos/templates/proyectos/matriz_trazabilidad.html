@@ -384,80 +384,6 @@
         </div>
     </div>
 
-    <!-- Métricas -->
-    <div class="metricas-grid">
-        <div class="metrica-card">
-            <p class="metrica-value">{{ total_requerimientos }}</p>
-            <p class="metrica-label">Requerimientos</p>
-            <p class="metrica-subtitle">Total del proyecto</p>
-        </div>
-        <div class="metrica-card">
-            <p class="metrica-value">{{ total_casos }}</p>
-            <p class="metrica-label">Casos de Uso</p>
-            <p class="metrica-subtitle">Total del proyecto</p>
-        </div>
-        <div class="metrica-card cobertura">
-            <p class="metrica-value">{{ cobertura_reqs }}%</p>
-            <p class="metrica-label">Cobertura de Requerimientos</p>
-            <p class="metrica-subtitle">{{ reqs_con_casos }}/{{ total_requerimientos }} cubiertos</p>
-        </div>
-        <div class="metrica-card cobertura">
-            <p class="metrica-value">{{ cobertura_casos }}%</p>
-            <p class="metrica-label">Cobertura de Casos</p>
-            <p class="metrica-subtitle">{{ casos_con_reqs }}/{{ total_casos }} cubiertos</p>
-        </div>
-        <div class="metrica-card huerfanos">
-            <p class="metrica-value">{{ reqs_huerfanos.count }}</p>
-            <p class="metrica-label">Requerimientos Huérfanos</p>
-            <p class="metrica-subtitle">Sin casos de uso</p>
-        </div>
-        <div class="metrica-card huerfanos">
-            <p class="metrica-value">{{ casos_huerfanos.count }}</p>
-            <p class="metrica-label">Casos Huérfanos</p>
-            <p class="metrica-subtitle">Sin requerimientos</p>
-        </div>
-    </div>
-
-    <!-- Filtros -->
-    <div class="filtros-container">
-        <h5 class="mb-3">
-            <i class="bi bi-funnel"></i>
-            Filtros
-        </h5>
-        <form method="get" id="filtrosForm">
-            <div class="filtros-grid">
-                <div class="filtro-group">
-                    <label for="estado_req">Estado de Requerimiento</label>
-                    <select name="estado_req" id="estado_req" class="form-select">
-                        <option value="">Todos</option>
-                        <option value="CREADO" {% if filtro_estado_req == 'CREADO' %}selected{% endif %}>Creado</option>
-                        <option value="EN_PROGRESO" {% if filtro_estado_req == 'EN_PROGRESO' %}selected{% endif %}>En Progreso</option>
-                        <option value="VALIDADO" {% if filtro_estado_req == 'VALIDADO' %}selected{% endif %}>Validado</option>
-                        <option value="COMPLETADO" {% if filtro_estado_req == 'COMPLETADO' %}selected{% endif %}>Completado</option>
-                    </select>
-                </div>
-                <div class="filtro-group">
-                    <div class="filtro-check">
-                        <input type="checkbox" name="solo_huerfanos" id="solo_huerfanos" 
-                               value="true" {% if filtro_solo_huerfanos %}checked{% endif %}>
-                        <label for="solo_huerfanos" class="mb-0">Solo huérfanos</label>
-                    </div>
-                    <div class="filtro-check">
-                        <input type="checkbox" name="solo_sin_cubrir" id="solo_sin_cubrir" 
-                               value="true" {% if filtro_solo_sin_cubrir %}checked{% endif %}>
-                        <label for="solo_sin_cubrir" class="mb-0">Solo sin cubrir</label>
-                    </div>
-                </div>
-                <div class="filtro-group">
-                    <label>&nbsp;</label>
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="bi bi-search"></i> Aplicar Filtros
-                    </button>
-                </div>
-            </div>
-        </form>
-    </div>
-
     <!-- Tabla de Matriz -->
     {% if matriz and casos %}
     <div class="matriz-table-container">
@@ -511,18 +437,131 @@
             </tbody>
         </table>
     </div>
-    {% else %}
-    <div class="empty-state">
-        <i class="bi bi-inbox"></i>
-        <h4>No hay datos para mostrar</h4>
-        <p>No se encontraron requerimientos o casos de uso con los filtros aplicados.</p>
-        {% if es_lider %}
-        <a href="{% url 'requerimientos:requerimiento_list' %}" class="btn btn-primary mt-3">
-            <i class="bi bi-plus-circle"></i> Agregar Requerimientos
-        </a>
-        {% endif %}
-    </div>
     {% endif %}
+
+    <!-- Métricas -->
+    <div class="row mb-4">
+        <div class="col-lg-4 col-xl-3">
+            <div class="card bg-gradient-primary text-white mb-3 shadow hover-shadow" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="card-body text-center d-flex flex-column justify-content-center">
+                    <h5 class="card-title"><i class="bi bi-list-check"></i> Requerimientos</h5>
+                    <p class="card-text display-6 mb-0">{{ total_requerimientos }}</p>
+                    <small class="text-white-50">Total del proyecto</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-xl-3">
+            <div class="card bg-gradient-primary text-white mb-3 shadow hover-shadow" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="card-body text-center d-flex flex-column justify-content-center">
+                    <h5 class="card-title"><i class="bi bi-diagram-3"></i> Casos de Uso</h5>
+                    <p class="card-text display-6 mb-0">{{ total_casos }}</p>
+                    <small class="text-white-50">Total del proyecto</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-xl-3">
+            <div class="card bg-gradient-primary text-white mb-3 shadow hover-shadow" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="card-body text-center d-flex flex-column justify-content-center">
+                    <h5 class="card-title"><i class="bi bi-bar-chart-line"></i> Cobertura Reqs</h5>
+                    <p class="card-text display-6 mb-0">{{ cobertura_reqs }}%</p>
+                    <small class="text-white-50">{{ reqs_con_casos }}/{{ total_requerimientos }} cubiertos</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-xl-3">
+            <div class="card bg-gradient-primary text-white mb-3 shadow hover-shadow" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="card-body text-center d-flex flex-column justify-content-center">
+                    <h5 class="card-title"><i class="bi bi-bar-chart-line"></i> Cobertura Casos</h5>
+                    <p class="card-text display-6 mb-0">{{ cobertura_casos }}%</p>
+                    <small class="text-white-50">{{ casos_con_reqs }}/{{ total_casos }} cubiertos</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-xl-3">
+            <div class="card huerfanos-card mb-3 shadow hover-shadow" style="border: none;">
+                <div class="card-body text-center d-flex flex-column justify-content-center">
+                    <h5 class="card-title text-danger"><i class="bi bi-exclamation-triangle"></i> Reqs Huérfanos</h5>
+                    <p class="card-text display-6 mb-2 text-danger">{{ reqs_huerfanos.count }}</p>
+                    <small class="text-white-50">Sin casos de uso</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-xl-3">
+            <div class="card huerfanos-card mb-3 shadow hover-shadow" style="border: none;">
+                <div class="card-body text-center d-flex flex-column justify-content-center">
+                    <h5 class="card-title text-danger"><i class="bi bi-exclamation-triangle"></i> Casos Huérfanos</h5>
+                    <p class="card-text display-6 mb-2 text-danger">{{ casos_huerfanos.count }}</p>
+                    <small class="text-white-50">Sin requerimientos</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filtros-container">
+        <h5 class="mb-3">
+            <i class="bi bi-funnel"></i>
+            Filtros
+        </h5>
+        <form method="get" id="filtrosForm">
+            <div class="filtros-grid">
+                <div class="filtro-group">
+                    <label for="estado_req">Estado de Requerimiento</label>
+                    <select name="estado_req" id="estado_req" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="CREADO" {% if filtro_estado_req == 'CREADO' %}selected{% endif %}>Creado</option>
+                        <option value="EN_PROGRESO" {% if filtro_estado_req == 'EN_PROGRESO' %}selected{% endif %}>En Progreso</option>
+                        <option value="VALIDADO" {% if filtro_estado_req == 'VALIDADO' %}selected{% endif %}>Validado</option>
+                        <option value="COMPLETADO" {% if filtro_estado_req == 'COMPLETADO' %}selected{% endif %}>Completado</option>
+                    </select>
+                </div>
+                <div class="filtro-group">
+                    <div class="filtro-check">
+                        <input type="checkbox" name="solo_huerfanos" id="solo_huerfanos" 
+                               value="true" {% if filtro_solo_huerfanos %}checked{% endif %}>
+                        <label for="solo_huerfanos" class="mb-0">Solo huérfanos</label>
+                    </div>
+                    <div class="filtro-check">
+                        <input type="checkbox" name="solo_sin_cubrir" id="solo_sin_cubrir" 
+                               value="true" {% if filtro_solo_sin_cubrir %}checked{% endif %}>
+                        <label for="solo_sin_cubrir" class="mb-0">Solo sin cubrir</label>
+                    </div>
+                </div>
+                <div class="filtro-group">
+                    <label>&nbsp;</label>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Aplicar Filtros
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Tooltip para casos -->
+    <div class="caso-tooltip-container" style="display:none;"></div>
+
+    <!-- Script para tooltip de casos -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const tooltips = document.querySelectorAll('.caso-tooltip');
+            const container = document.querySelector('.caso-tooltip-container');
+
+            tooltips.forEach(function(tooltip) {
+                tooltip.addEventListener('mouseenter', function() {
+                    const nombre = this.getAttribute('data-nombre');
+                    container.innerHTML = nombre;
+                    container.style.display = 'block';
+                    const rect = this.getBoundingClientRect();
+                    container.style.left = `${rect.left + window.scrollX}px`;
+                    container.style.top = `${rect.top + window.scrollY - container.offsetHeight}px`;
+                });
+
+                tooltip.addEventListener('mouseleave', function() {
+                    container.style.display = 'none';
+                });
+            });
+        });
+    </script>
 </div>
 
 <script src="{% static 'proyectos/js/matriz_trazabilidad.js' %}?v=1.0"></script>

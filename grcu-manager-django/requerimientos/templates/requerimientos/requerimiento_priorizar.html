@@ -5,7 +5,7 @@
 {% block title %}{{ page_title }}{% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'requerimientos/css/priorizar_styles.css' %}?v=1.0">
+    <link rel="stylesheet" href="{% static 'requerimientos/css/priorizar_styles.css' %}?v=1.1">
 {% endblock %}
 
 {% block content %}
@@ -18,7 +18,7 @@
         {% csrf_token %}
         <div class="table-responsive">
         <table class="table table-bordered align-middle mb-0">
-            <thead>
+            <thead class="table-primary">
                 <tr>
                     <th><i class="bi bi-file-earmark-text me-1"></i> Requerimiento</th>
                     <th><i class="bi bi-card-text me-1"></i> Descripción</th>
@@ -32,9 +32,13 @@
                     <td>{{ req.nombre }}</td>
                     <td>{{ req.descripcion|truncatechars:60 }}</td>
                     <td>
-                        <select name="prioridad_{{ req.pk }}" class="form-select">
+                        <select name="prioridad_{{ req.pk }}" class="form-select prioridad-select">
                             {% for val, label in MOSCOW_CHOICES %}
-                                <option value="{{ val }}" {% if req.detalle_tradicional and req.detalle_tradicional.prioridad == val or req.detalle_agil and req.detalle_agil.prioridad == val %}selected{% endif %}>{{ label }}</option>
+                                <option value="{{ val }}" 
+                                        class="prioridad-{{ val|lower }}"
+                                        {% if req.detalle_tradicional and req.detalle_tradicional.prioridad == val or req.detalle_agil and req.detalle_agil.prioridad == val %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
                             {% endfor %}
                         </select>
                     </td>

@@ -58,3 +58,69 @@
     padding: 0.5em 1em;
     border-radius: 0.5em;
 }
+
+/* Colores para las prioridades MOSCOW - Paleta de colores claros sin amarillo, verde ni rojo */
+.prioridad-select {
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+/* CRÍTICO - Azul intenso */
+.prioridad-select option[value="MUST"] {
+    background-color: #4A90E2;
+    color: white;
+    font-weight: bold;
+}
+
+/* IMPORTANTE - Morado suave */
+.prioridad-select option[value="SHOULD"] {
+    background-color: #9B59B6;
+    color: white;
+    font-weight: bold;
+}
+
+/* DESEABLE - Celeste claro */
+.prioridad-select option[value="COULD"] {
+    background-color: #5DADE2;
+    color: white;
+    font-weight: bold;
+}
+
+/* DESCARTADO - Gris claro */
+.prioridad-select option[value="WONT"] {
+    background-color: #95A5A6;
+    color: white;
+    font-weight: bold;
+}
+
+/* Color del select según la opción seleccionada - CRÍTICO */
+.prioridad-select:has(option[value="MUST"]:checked) {
+    background-color: #4A90E2;
+    color: white;
+    font-weight: bold;
+    border-color: #4A90E2;
+}
+
+/* IMPORTANTE */
+.prioridad-select:has(option[value="SHOULD"]:checked) {
+    background-color: #9B59B6;
+    color: white;
+    font-weight: bold;
+    border-color: #9B59B6;
+}
+
+/* DESEABLE */
+.prioridad-select:has(option[value="COULD"]:checked) {
+    background-color: #5DADE2;
+    color: white;
+    font-weight: bold;
+    border-color: #5DADE2;
+}
+
+/* DESCARTADO */
+.prioridad-select:has(option[value="WONT"]:checked) {
+    background-color: #95A5A6;
+    color: white;
+    font-weight: bold;
+    border-color: #95A5A6;
+}

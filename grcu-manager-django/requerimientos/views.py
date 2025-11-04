@@ -62,10 +62,16 @@ def requerimiento_list(request, proyecto_id=None):
             requerimientos = Requerimiento.objects.filter(
                 proyecto=proyecto,
                 estado='CREADO'
-            ).select_related('proyecto')
+            ).select_related('proyecto').annotate(
+                num_comentarios=Count('comentarios_validacion', distinct=True)
+            )
         else:
             # Líderes y desarrolladores ven todos los requerimientos
-            requerimientos = Requerimiento.objects.filter(proyecto=proyecto).select_related('proyecto')
+            requerimientos = Requerimiento.objects.filter(proyecto=proyecto).select_related(
+                'proyecto', 'detalle_tradicional', 'detalle_agil'
+            ).annotate(
+                num_comentarios=Count('comentarios_validacion', distinct=True)
+            )
         
         # Estadísticas adicionales para líderes
         stats = None
@@ -92,7 +98,11 @@ def requerimiento_list(request, proyecto_id=None):
                 'req_por_tipo': list(req_tipo_qs),
             }
     else:
-        requerimientos = Requerimiento.objects.all().select_related('proyecto')
+        requerimientos = Requerimiento.objects.all().select_related(
+            'proyecto', 'detalle_tradicional', 'detalle_agil'
+        ).annotate(
+            num_comentarios=Count('comentarios_validacion', distinct=True)
+        )
         proyecto = None
         stats = None
         
@@ -110,13 +120,59 @@ def requerimiento_list(request, proyecto_id=None):
         "page_title": page_title,
         # Agregar conteo de requerimientos pendientes de validación
         "pendientes_validacion": Requerimiento.objects.filter(proyecto=proyecto, estado='CREADO').count() if proyecto else 0,
+        "MOSCOW_CHOICES": [
+            ("MUST", "Crítico"),
+            ("SHOULD", "Importante"),
+            ("COULD", "Deseable"),
+            ("WONT", "Descartado")
+        ],
     }
     return render(request, "requerimientos/requerimiento_list.html", context)
 
 @login_required
 def requerimiento_detail(request, pk):
+    """
+    Vista de detalle del requerimiento que muestra información completa
+    incluyendo comentarios y conversaciones de validación.
+    """
     requerimiento = get_object_or_404(Requerimiento, pk=pk)
-    return render(request, "requerimientos/requerimiento_detail.html", {"requerimiento": requerimiento})
+    proyecto = requerimiento.proyecto
+    
+    # Verificar permisos: solo participantes del proyecto pueden ver detalles completos
+    es_lider = request.user == proyecto.lider
+    es_participante = proyecto.participantes.filter(id=request.user.id).exists()
+    tiene_permiso = es_lider or es_participante
+    
+    # Obtener comentarios si el usuario tiene permiso
+    comentarios = []
+    comentarios_hilo = []
+    
+    if tiene_permiso:
+        # Obtener comentarios ordenados por fecha con información completa del autor
+        comentarios = ComentarioValidacion.objects.filter(
+            requerimiento=requerimiento
+        ).select_related('autor', 'comentario_padre').order_by('fecha_creacion')
+        
+        # Organizar comentarios en hilos
+        comentarios_raiz = comentarios.filter(comentario_padre__isnull=True)
+        
+        for comentario in comentarios_raiz:
+            hilo = {
+                'comentario': comentario,
+                'respuestas': list(comentarios.filter(comentario_padre=comentario))
+            }
+            comentarios_hilo.append(hilo)
+    
+    context = {
+        'requerimiento': requerimiento,
+        'comentarios_hilo': comentarios_hilo,
+        'total_comentarios': len(comentarios),
+        'tiene_permiso': tiene_permiso,
+        'es_lider': es_lider,
+        'es_participante': es_participante,
+    }
+    
+    return render(request, "requerimientos/requerimiento_detail.html", context)
 
 
 @login_required
@@ -242,10 +298,10 @@ def requerimiento_priorizar(request, proyecto_id=None):
     from requerimientos.models import Requerimiento, DetalleRequerimientoTradicional
     from proyectos.models import Proyecto
     MOSCOW_CHOICES = [
-        ("MUST", "Must have"),
-        ("SHOULD", "Should have"),
-        ("COULD", "Could have"),
-        ("WONT", "Won't have")
+        ("MUST", "Crítico"),
+        ("SHOULD", "Importante"),
+        ("COULD", "Deseable"),
+        ("WONT", "Descartado")
     ]
 
     # Determinar el proyecto
@@ -263,29 +319,58 @@ def requerimiento_priorizar(request, proyecto_id=None):
     if request.user != proyecto.lider:
         return render(request, "requerimientos/requerimiento_priorizar.html", {"proyecto": None})
 
-    # Obtener requerimientos validados que pueden ser priorizados
+    # Obtener todos los requerimientos del proyecto para priorizar
     requerimientos = Requerimiento.objects.filter(
-        proyecto=proyecto,
-        estado='VALIDADO'
+        proyecto=proyecto
     ).select_related('detalle_tradicional', 'detalle_agil')
 
     if request.method == 'POST':
         for req in requerimientos:
             prioridad = request.POST.get(f'prioridad_{req.pk}')
-            # Actualizar prioridad según el tipo de detalle que exista
-            if req.detalle_tradicional and prioridad:
-                if req.detalle_tradicional.prioridad != prioridad:
-                    req.detalle_tradicional.prioridad = prioridad
-                    req.detalle_tradicional.save()
-                    # Cambiar estado a PRIORIZADO
-                    req.estado = 'PRIORIZADO'
-                    req.save()
-            elif req.detalle_agil and prioridad:
-                # Para metodología ágil, la priorización se maneja diferente
-                # Solo cambiar el estado a PRIORIZADO sin modificar campos específicos
+            if prioridad:
+                detalle_actualizado = False
+                
+                # Intentar acceder a detalle tradicional usando hasattr
+                if hasattr(req, 'detalle_tradicional'):
+                    try:
+                        detalle_trad = req.detalle_tradicional
+                        if detalle_trad:
+                            detalle_trad.prioridad = prioridad
+                            detalle_trad.save()
+                            detalle_actualizado = True
+                    except DetalleRequerimientoTradicional.DoesNotExist:
+                        pass
+                
+                # Intentar acceder a detalle ágil si no se actualizó tradicional
+                if not detalle_actualizado and hasattr(req, 'detalle_agil'):
+                    try:
+                        detalle_agil = req.detalle_agil
+                        if detalle_agil:
+                            detalle_agil.prioridad = prioridad
+                            detalle_agil.save()
+                            detalle_actualizado = True
+                    except DetalleRequerimientoAgil.DoesNotExist:
+                        pass
+                
+                # Si no tiene ningún detalle, crear según metodología del proyecto
+                if not detalle_actualizado:
+                    if proyecto.metodologia == 'TRADICIONAL':
+                        DetalleRequerimientoTradicional.objects.create(
+                            requerimiento_padre=req, 
+                            prioridad=prioridad
+                        )
+                    elif proyecto.metodologia == 'AGIL':
+                        DetalleRequerimientoAgil.objects.create(
+                            requerimiento_padre=req, 
+                            prioridad=prioridad
+                        )
+                
+                # Cambiar estado a PRIORIZADO si no lo está
                 if req.estado != 'PRIORIZADO':
                     req.estado = 'PRIORIZADO'
                     req.save()
+        
+        messages.success(request, '✅ Priorización realizada con éxito. Los requerimientos han sido actualizados.')
         return redirect(f"{reverse('requerimientos:requerimiento_priorizar')}?proyecto_id={proyecto.pk}")
 
     context = {

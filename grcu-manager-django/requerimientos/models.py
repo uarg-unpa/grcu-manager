@@ -54,9 +54,7 @@ class Requerimiento(models.Model):
     link_externo = models.URLField(max_length=500, blank=True, 
                                    help_text='Enlace a recurso externo')
 
-    # Relaciones a detalles específicos
-    detalle_tradicional = models.OneToOneField('DetalleRequerimientoTradicional', on_delete=models.SET_NULL, null=True, blank=True, related_name='requerimiento', verbose_name="Detalle Tradicional")
-    detalle_agil = models.OneToOneField('DetalleRequerimientoAgil', on_delete=models.SET_NULL, null=True, blank=True, related_name='requerimiento', verbose_name="Detalle Ágil")
+    # Relaciones a detalles específicos - se acceden desde los modelos de detalle como reverse relations
 
     # Relación opcional con Casos de Uso (muchos a muchos) usando tabla intermedia para mantener 3FN
     casos_relacionados = models.ManyToManyField('casos_de_uso.CasoDeUso', through='RequerimientoCaso', blank=True, related_name='requerimientos_relacionados')
@@ -66,8 +64,8 @@ class Requerimiento(models.Model):
 
     # Type hints para Pylance (campos OneToOne inversos y métodos dinámicos)
     if TYPE_CHECKING:
-        detalle_tradicional_reverse: "Optional[DetalleRequerimientoTradicional]"
-        detalle_agil_reverse: "Optional[DetalleRequerimientoAgil]"
+        detalle_tradicional: "Optional[DetalleRequerimientoTradicional]"
+        detalle_agil: "Optional[DetalleRequerimientoAgil]"
         
         # Type hints para métodos dinámicos de Django (generados por choices)
         def get_tipo_display(self) -> str: ...
@@ -79,7 +77,7 @@ class Requerimiento(models.Model):
 
 # Detalles para gestión tradicional
 class DetalleRequerimientoTradicional(models.Model):
-    requerimiento_padre = models.OneToOneField(Requerimiento, on_delete=models.CASCADE, related_name='detalle_tradicional_reverse')
+    requerimiento_padre = models.OneToOneField(Requerimiento, on_delete=models.CASCADE, related_name='detalle_tradicional')
 
     prioridad = models.CharField(max_length=50, blank=True)
     fuente = models.CharField(max_length=255, blank=True)
@@ -94,8 +92,9 @@ class DetalleRequerimientoTradicional(models.Model):
 
 # Detalles para gestión ágil
 class DetalleRequerimientoAgil(models.Model):
-    requerimiento_padre = models.OneToOneField(Requerimiento, on_delete=models.CASCADE, related_name='detalle_agil_reverse')
+    requerimiento_padre = models.OneToOneField(Requerimiento, on_delete=models.CASCADE, related_name='detalle_agil')
 
+    prioridad = models.CharField(max_length=50, blank=True)
     historia_usuario = models.TextField(blank=True)
     criterio_aceptacion = models.TextField(blank=True)
     puntos_estimados = models.PositiveIntegerField(null=True, blank=True)
