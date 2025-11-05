@@ -1,0 +1,157 @@
+/* dashboards/static/dashboards/css/stakeholder_dashboard.css */
+/* Estilos para el dashboard de clientes/stakeholders */
+
+.dashboard-title {
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+.proyecto-card {
+    border-radius: 12px;
+    overflow: hidden;
+    border: none;
+}
+
+.proyecto-card .card-header {
+    padding: 1.5rem;
+}
+
+.proyecto-logo {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+    border-radius: 8px;
+    background: white;
+    padding: 4px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.metric-card {
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease;
+}
+
+.metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.metric-icon {
+    font-size: 2.5rem;
+    opacity: 0.9;
+}
+
+.metric-content {
+    flex: 1;
+}
+
+.metric-value {
+    font-size: 2rem;
+    font-weight: bold;
+    margin: 0;
+}
+
+.metric-label {
+    font-size: 0.9rem;
+    margin: 0;
+    opacity: 0.9;
+}
+
+.list-group-item {
+    border-left: 4px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.list-group-item:hover {
+    border-left-color: #17a2b8;
+    background-color: #f8f9fa;
+}
+
+/* Estilos para tabs */
+.nav-tabs {
+    border-bottom: 2px solid #dee2e6;
+}
+
+.nav-tabs .nav-link {
+    color: #6c757d;
+    border: none;
+    border-bottom: 3px solid transparent;
+    padding: 0.75rem 1.5rem;
+    transition: all 0.2s ease;
+}
+
+.nav-tabs .nav-link:hover {
+    border-color: transparent;
+    color: #495057;
+    background-color: #f8f9fa;
+}
+
+.nav-tabs .nav-link.active {
+    color: #17a2b8;
+    border-bottom-color: #17a2b8;
+    background-color: transparent;
+    font-weight: 500;
+}
+
+/* Botones de acción en grupo */
+.btn-group .btn {
+    font-size: 0.875rem;
+}
+
+/* Tarjeta de información del proyecto */
+.card {
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e9ecef;
+}
+
+.card-title {
+    color: #2c3e50;
+    font-weight: 600;
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 0.5rem;
+}
+
+/* Badges personalizados */
+.badge {
+    font-weight: 500;
+    padding: 0.4em 0.8em;
+}
+
+/* Mejoras responsivas */
+@media (max-width: 768px) {
+    .metric-card {
+        flex-direction: column;
+        text-align: center;
+        padding: 1rem;
+    }
+    
+    .metric-value {
+        font-size: 1.5rem;
+    }
+    
+    .metric-icon {
+        font-size: 2rem;
+    }
+    
+    .proyecto-logo {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .btn-group {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .btn-group .btn {
+        width: 100%;
+        border-radius: 0.25rem !important;
+        margin-bottom: 0.25rem;
+    }
+}

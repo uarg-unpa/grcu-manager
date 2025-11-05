@@ -123,66 +123,23 @@
     </div>
 </div>
 
-<style>
-.timeline-badge {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 1.2rem;
-}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'casos_de_uso/css/historial.css' %}?v=1.0">
+{% endblock %}
 
-.timeline-item {
-    position: relative;
-}
-
-.timeline-item:not(:last-child)::after {
-    content: '';
-    position: absolute;
-    left: calc(16.666% + 30px);
-    top: 60px;
-    bottom: -30px;
-    width: 2px;
-    background: #dee2e6;
-}
-</style>
-
+{% block extra_js %}
 <script>
-let versionSeleccionada = null;
-
-function seleccionarParaComparar(historyId, numeroVersion) {
-    versionSeleccionada = historyId;
-    document.getElementById('versionSeleccionada').textContent = 'Versión #' + numeroVersion;
-    
-    // Limpiar lista
-    const lista = document.getElementById('listaVersiones');
-    lista.innerHTML = '';
-    
-    // Obtener todas las versiones menos la seleccionada
+window.VERSIONES = [
     {% for item in versiones %}
-    if ('{{ item.history_id }}' !== historyId) {
-        const btn = document.createElement('button');
-        btn.className = 'list-group-item list-group-item-action';
-        btn.innerHTML = '<strong>Versión #{{ item.numero }}</strong> - {{ item.version.history_date|date:"d/m/Y H:i" }}';
-        btn.onclick = function() {
-            compararVersiones('{{ item.history_id }}');
-        };
-        lista.appendChild(btn);
-    }
+    {
+        history_id: "{{ item.history_id }}",
+        numero: "{{ item.numero }}",
+        fecha: "{{ item.version.history_date|date:'d/m/Y H:i' }}"
+    },
     {% endfor %}
-    
-    // Mostrar modal
-    const modal = new bootstrap.Modal(document.getElementById('compararModal'));
-    modal.show();
-}
-
-function compararVersiones(version2Id) {
-    const url = '{% url "casos_de_uso:caso_de_uso_comparar_versiones" caso.pk %}' +
-                '?version1_id=' + versionSeleccionada + '&version2_id=' + version2Id;
-    window.location.href = url;
-}
+];
+window.COMPARAR_URL = "{% url 'casos_de_uso:caso_de_uso_comparar_versiones' caso.pk %}";
 </script>
+<script src="{% static 'casos_de_uso/js/historial.js' %}?v=1.0"></script>
+{% endblock %}
 {% endblock %}

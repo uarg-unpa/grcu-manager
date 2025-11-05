@@ -63,6 +63,9 @@ class Usuario(AbstractUser):
     def es_desarrollador(self):
         return self.roles.filter(nombre__iexact='Desarrollador').exists()
 
+    def es_stakeholder(self):
+        return self.roles.filter(nombre__iexact='Stakeholder').exists()
+
     # Chequear si el usuario tiene cierto permiso
     def tiene_permiso(self, permiso_nombre):
         # Se consulta a través de los roles relacionados

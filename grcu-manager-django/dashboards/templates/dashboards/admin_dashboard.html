@@ -3,76 +3,8 @@
 
 {% block title %}Dashboard Admin{% endblock %}
 
-{% block extra_head %}
-<style>
-.hover-shadow:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
-  transform: translateY(-2px);
-  transition: all 0.3s ease;
-}
-
-.card {
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.bg-gradient-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.text-white-50 {
-  color: rgba(255, 255, 255, 0.7) !important;
-}
-
-.badge.bg-white {
-  background-color: rgba(255, 255, 255, 0.9) !important;
-  color: #495057 !important;
-}
-
-/* Alturas iguales para todas las tarjetas */
-.card {
-  border-radius: 12px;
-  overflow: hidden;
-  height: 320px; /* Altura fija para todas las tarjetas */
-  display: flex;
-  flex-direction: column;
-}
-
-.card-body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 1.5rem;
-}
-
-/* Responsive adjustments */
-@media (max-width: 1199.98px) {
-  .col-xl-3 {
-    flex: 0 0 33.333333%;
-    max-width: 33.333333%;
-  }
-}
-
-@media (max-width: 991.98px) {
-  .col-lg-4, .col-xl-3 {
-    flex: 0 0 50%;
-    max-width: 50%;
-  }
-}
-
-@media (max-width: 767.98px) {
-  .col-lg-4, .col-xl-3 {
-    flex: 0 0 100%;
-    max-width: 100%;
-  }
-  
-  .card {
-    height: auto; /* Altura automática en móviles */
-    min-height: 280px;
-  }
-}
-</style>
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dashboards/css/admin_dashboard.css' %}?v=1.0">
 {% endblock %}
 
 {% block content %}
@@ -281,8 +213,9 @@
   </div>
 
 </div>
+{% endblock %}
 
-
+{% block extra_js %}
 <!-- === Scripts === -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
 <script src="{% static 'dashboards/js/charts.js' %}?v=6.0"></script>

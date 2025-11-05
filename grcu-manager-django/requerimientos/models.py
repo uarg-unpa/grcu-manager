@@ -129,18 +129,31 @@ class ComentarioValidacion(models.Model):
     """
     Modelo para comentarios y discusiones durante el proceso de validación de requerimientos.
     Permite hilos de conversación entre validadores, líderes y desarrolladores.
+    Soporta diferentes tipos de comentarios según el contexto y participantes.
     """
     TIPO_ACCION_CHOICES = [
         ("VALIDAR", "Validar"),
         ("RECHAZAR", "Rechazar"),
         ("RESPUESTA", "Respuesta"),
-        ("ACLARACION", "Aclaraación"),
+        ("ACLARACION", "Aclaración"),
+    ]
+    
+    TIPO_COMENTARIO_CHOICES = [
+        ("DISCUSION_INTERNA", "Discusión Interna"),      # Líder + Desarrolladores
+        ("VALIDACION_CLIENTE", "Validación con Cliente"), # Líder + Cliente (visible para devs)
+        ("IMPLEMENTACION", "Implementación"),             # Post-validación
     ]
 
     requerimiento = models.ForeignKey(Requerimiento, on_delete=models.CASCADE, related_name='comentarios_validacion')
     autor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='comentarios_validacion')
     comentario = models.TextField(help_text='Comentario o explicación sobre la validación/rechazo')
     tipo_accion = models.CharField(max_length=20, choices=TIPO_ACCION_CHOICES, help_text='Tipo de acción que representa este comentario')
+    tipo_comentario = models.CharField(
+        max_length=20, 
+        choices=TIPO_COMENTARIO_CHOICES, 
+        default='DISCUSION_INTERNA',
+        help_text='Contexto del comentario: interno del equipo, con cliente, o implementación'
+    )
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     
     # Para respuestas/hilos de conversación

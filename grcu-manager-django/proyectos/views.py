@@ -51,7 +51,7 @@ def actualizar_rol_lider(usuario):
 @login_required
 @user_passes_test(is_admin)
 def lista_proyectos(request):
-    proyectos = Proyecto.objects.select_related('lider', 'grupo').all()
+    proyectos = Proyecto.objects.select_related('lider', 'grupo', 'creado_por').prefetch_related('clientes').all()
     return render(request, "proyectos/lista_proyectos.html", {
         "proyectos": proyectos,
         "page_title": "Lista de Proyectos"
@@ -123,6 +123,25 @@ def crear_proyecto(request):
             else:
                 # Proyecto sin grupo
                 messages.success(request, f"Proyecto '{proyecto.nombre}' creado exitosamente sin grupo asignado.")
+
+            # Asignar clientes al proyecto (independientemente de si hay grupo o no)
+            clientes_ids = form.cleaned_data.get('clientes')
+            if clientes_ids:
+                # Convertir IDs (strings) a enteros y obtener objetos Usuario
+                clientes_ids_int = [int(id) for id in clientes_ids]
+                clientes = Usuario.objects.filter(id__in=clientes_ids_int)
+                proyecto.clientes.set(clientes)
+                # Asignar rol Stakeholder en ParticipacionProyecto para cada cliente
+                rol_stakeholder, _ = Rol.objects.get_or_create(
+                    nombre="Stakeholder",
+                    defaults={"color": "#17a2b8"}
+                )
+                for cliente in clientes:
+                    ParticipacionProyecto.objects.get_or_create(
+                        usuario=cliente,
+                        proyecto=proyecto,
+                        defaults={'rol': rol_stakeholder}
+                    )
 
             return redirect("proyectos:lista_proyectos")
     else:
@@ -219,6 +238,51 @@ def editar_proyecto(request, proyecto_id):
                     actualizar_rol_lider(lider_anterior)
                 
                 messages.success(request, f"Proyecto '{proyecto.nombre}' actualizado exitosamente sin grupo asignado.")
+
+            # Actualizar clientes del proyecto (independientemente de si hay grupo o no)
+            clientes_ids = form.cleaned_data.get('clientes')
+            if clientes_ids:
+                # Convertir IDs (strings) a enteros y obtener objetos Usuario
+                clientes_ids_int = [int(id) for id in clientes_ids]
+                clientes = Usuario.objects.filter(id__in=clientes_ids_int)
+                
+                # Obtener clientes anteriores para limpiar ParticipacionProyecto
+                clientes_anteriores = set(proyecto.clientes.all())
+                clientes_nuevos = set(clientes)
+                
+                # Eliminar ParticipacionProyecto de clientes que ya no están asignados
+                clientes_removidos = clientes_anteriores - clientes_nuevos
+                for cliente in clientes_removidos:
+                    ParticipacionProyecto.objects.filter(
+                        usuario=cliente,
+                        proyecto=proyecto,
+                        rol__nombre='Stakeholder'
+                    ).delete()
+                
+                # Actualizar la lista de clientes
+                proyecto.clientes.set(clientes)
+                
+                # Asignar rol Stakeholder en ParticipacionProyecto para nuevos clientes
+                rol_stakeholder, _ = Rol.objects.get_or_create(
+                    nombre="Stakeholder",
+                    defaults={"color": "#17a2b8"}
+                )
+                for cliente in clientes:
+                    ParticipacionProyecto.objects.get_or_create(
+                        usuario=cliente,
+                        proyecto=proyecto,
+                        defaults={'rol': rol_stakeholder}
+                    )
+            else:
+                # Si no hay clientes seleccionados, limpiar todos
+                clientes_anteriores = proyecto.clientes.all()
+                for cliente in clientes_anteriores:
+                    ParticipacionProyecto.objects.filter(
+                        usuario=cliente,
+                        proyecto=proyecto,
+                        rol__nombre='Stakeholder'
+                    ).delete()
+                proyecto.clientes.clear()
 
             return redirect("proyectos:lista_proyectos")
     else:

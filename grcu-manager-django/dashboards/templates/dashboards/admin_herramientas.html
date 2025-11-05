@@ -1,24 +1,11 @@
 {% extends "core/base.html" %}
+
 {% load static %}
 
 {% block title %}Herramientas Administrativas{% endblock %}
 
-{% block extra_head %}
-<style>
-.hover-shadow:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
-  transform: translateY(-2px);
-  transition: all 0.3s ease;
-}
-.danger-zone {
-  border: 2px solid #dc3545;
-  background-color: #fff5f5;
-}
-.warning-zone {
-  border: 2px solid #ffc107;
-  background-color: #fffbf0;
-}
-</style>
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'dashboards/css/admin_herramientas.css' %}?v=1.0">
 {% endblock %}
 
 {% block content %}

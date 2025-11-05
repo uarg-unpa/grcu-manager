@@ -1,35 +1,32 @@
 {% extends "core/base.html" %}
+
 {% load static %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'dashboards/css/developer_dashboard_styles.css' %}?v=1.0">
+<link rel="stylesheet" href="{% static 'dashboards/css/developer_dashboard_styles.css' %}?v=1.0">
 {% endblock %}
 
 {% block extra_js %}
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="{% static 'dashboards/js/developer_dashboard.js' %}?v=1.0"></script>
-    <script>
-        // Initialize charts with dynamic data
-        document.addEventListener('DOMContentLoaded', function () {
-            {% for data in dashboard_data %}
-            // Requirements chart: orphans vs related
-            createDeveloperDashboardChart(
-                'grafico-req-{{ forloop.counter0 }}',
-                {{ data.reqs_huerfanos|length }},
-                {{ data.reqs_relacionados }},
-                ['#EF4444', '#3B82F6']
-            );
-
-            // Use cases chart: orphans vs related
-            createDeveloperDashboardChart(
-                'grafico-cu-{{ forloop.counter0 }}',
-                {{ data.casos_huerfanos|length }},
-                {{ data.casos_relacionados }},
-                ['#EF4444', '#10B981']
-            );
-            {% endfor %}
-        });
-    </script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="{% static 'dashboards/js/developer_dashboard.js' %}?v=1.0"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        {% for data in dashboard_data %}
+        createDeveloperDashboardChart(
+            'grafico-req-{{ forloop.counter0 }}',
+            {{ data.reqs_huerfanos|length }},
+            {{ data.reqs_relacionados }},
+            ['#EF4444', '#3B82F6']
+        );
+        createDeveloperDashboardChart(
+            'grafico-cu-{{ forloop.counter0 }}',
+            {{ data.casos_huerfanos|length }},
+            {{ data.casos_relacionados }},
+            ['#EF4444', '#10B981']
+        );
+        {% endfor %}
+    });
+</script>
 {% endblock %}
 
 {% block title %}{{ page_title }}{% endblock %}

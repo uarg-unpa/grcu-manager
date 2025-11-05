@@ -62,11 +62,67 @@
                     <div class="card-body border-bottom">
                         <form method="post">
                             {% csrf_token %}
+                            
+                            <!-- Selector de tipo de comentario -->
                             <div class="mb-3">
-                                <label for="comentario" class="form-label">Nuevo comentario:</label>
-                                <textarea name="comentario" id="comentario" class="form-control" rows="3" 
-                                          placeholder="Escribe tu comentario aquí..." required></textarea>
+                                <label class="form-label fw-bold">Tipo de Discusión:</label>
+                                <div class="row g-3">
+                                    {% if puede_comentar_interno %}
+                                    <div class="col-md-6">
+                                        <div class="card h-100 tipo-comentario-card" id="card-DISCUSION_INTERNA">
+                                            <div class="card-body">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" 
+                                                           name="tipo_comentario" id="tipo_interna" 
+                                                           value="DISCUSION_INTERNA" required>
+                                                    <label class="form-check-label fw-bold" for="tipo_interna">
+                                                        <i class="bi bi-people me-1 text-primary"></i>
+                                                        Discusión Interna
+                                                    </label>
+                                                </div>
+                                                <small class="text-muted d-block mt-2">
+                                                    Solo visible para el líder y desarrolladores del proyecto.
+                                                    Úsalo para coordinar implementación y resolver dudas técnicas.
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if puede_comentar_cliente %}
+                                    <div class="col-md-6">
+                                        <div class="card h-100 tipo-comentario-card" id="card-VALIDACION_CLIENTE">
+                                            <div class="card-body">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" 
+                                                           name="tipo_comentario" id="tipo_cliente" 
+                                                           value="VALIDACION_CLIENTE" required>
+                                                    <label class="form-check-label fw-bold" for="tipo_cliente">
+                                                        <i class="bi bi-chat-square-quote me-1 text-success"></i>
+                                                        Validación con Cliente
+                                                    </label>
+                                                </div>
+                                                <small class="text-muted d-block mt-2">
+                                                    Visible para todos, comentable por líder y cliente.
+                                                    Úsalo para negociar y validar requerimientos con el cliente.
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
                             </div>
+                            
+                            <div class="mb-3">
+                                <label for="comentario" class="form-label fw-bold">Comentario:</label>
+                                <textarea name="comentario" id="comentario" class="form-control" rows="4" 
+                                          placeholder="Escribe tu comentario aquí..." required></textarea>
+                                <div class="form-text">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Selecciona el tipo de discusión antes de comentar.
+                                </div>
+                            </div>
+                            
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-send me-1"></i>Enviar Comentario
                             </button>
@@ -96,6 +152,21 @@
                                                 <span class="badge bg-{{ hilo.autor_info.rol_principal|lower|slugify }} ms-2">{{ hilo.autor_info.rol_principal }}</span>
                                             {% endif %}
                                             <span class="badge bg-secondary ms-1">{{ hilo.comentario.get_tipo_accion_display }}</span>
+                                            
+                                            <!-- Badge del tipo de comentario -->
+                                            {% if hilo.tipo_comentario == 'DISCUSION_INTERNA' %}
+                                                <span class="badge bg-primary ms-1" title="Solo visible para líder y desarrolladores">
+                                                    <i class="bi bi-people"></i> Interna
+                                                </span>
+                                            {% elif hilo.tipo_comentario == 'VALIDACION_CLIENTE' %}
+                                                <span class="badge bg-success ms-1" title="Visible para todos, comentable por líder y cliente">
+                                                    <i class="bi bi-chat-square-quote"></i> Cliente
+                                                </span>
+                                            {% elif hilo.tipo_comentario == 'IMPLEMENTACION' %}
+                                                <span class="badge bg-info ms-1" title="Discusión post-validación">
+                                                    <i class="bi bi-code-slash"></i> Implementación
+                                                </span>
+                                            {% endif %}
                                         </div>
                                         <small class="text-muted">{{ hilo.comentario.fecha_creacion|date:"d/m/Y H:i" }}</small>
                                     </div>
@@ -115,6 +186,7 @@
                                             <form method="post">
                                                 {% csrf_token %}
                                                 <input type="hidden" name="comentario_padre" value="{{ hilo.comentario.pk }}">
+                                                <input type="hidden" name="tipo_comentario" value="{{ hilo.tipo_comentario }}">
                                                 <div class="input-group">
                                                     <textarea name="comentario" class="form-control" rows="2" 
                                                               placeholder="Escribe tu respuesta..." required></textarea>
@@ -228,6 +300,47 @@ document.querySelectorAll('textarea').forEach(textarea => {
     textarea.addEventListener('input', function() {
         this.style.height = 'auto';
         this.style.height = this.scrollHeight + 'px';
+    });
+});
+
+// Manejo de selección de tipo de comentario
+document.querySelectorAll('.tipo-comentario-card').forEach(card => {
+    card.addEventListener('click', function() {
+        const radio = this.querySelector('input[type="radio"]');
+        if (radio) {
+            radio.checked = true;
+            
+            // Remover clase selected de todas las tarjetas
+            document.querySelectorAll('.tipo-comentario-card').forEach(c => {
+                c.classList.remove('selected');
+            });
+            
+            // Agregar clase selected a la tarjeta clickeada
+            this.classList.add('selected');
+        }
+    });
+});
+
+// Marcar tarjeta si el radio está checked al cargar
+document.querySelectorAll('input[name="tipo_comentario"]:checked').forEach(radio => {
+    const card = radio.closest('.tipo-comentario-card');
+    if (card) {
+        card.classList.add('selected');
+    }
+});
+
+// Validar que se seleccione tipo antes de enviar
+document.querySelectorAll('form').forEach(form => {
+    form.addEventListener('submit', function(e) {
+        const tipoRadio = this.querySelector('input[name="tipo_comentario"]');
+        if (tipoRadio) {
+            const tipoSeleccionado = this.querySelector('input[name="tipo_comentario"]:checked');
+            if (!tipoSeleccionado) {
+                e.preventDefault();
+                alert('Por favor, selecciona el tipo de discusión antes de enviar tu comentario.');
+                return false;
+            }
+        }
     });
 });
 </script>

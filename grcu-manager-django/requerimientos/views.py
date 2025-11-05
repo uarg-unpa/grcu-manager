@@ -1207,15 +1207,59 @@ def requerimiento_discusion(request, pk):
         return redirect('requerimientos:requerimiento_detail', pk=pk)
 
     # Obtener comentarios ordenados por fecha con información completa del autor
-    comentarios = ComentarioValidacion.objects.filter(
+    # Filtrar según permisos de visualización
+    comentarios_query = ComentarioValidacion.objects.filter(
         requerimiento=requerimiento
     ).select_related('autor', 'comentario_padre').prefetch_related('autor__roles').order_by('fecha_creacion')
+    
+    # Aplicar filtro de visibilidad según rol del usuario
+    comentarios_visibles = []
+    for comentario in comentarios_query:
+        puede_ver = False
+        
+        if comentario.tipo_comentario == 'DISCUSION_INTERNA':
+            # Solo líder y desarrolladores
+            puede_ver = es_lider or es_participante
+            
+        elif comentario.tipo_comentario == 'VALIDACION_CLIENTE':
+            # Todos pueden ver (líder, cliente, desarrolladores)
+            puede_ver = True
+            
+        elif comentario.tipo_comentario == 'IMPLEMENTACION':
+            # Solo líder y desarrolladores
+            puede_ver = es_lider or es_participante
+        
+        if puede_ver:
+            comentarios_visibles.append(comentario)
+    
+    # Convertir de nuevo a lista para mantener compatibilidad con el código existente
+    comentarios = comentarios_visibles
 
     if request.method == 'POST':
         comentario_texto = request.POST.get('comentario', '').strip()
         comentario_padre_id = request.POST.get('comentario_padre')
+        tipo_comentario_seleccionado = request.POST.get('tipo_comentario', 'DISCUSION_INTERNA')
         
         if comentario_texto:
+            # Validar permisos según tipo de comentario
+            puede_comentar = False
+            
+            if tipo_comentario_seleccionado == 'DISCUSION_INTERNA':
+                # Solo líder y desarrolladores
+                puede_comentar = es_lider or es_participante
+                
+            elif tipo_comentario_seleccionado == 'VALIDACION_CLIENTE':
+                # Solo líder y cliente (stakeholder)
+                puede_comentar = es_lider or es_stakeholder
+                
+            elif tipo_comentario_seleccionado == 'IMPLEMENTACION':
+                # Solo líder y desarrolladores
+                puede_comentar = es_lider or es_participante
+            
+            if not puede_comentar:
+                messages.error(request, 'No tienes permiso para comentar en este contexto.')
+                return redirect('requerimientos:requerimiento_discusion', pk=pk)
+            
             # Determinar el tipo de acción basado en el contexto
             tipo_accion = 'RESPUESTA'
             if not comentario_padre_id and requerimiento.estado == 'BORRADOR':
@@ -1228,6 +1272,8 @@ def requerimiento_discusion(request, pk):
                         pk=comentario_padre_id,
                         requerimiento=requerimiento
                     )
+                    # Heredar el tipo de comentario del padre
+                    tipo_comentario_seleccionado = comentario_padre.tipo_comentario
                 except ComentarioValidacion.DoesNotExist:
                     pass
             
@@ -1237,6 +1283,7 @@ def requerimiento_discusion(request, pk):
                 autor=request.user,
                 comentario=comentario_texto,
                 tipo_accion=tipo_accion,
+                tipo_comentario=tipo_comentario_seleccionado,
                 comentario_padre=comentario_padre
             )
             
@@ -1247,7 +1294,7 @@ def requerimiento_discusion(request, pk):
 
     # Organizar comentarios en hilos con información completa del autor
     comentarios_hilo = []
-    comentarios_raiz = comentarios.filter(comentario_padre__isnull=True)
+    comentarios_raiz = [c for c in comentarios if c.comentario_padre is None]
     
     for comentario in comentarios_raiz:
         # Obtener roles del autor como lista de nombres
@@ -1263,11 +1310,14 @@ def requerimiento_discusion(request, pk):
                 'roles': roles_autor,
                 'rol_principal': rol_principal,
             },
-            'respuestas': []
+            'respuestas': [],
+            'tipo_comentario': comentario.tipo_comentario,
+            'tipo_comentario_display': comentario.get_tipo_comentario_display(),
         }
         
         # Agregar información del autor a cada respuesta
-        for respuesta in comentarios.filter(comentario_padre=comentario):
+        respuestas_del_comentario = [r for r in comentarios if r.comentario_padre and r.comentario_padre.pk == comentario.pk]
+        for respuesta in respuestas_del_comentario:
             roles_respuesta = list(respuesta.autor.roles.values_list('nombre', flat=True))
             rol_respuesta = roles_respuesta[0] if roles_respuesta else 'Sin rol'
             
@@ -1288,8 +1338,13 @@ def requerimiento_discusion(request, pk):
         'requerimiento': requerimiento,
         'proyecto': proyecto,
         'comentarios_hilo': comentarios_hilo,
-        'total_comentarios': comentarios.count(),
+        'total_comentarios': len(comentarios),
         'page_title': f'{proyecto.nombre} - Discusión: {requerimiento.nombre}',
+        'es_lider': es_lider,
+        'es_participante': es_participante,
+        'es_stakeholder': es_stakeholder,
+        'puede_comentar_interno': es_lider or es_participante,
+        'puede_comentar_cliente': es_lider or es_stakeholder,
     }
     
     return render(request, 'requerimientos/requerimiento_discusion.html', context)

@@ -16,4 +16,5 @@ urlpatterns = [
     path('lider/priorizar/', views.lider_priorizar, name='lider_priorizar'),
     path("developer/", views.developer_dashboard, name="developer_dashboard"),
     path("developer/matriz/", views.developer_matriz, name="developer_matriz"),
+    path("stakeholder/", views.stakeholder_dashboard, name="stakeholder_dashboard"),
 ]

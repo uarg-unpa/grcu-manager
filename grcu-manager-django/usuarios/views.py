@@ -73,8 +73,8 @@ def crear_usuario(request):
     else:
         form = UsuarioCrearForm()
 
-    # Mostrar solo roles Admin y Desarrollador para que el admin pueda asignarlos
-    roles_qs = Rol.objects.filter(nombre__in=["Admin", "Desarrollador"]).order_by('nombre')
+    # Mostrar roles Admin, Desarrollador y Stakeholder para que el admin pueda asignarlos
+    roles_qs = Rol.objects.filter(nombre__in=["Admin", "Desarrollador", "Stakeholder"]).order_by('nombre')
     roles = []
     for rol in roles_qs:
         roles.append((rol.nombre, None, rol.pk, rol.color, rol.icono_url))
@@ -103,8 +103,8 @@ def editar_usuario(request, pk):
     else:
         form = UsuarioEditarForm(instance=usuario)
 
-    # Mostrar solo roles Admin y Desarrollador para que el admin pueda asignarlos
-    roles_qs = Rol.objects.filter(nombre__in=["Admin", "Desarrollador"]).order_by('nombre')
+    # Mostrar roles Admin, Desarrollador y Stakeholder para que el admin pueda asignarlos
+    roles_qs = Rol.objects.filter(nombre__in=["Admin", "Desarrollador", "Stakeholder"]).order_by('nombre')
     roles = []
     for rol in roles_qs:
         roles.append((rol.nombre, None, rol.pk, rol.color, rol.icono_url))

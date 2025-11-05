@@ -195,12 +195,15 @@ def lider_dashboard(request):
     dashboard_data = []
 
     for proyecto in proyectos:
-        integrantes = list(proyecto.participantes.all())
+        # Separar integrantes del equipo de desarrollo de los clientes
+        integrantes_desarrollo = list(proyecto.participantes.exclude(id__in=proyecto.clientes.all()))
+        clientes = list(proyecto.clientes.all())
+        
         requerimientos = Requerimiento.objects.filter(proyecto=proyecto)
         casos_de_uso = CasoDeUso.objects.filter(proyecto=proyecto)
 
-        # Acciones recientes de los integrantes del proyecto
-        acciones = RegistroActividad.objects.filter(usuario__in=integrantes).order_by('-fecha')[:20]
+        # Acciones recientes de los integrantes del proyecto (solo equipo de desarrollo)
+        acciones = RegistroActividad.objects.filter(usuario__in=integrantes_desarrollo).order_by('-fecha')[:20]
 
         # Huérfanos definidos por ausencia de relación en la tabla intermedia RequerimientoCaso
         reqs_huerfanos = requerimientos.annotate(rel_count=Count('relaciones_casos')).filter(rel_count=0)
@@ -219,7 +222,8 @@ def lider_dashboard(request):
 
         dashboard_data.append({
             "proyecto": proyecto,
-            "integrantes": integrantes,
+            "integrantes": integrantes_desarrollo,
+            "clientes": clientes,
             "requerimientos": requerimientos,
             "casos_de_uso": casos_de_uso,
             "acciones": acciones,
@@ -389,6 +393,59 @@ def developer_matriz(request):
     
     # Redirigir a la matriz del proyecto
     return redirect('proyectos:matriz_trazabilidad', proyecto_id=proyecto.pk)
+
+@login_required
+def stakeholder_dashboard(request):
+    """
+    Dashboard para clientes/stakeholders.
+    Muestra los proyectos donde el usuario es cliente.
+    Los clientes pueden ver requerimientos pero no editarlos.
+    """
+    from requerimientos.models import Requerimiento
+    from casos_de_uso.models import CasoDeUso
+    
+    # Obtener proyectos donde el usuario es cliente
+    proyectos = Proyecto.objects.filter(clientes=request.user)
+    dashboard_data = []
+    
+    for proyecto in proyectos:
+        requerimientos = Requerimiento.objects.filter(proyecto=proyecto)
+        casos_de_uso = CasoDeUso.objects.filter(proyecto=proyecto)
+        
+        # Calcular huérfanos
+        reqs_huerfanos = requerimientos.annotate(rel_count=Count('relaciones_casos')).filter(rel_count=0)
+        casos_huerfanos = casos_de_uso.annotate(rel_count=Count('relaciones_requerimientos')).filter(rel_count=0)
+        
+        reqs_relacionados = requerimientos.count() - reqs_huerfanos.count()
+        casos_relacionados = casos_de_uso.count() - casos_huerfanos.count()
+        
+        # Métricas por estado
+        reqs_pendientes = requerimientos.filter(estado='CREADO').count()
+        reqs_validados = requerimientos.filter(estado='VALIDADO').count()
+        reqs_completados = requerimientos.filter(estado__in=['TERMINADO', 'COMPLETADO']).count()
+        
+        dashboard_data.append({
+            "proyecto": proyecto,
+            "requerimientos": requerimientos,
+            "casos_de_uso": casos_de_uso,
+            "reqs_huerfanos": reqs_huerfanos,
+            "casos_huerfanos": casos_huerfanos,
+            "reqs_relacionados": reqs_relacionados,
+            "casos_relacionados": casos_relacionados,
+            "reqs_pendientes": reqs_pendientes,
+            "reqs_validados": reqs_validados,
+            "reqs_completados": reqs_completados,
+        })
+    
+    # Obtener el primer proyecto para el título
+    primer_proyecto = proyectos.first()
+    titulo_proyecto = primer_proyecto.nombre if primer_proyecto else "Sin Proyecto"
+    
+    return render(request, "dashboards/stakeholder_dashboard.html", {
+        "dashboard_data": dashboard_data,
+        "page_title": f"{titulo_proyecto} - Dashboard Cliente",
+    })
+
 
 @login_required
 def limpiar_base_datos(request):

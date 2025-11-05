@@ -1,232 +1,27 @@
 {% extends "core/base.html" %}
+
 {% load static %}
+
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'dashboards/css/lider_dashboard_styles.css' %}?v=2.1">
 {% endblock %}
+
 {% block extra_head %}
-<style>
-.hover-shadow:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
-  transform: translateY(-2px);
-  transition: all 0.3s ease;
-}
-
-.card {
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.bg-gradient-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.text-white-50 {
-  color: rgba(255, 255, 255, 0.7) !important;
-}
-
-.badge.bg-white {
-  background-color: rgba(255, 255, 255, 0.9) !important;
-  color: #495057 !important;
-}
-
-/* Alturas iguales para todas las tarjetas métricas */
-.metric-card {
-  border-radius: 12px;
-  overflow: hidden;
-  height: 180px;
-  display: flex;
-  flex-direction: column;
-}
-
-.metric-card .card-body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 1.5rem;
-  text-align: center;
-}
-
-/* Responsive adjustments */
-@media (max-width: 1199.98px) {
-  .col-xl-3 {
-    flex: 0 0 33.333333%;
-    max-width: 33.333333%;
-  }
-}
-
-@media (max-width: 991.98px) {
-  .col-lg-4, .col-xl-3 {
-    flex: 0 0 50%;
-    max-width: 50%;
-  }
-}
-
-@media (max-width: 767.98px) {
-  .col-lg-4, .col-xl-3 {
-    flex: 0 0 100%;
-    max-width: 100%;
-  }
-
-  .metric-card {
-    height: auto;
-    min-height: 150px;
-  }
-}
-
-/* Efecto especial para huérfanos */
-.huerfanos-card {
-  background: linear-gradient(135deg, #fff5f5 0%, #fef2f2 100%);
-  border: 1px solid #fecaca;
-  animation: gentle-pulse 3s ease-in-out infinite;
-}
-
-.huerfanos-card:hover {
-  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-}
-
-@keyframes gentle-pulse {
-  0%, 100% {
-    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.1);
-  }
-  50% {
-    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.15);
-  }
-}
-
-/* Estilos para avatares de integrantes */
-.integrantes-avatars {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 1.5rem;
-  justify-content: flex-start;
-  align-items: flex-end;
-}
-
-.integrante-avatar-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 70px;
-  margin-bottom: 0.5rem;
-}
-
-.integrante-info {
-  margin-top: 0.25rem;
-  text-align: center;
-}
-
-.integrante-nombre {
-  font-size: 0.75rem;
-  line-height: 1.2;
-  display: block;
-  max-width: 70px;
-  word-wrap: break-word;
-  hyphens: auto;
-  white-space: normal;
-  overflow-wrap: break-word;
-}
-
-/* Centrar filas de métricas */
-.metrics-row {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 1.5rem;
-  justify-content: flex-start;
-  align-items: flex-start;
-}
-
-.metrics-row .metric-col {
-  flex: 0 0 auto;
-  width: 280px;
-  max-width: 100%;
-}
-
-/* Responsive para filas de métricas */
-@media (max-width: 991.98px) {
-  .metrics-row .metric-col {
-    width: 45%;
-    min-width: 250px;
-  }
-}
-
-@media (max-width: 767.98px) {
-  .metrics-row .metric-col {
-    width: 100%;
-    max-width: 100%;
-  }
-}
-</style>
+{# CSS ahora está en static/dashboards/css/lider_dashboard_styles.css #}
 {% endblock %}
 {% block extra_js %}
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script>
-      document.addEventListener('DOMContentLoaded', function () {
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        tooltipTriggerList.forEach(function (tooltipTriggerEl) {
-          new bootstrap.Tooltip(tooltipTriggerEl);
-        });
-        // Renderiza los gráficos circulares para cada proyecto
-        {% for data in dashboard_data %}
-        // Gráfico de requerimientos: huérfanos vs relacionados
-        var ctxReq{{ forloop.counter0 }} = document.getElementById('grafico-req-{{ forloop.counter0 }}');
-        if (ctxReq{{ forloop.counter0 }}) {
-          new Chart(ctxReq{{ forloop.counter0 }}, {
-            type: 'doughnut',
-            data: {
-              labels: ['Huérfanos', 'Relacionados'],
-              datasets: [{
-                data: [
-                  {{ data.reqs_huerfanos|length }},
-                  {{ data.reqs_relacionados }}
-                ],
-                backgroundColor: [
-                  '#EF4444',
-                  '#3B82F6'
-                ],
-                borderWidth: 1
-              }]
-            },
-            options: {
-              plugins: {
-                legend: { display: true, position: 'bottom' }
-              },
-              cutout: '65%'
-            }
-          });
-        }
-        // Gráfico de casos de uso: huérfanos vs relacionados
-        var ctxCu{{ forloop.counter0 }} = document.getElementById('grafico-cu-{{ forloop.counter0 }}');
-        if (ctxCu{{ forloop.counter0 }}) {
-          new Chart(ctxCu{{ forloop.counter0 }}, {
-            type: 'doughnut',
-            data: {
-              labels: ['Huérfanos', 'Relacionados'],
-              datasets: [{
-                data: [
-                  {{ data.casos_huerfanos|length }},
-                  {{ data.casos_relacionados }}
-                ],
-                backgroundColor: [
-                  '#EF4444',
-                  '#10B981'
-                ],
-                borderWidth: 1
-              }]
-            },
-            options: {
-              plugins: {
-                legend: { display: true, position: 'bottom' }
-              },
-              cutout: '65%'
-            }
-          });
-        }
-        {% endfor %}
-      });
-    </script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+        <script id="dashboard-data" type="application/json">[
+            {% for data in dashboard_data %}
+                {
+                    "reqs_huerfanos_count": {{ data.reqs_huerfanos|length }},
+                    "reqs_relacionados_count": {{ data.reqs_relacionados }},
+                    "casos_huerfanos_count": {{ data.casos_huerfanos|length }},
+                    "casos_relacionados_count": {{ data.casos_relacionados }}
+                }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ]</script>
+        <script src="{% static 'dashboards/js/lider_dashboard.js' %}?v=1.0"></script>
 {% endblock %}
 {% block content %}
 <div class="mt-4 px-4">
@@ -295,10 +90,13 @@
                         </div>
                     </div>
                     
-                    {# Columna derecha: Integrantes #}
+                    {# Columna derecha: Integrantes y Clientes #}
                     <div class="col-md-3">
-                        <div class="integrantes-list-header">
-                            <small class="text-muted d-block mb-2">Integrantes:</small>
+                        {# Equipo de Desarrollo #}
+                        <div class="integrantes-list-header mb-3">
+                            <small class="text-muted d-block mb-2">
+                                <i class="bi bi-people-fill me-1"></i>Equipo de Desarrollo:
+                            </small>
                             <div class="integrantes-avatars" style="display: flex; flex-direction: row; flex-wrap: wrap; gap: 1rem; align-items: flex-start;">
                                 {% for integrante in data.integrantes %}
                                     <div class="integrante-avatar-item" style="display: flex; flex-direction: column; align-items: center; width: 60px;">
@@ -306,10 +104,10 @@
                                             {% if integrante.avatar %}
                                                 <img src="{{ integrante.avatar }}"
                                                      alt="{{ integrante.nombre }}"
-                                                     class="integrante-avatar rounded-circle border"
+                                                     class="integrante-avatar rounded-circle border border-primary"
                                                      style="width: 40px; height: 40px; object-fit: cover;">
                                             {% else %}
-                                                <div class="integrante-avatar-placeholder rounded-circle border d-flex align-items-center justify-content-center bg-primary text-white"
+                                                <div class="integrante-avatar-placeholder rounded-circle border border-primary d-flex align-items-center justify-content-center bg-primary text-white"
                                                      style="width: 40px; height: 40px; font-size: 16px; font-weight: bold;">
                                                     {{ integrante.nombre|first|upper }}
                                                 </div>
@@ -324,6 +122,37 @@
                                 {% endfor %}
                             </div>
                         </div>
+                        
+                        {# Clientes/Stakeholders #}
+                        {% if data.clientes %}
+                        <div class="clientes-list-header">
+                            <small class="text-info d-block mb-2">
+                                <i class="bi bi-person-badge me-1"></i>Clientes:
+                            </small>
+                            <div class="clientes-avatars" style="display: flex; flex-direction: row; flex-wrap: wrap; gap: 1rem; align-items: flex-start;">
+                                {% for cliente in data.clientes %}
+                                    <div class="cliente-avatar-item" style="display: flex; flex-direction: column; align-items: center; width: 60px;">
+                                        <div class="avatar-container">
+                                            {% if cliente.avatar %}
+                                                <img src="{{ cliente.avatar }}"
+                                                     alt="{{ cliente.nombre }}"
+                                                     class="cliente-avatar rounded-circle border border-info"
+                                                     style="width: 40px; height: 40px; object-fit: cover;">
+                                            {% else %}
+                                                <div class="cliente-avatar-placeholder rounded-circle border border-info d-flex align-items-center justify-content-center bg-info text-white"
+                                                     style="width: 40px; height: 40px; font-size: 16px; font-weight: bold;">
+                                                    {{ cliente.nombre|first|upper }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="cliente-info" style="margin-top: 0.25rem; text-align: center;">
+                                            <small class="cliente-nombre text-info fw-semibold" style="font-size: 0.7rem; line-height: 1.1; display: block; max-width: 60px; word-wrap: break-word; hyphens: auto; white-space: normal; overflow-wrap: break-word;">{{ cliente.nombre|truncatechars:12 }}</small>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>

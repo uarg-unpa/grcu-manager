@@ -170,24 +170,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Confirmar antes de enviar el formulario
-        const form = document.getElementById('formGestionIntegrantes');
-        if (form) {
-            form.addEventListener('submit', function(e) {
-                const cambios = Array.from(form.querySelectorAll('select[name^="rol_"]'))
-                    .filter(select => !select.disabled)
-                    .length;
-                
-                if (cambios > 0) {
-                    const confirmar = confirm(`¿Estás seguro de que deseas actualizar los roles de los integrantes?`);
-                    if (!confirmar) {
-                        e.preventDefault();
-                    }
-                }
-            });
-        }
-    });
-</script>
+<script src="{% static 'proyectos/js/gestionar_integrantes.js' %}?v=1.0"></script>
 {% endblock %}

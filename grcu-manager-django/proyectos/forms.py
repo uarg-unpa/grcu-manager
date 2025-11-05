@@ -1,6 +1,7 @@
 from django import forms
 from proyectos.models import Proyecto
 from grupos.models import Grupo
+from accounts.models import Usuario
 
 class ProyectoCrearForm(forms.ModelForm):
     grupo = forms.ModelChoiceField(
@@ -16,9 +17,17 @@ class ProyectoCrearForm(forms.ModelForm):
         required=False  # Hacer opcional cuando no hay grupo
     )
 
+    clientes = forms.MultipleChoiceField(
+        choices=[],
+        widget=forms.SelectMultiple(attrs={'class': 'form-control', 'id': 'id_clientes', 'size': '5'}),
+        required=False,
+        label='Clientes/Stakeholders',
+        help_text='Selecciona uno o más clientes para este proyecto (mantén Ctrl/Cmd para seleccionar múltiples)'
+    )
+
     class Meta:
         model = Proyecto
-        fields = ['nombre', 'descripcion', 'logo', 'grupo']
+        fields = ['nombre', 'descripcion', 'logo', 'grupo', 'clientes']
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control', 'required': True}),
             'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
@@ -27,8 +36,16 @@ class ProyectoCrearForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Inicializar choices vacíos para lider
+        # Inicializar choices vacíos para lider y clientes
         self.fields['lider'].choices = []
+        self.fields['clientes'].choices = []
+
+        # Cargar clientes disponibles (usuarios con rol Stakeholder)
+        stakeholders = Usuario.objects.filter(roles__nombre='Stakeholder').distinct().order_by('nombre')
+        self.fields['clientes'].choices = [
+            (usuario.pk, f"{usuario.nombre} ({usuario.email})")
+            for usuario in stakeholders
+        ]
 
         # Si hay un grupo seleccionado, cargar sus integrantes
         if 'grupo' in self.data and self.data['grupo']:
@@ -57,11 +74,16 @@ class ProyectoCrearForm(forms.ModelForm):
         else:
             # No hay grupo seleccionado
             self.fields['lider'].required = False  # No requerir lider cuando no hay grupo
+        
+        # Si estamos editando, preseleccionar los clientes actuales
+        if self.instance and self.instance.pk:
+            self.initial['clientes'] = list(self.instance.clientes.values_list('id', flat=True))
 
     def clean(self):
         cleaned_data = super().clean()
         grupo = cleaned_data.get('grupo')
         lider = cleaned_data.get('lider')
+        clientes_ids = cleaned_data.get('clientes')
 
         # Si hay grupo seleccionado, debe haber lider
         if grupo and not lider:
@@ -70,5 +92,21 @@ class ProyectoCrearForm(forms.ModelForm):
         # Si hay lider seleccionado, debe haber grupo
         if lider and not grupo:
             raise forms.ValidationError("No puede seleccionar un líder sin asignar un grupo.")
+
+        # Validar que los clientes NO pertenezcan al grupo de desarrollo
+        if grupo and clientes_ids:
+            # Convertir IDs de clientes (strings) a objetos Usuario
+            clientes_ids_int = [int(id) for id in clientes_ids]
+            clientes_objs = Usuario.objects.filter(id__in=clientes_ids_int)
+            
+            integrantes_grupo = set(grupo.integrantes.all())
+            clientes_set = set(clientes_objs)
+            clientes_en_grupo = integrantes_grupo.intersection(clientes_set)
+            
+            if clientes_en_grupo:
+                nombres = ', '.join([u.nombre for u in clientes_en_grupo])
+                raise forms.ValidationError(
+                    f"Los siguientes clientes no pueden ser asignados porque pertenecen al grupo de desarrollo: {nombres}"
+                )
 
         return cleaned_data
