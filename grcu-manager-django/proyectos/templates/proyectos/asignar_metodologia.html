@@ -67,7 +67,7 @@
         </div>
         
         <div class="btn-container">
-            <button type="submit" class="btn-asignar" {% if not puede_cambiar and not necesita_metodologia %}disabled{% endif %}>
+            <button type="submit" class="btn-asignar" {% if not puede_cambiar and not necesita_metodologia %}disabled{% endif %} disabled style="opacity: 0.6; cursor: not-allowed;">
                 <i class="bi bi-check-lg me-2"></i>
                 {% if necesita_metodologia %}Asignar Metodología{% else %}Cambiar Metodología{% endif %}
             </button>
