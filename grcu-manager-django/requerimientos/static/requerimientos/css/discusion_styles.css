@@ -106,6 +106,27 @@
     transition: all 0.3s ease-in-out;
 }
 
+/* Estilos para tarjetas de tipo de comentario */
+.tipo-comentario-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.tipo-comentario-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.tipo-comentario-card.selected {
+    border-color: #007bff;
+    background-color: #f0f8ff;
+}
+
+.form-check-input:checked ~ .form-check-label {
+    color: #007bff;
+}
+
 /* Estilos responsive */
 @media (max-width: 768px) {
     .avatar-circle {

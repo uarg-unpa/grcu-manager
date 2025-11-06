@@ -41,6 +41,14 @@ class Proyecto(models.Model):
         blank=True
     )
 
+    # Clientes/Stakeholders asignados al proyecto (NO pertenecen al grupo de desarrollo)
+    clientes = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        related_name="proyectos_como_cliente",
+        blank=True,
+        limit_choices_to={'roles__nombre': 'Stakeholder'}
+    )
+
     # Relación muchos a muchos con usuarios vía una tabla intermedia
     participantes = models.ManyToManyField(
         settings.AUTH_USER_MODEL,

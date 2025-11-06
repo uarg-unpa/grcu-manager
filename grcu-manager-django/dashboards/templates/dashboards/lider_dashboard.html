@@ -1,145 +1,30 @@
 {% extends "core/base.html" %}
+
 {% load static %}
+
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'dashboards/css/lider_dashboard_styles.css' %}?v=2.1">
-    <style>
-        /* Estilo único para tarjetas métricas */
-        .metric-card {
-            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-            border: 1px solid #e9ecef;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-            transition: all 0.3s ease;
-            height: 100%;
-        }
+{% endblock %}
 
-        .metric-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-        }
-
-        .metric-icon {
-            opacity: 0.8;
-            transition: opacity 0.3s ease;
-        }
-
-        .metric-card:hover .metric-icon {
-            opacity: 1;
-        }
-
-        .metric-value {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: #2c3e50;
-            margin: 0.5rem 0;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-        }
-
-        .metric-label {
-            font-size: 0.9rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        /* Efecto especial para huérfanos */
-        .huerfanos-card {
-            background: linear-gradient(135deg, #fff5f5 0%, #fef2f2 100%);
-            border: 1px solid #fecaca;
-            animation: gentle-pulse 3s ease-in-out infinite;
-        }
-
-        .huerfanos-card:hover {
-            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-        }
-
-        @keyframes gentle-pulse {
-            0%, 100% {
-                box-shadow: 0 2px 8px rgba(220, 53, 69, 0.1);
-            }
-            50% {
-                box-shadow: 0 4px 12px rgba(220, 53, 69, 0.15);
-            }
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .metric-value {
-                font-size: 2rem;
-            }
-        }
-    </style>
+{% block extra_head %}
+{# CSS ahora está en static/dashboards/css/lider_dashboard_styles.css #}
 {% endblock %}
 {% block extra_js %}
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script>
-      document.addEventListener('DOMContentLoaded', function () {
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        tooltipTriggerList.forEach(function (tooltipTriggerEl) {
-          new bootstrap.Tooltip(tooltipTriggerEl);
-        });
-        // Renderiza los gráficos circulares para cada proyecto
-        {% for data in dashboard_data %}
-        // Gráfico de requerimientos: huérfanos vs relacionados
-        var ctxReq{{ forloop.counter0 }} = document.getElementById('grafico-req-{{ forloop.counter0 }}');
-        if (ctxReq{{ forloop.counter0 }}) {
-          new Chart(ctxReq{{ forloop.counter0 }}, {
-            type: 'doughnut',
-            data: {
-              labels: ['Huérfanos', 'Relacionados'],
-              datasets: [{
-                data: [
-                  {{ data.reqs_huerfanos|length }},
-                  {{ data.reqs_relacionados }}
-                ],
-                backgroundColor: [
-                  '#EF4444',
-                  '#3B82F6'
-                ],
-                borderWidth: 1
-              }]
-            },
-            options: {
-              plugins: {
-                legend: { display: true, position: 'bottom' }
-              },
-              cutout: '65%'
-            }
-          });
-        }
-        // Gráfico de casos de uso: huérfanos vs relacionados
-        var ctxCu{{ forloop.counter0 }} = document.getElementById('grafico-cu-{{ forloop.counter0 }}');
-        if (ctxCu{{ forloop.counter0 }}) {
-          new Chart(ctxCu{{ forloop.counter0 }}, {
-            type: 'doughnut',
-            data: {
-              labels: ['Huérfanos', 'Relacionados'],
-              datasets: [{
-                data: [
-                  {{ data.casos_huerfanos|length }},
-                  {{ data.casos_relacionados }}
-                ],
-                backgroundColor: [
-                  '#EF4444',
-                  '#10B981'
-                ],
-                borderWidth: 1
-              }]
-            },
-            options: {
-              plugins: {
-                legend: { display: true, position: 'bottom' }
-              },
-              cutout: '65%'
-            }
-          });
-        }
-        {% endfor %}
-      });
-    </script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+        <script id="dashboard-data" type="application/json">[
+            {% for data in dashboard_data %}
+                {
+                    "reqs_huerfanos_count": {{ data.reqs_huerfanos|length }},
+                    "reqs_relacionados_count": {{ data.reqs_relacionados }},
+                    "casos_huerfanos_count": {{ data.casos_huerfanos|length }},
+                    "casos_relacionados_count": {{ data.casos_relacionados }}
+                }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ]</script>
+        <script src="{% static 'dashboards/js/lider_dashboard.js' %}?v=1.0"></script>
 {% endblock %}
 {% block content %}
-<div class="container py-4">
+<div class="mt-4 px-4">
     {% comment %} <div class="lider-dashboard-header mb-4">
         <i class="bi bi-speedometer2"></i>
         <span class="fs-4 fw-bold">Dashboard del Líder</span>
@@ -147,61 +32,127 @@
     {% if dashboard_data %}
         {% for data in dashboard_data %}
         <div class="card mb-4 shadow-sm lider-dashboard-card">
-            <div class="card-header d-flex align-items-center justify-content-between">
-                <div class="d-flex align-items-center">
-                    {% if data.proyecto.logo %}
-                        <img src="{{ data.proyecto.logo.url }}" alt="Logo" class="proyecto-logo me-3">
-                    {% endif %}
-                    <div>
-                        <span class="badge-proyecto mb-1"><i class="bi bi-diagram-3 me-1"></i> {{ data.proyecto.nombre }}</span><br>
-                        <small class="text-muted">
-                            Metodología: 
-                            {% if data.proyecto.metodologia %}
-                                {{ data.proyecto.get_metodologia_display }}
-                            {% else %}
-                                <span class="text-danger fw-bold">(no asignada)</span>
+            <div class="card-header">
+                <div class="row align-items-center">
+                    {# Columna izquierda: Logo y nombre del proyecto #}
+                    <div class="col-md-3">
+                        <div class="d-flex align-items-center">
+                            {% if data.proyecto.logo %}
+                                <img src="{{ data.proyecto.logo.url }}" alt="Logo" class="proyecto-logo me-3">
                             {% endif %}
-                        </small>
-                    </div>
-                </div>
-                <div class="d-flex flex-column align-items-end gap-2">
-                    <div class="d-flex gap-2">
-                        {% comment %} Botón para asignar metodología (visible si no tiene) {% endcomment %}
-                        {% if data.necesita_metodologia %}
-                        <a href="{% url 'proyectos:asignar_metodologia' data.proyecto.id %}" 
-                           class="btn btn-warning btn-sm">
-                            <i class="bi bi-exclamation-triangle-fill me-1"></i>Asignar Metodología
-                        </a>
-                        {% else %}
-                        {% comment %} Botón para cambiar metodología (siempre visible si ya tiene una) {% endcomment %}
-                        <a href="{% url 'proyectos:asignar_metodologia' data.proyecto.id %}" 
-                           class="btn btn-outline-primary btn-sm"
-                           data-bs-toggle="tooltip"
-                           data-bs-placement="top"
-                           title="Cambiar metodología del proyecto">
-                            <i class="bi bi-gear-fill me-1"></i>Cambiar Metodología
-                        </a>
-                        {% endif %}
-                        
-                        {% comment %} Botón para gestionar integrantes {% endcomment %}
-                        <a href="{% url 'proyectos:gestionar_integrantes' data.proyecto.id %}" 
-                           class="btn btn-info btn-sm"
-                           data-bs-toggle="tooltip"
-                           data-bs-placement="top"
-                           title="Gestionar roles de los integrantes">
-                            <i class="bi bi-people-fill me-1"></i>Gestión de Integrantes
-                        </a>
+                            <div>
+                                <span class="badge-proyecto mb-2 d-block"><i class="bi bi-diagram-3 me-1"></i> {{ data.proyecto.nombre }}</span>
+                                <div class="mt-1">
+                                    {% if data.proyecto.metodologia %}
+                                        <span class="badge bg-success text-white px-3 py-2">
+                                            <i class="bi bi-check-circle-fill me-1"></i>
+                                            Metodología: {{ data.proyecto.get_metodologia_display }}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-danger text-white px-3 py-2">
+                                            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                            Sin metodología asignada
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     
-                    <div class="integrantes-list-header">
-                        <small class="text-muted">Integrantes:</small>
-                        <span>
-                            {% for integrante in data.integrantes %}
-                                <span class="badge bg-secondary me-1">{{ integrante.nombre }}</span>
-                            {% empty %}
-                                <span class="text-muted">Sin integrantes</span>
-                            {% endfor %}
-                        </span>
+                    {# Columna central: Botones de acción #}
+                    <div class="col-md-6 text-center">
+                        <div class="d-flex gap-2 justify-content-center">
+                            {% comment %} Botón para asignar metodología (visible si no tiene) {% endcomment %}
+                            {% if data.necesita_metodologia %}
+                            <a href="{% url 'proyectos:asignar_metodologia' data.proyecto.id %}" 
+                               class="btn btn-warning btn-sm">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i>Asignar Metodología
+                            </a>
+                            {% else %}
+                            {% comment %} Botón para cambiar metodología (siempre visible si ya tiene una) {% endcomment %}
+                            <a href="{% url 'proyectos:asignar_metodologia' data.proyecto.id %}" 
+                               class="btn btn-outline-primary btn-sm"
+                               data-bs-toggle="tooltip"
+                               data-bs-placement="top"
+                               title="Cambiar metodología del proyecto">
+                                <i class="bi bi-gear-fill me-1"></i>Cambiar Metodología
+                            </a>
+                            {% endif %}
+                            
+                            {% comment %} Botón para gestionar integrantes {% endcomment %}
+                            <a href="{% url 'proyectos:gestionar_integrantes' data.proyecto.id %}" 
+                               class="btn btn-info btn-sm"
+                               data-bs-toggle="tooltip"
+                               data-bs-placement="top"
+                               title="Gestionar roles de los integrantes">
+                                <i class="bi bi-people-fill me-1"></i>Gestión de Integrantes
+                            </a>
+                        </div>
+                    </div>
+                    
+                    {# Columna derecha: Integrantes y Clientes #}
+                    <div class="col-md-3">
+                        {# Equipo de Desarrollo #}
+                        <div class="integrantes-list-header mb-3">
+                            <small class="text-muted d-block mb-2">
+                                <i class="bi bi-people-fill me-1"></i>Equipo de Desarrollo:
+                            </small>
+                            <div class="integrantes-avatars" style="display: flex; flex-direction: row; flex-wrap: wrap; gap: 1rem; align-items: flex-start;">
+                                {% for integrante in data.integrantes %}
+                                    <div class="integrante-avatar-item" style="display: flex; flex-direction: column; align-items: center; width: 60px;">
+                                        <div class="avatar-container">
+                                            {% if integrante.avatar %}
+                                                <img src="{{ integrante.avatar }}"
+                                                     alt="{{ integrante.nombre }}"
+                                                     class="integrante-avatar rounded-circle border border-primary"
+                                                     style="width: 40px; height: 40px; object-fit: cover;">
+                                            {% else %}
+                                                <div class="integrante-avatar-placeholder rounded-circle border border-primary d-flex align-items-center justify-content-center bg-primary text-white"
+                                                     style="width: 40px; height: 40px; font-size: 16px; font-weight: bold;">
+                                                    {{ integrante.nombre|first|upper }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="integrante-info" style="margin-top: 0.25rem; text-align: center;">
+                                            <small class="integrante-nombre text-muted fw-semibold" style="font-size: 0.7rem; line-height: 1.1; display: block; max-width: 60px; word-wrap: break-word; hyphens: auto; white-space: normal; overflow-wrap: break-word;">{{ integrante.nombre|truncatechars:12 }}</small>
+                                        </div>
+                                    </div>
+                                {% empty %}
+                                    <small class="text-muted">Sin integrantes</small>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        {# Clientes/Stakeholders #}
+                        {% if data.clientes %}
+                        <div class="clientes-list-header">
+                            <small class="text-info d-block mb-2">
+                                <i class="bi bi-person-badge me-1"></i>Clientes:
+                            </small>
+                            <div class="clientes-avatars" style="display: flex; flex-direction: row; flex-wrap: wrap; gap: 1rem; align-items: flex-start;">
+                                {% for cliente in data.clientes %}
+                                    <div class="cliente-avatar-item" style="display: flex; flex-direction: column; align-items: center; width: 60px;">
+                                        <div class="avatar-container">
+                                            {% if cliente.avatar %}
+                                                <img src="{{ cliente.avatar }}"
+                                                     alt="{{ cliente.nombre }}"
+                                                     class="cliente-avatar rounded-circle border border-info"
+                                                     style="width: 40px; height: 40px; object-fit: cover;">
+                                            {% else %}
+                                                <div class="cliente-avatar-placeholder rounded-circle border border-info d-flex align-items-center justify-content-center bg-info text-white"
+                                                     style="width: 40px; height: 40px; font-size: 16px; font-weight: bold;">
+                                                    {{ cliente.nombre|first|upper }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="cliente-info" style="margin-top: 0.25rem; text-align: center;">
+                                            <small class="cliente-nombre text-info fw-semibold" style="font-size: 0.7rem; line-height: 1.1; display: block; max-width: 60px; word-wrap: break-word; hyphens: auto; white-space: normal; overflow-wrap: break-word;">{{ cliente.nombre|truncatechars:12 }}</small>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -220,103 +171,97 @@
                 </div>
                 {% endif %}
                 
-                <div class="row mb-3">
+                {# Métricas principales - 3 columnas #}
+                <div class="row g-3 mb-4">
                     <div class="col-md-4">
-                        <div class="card metric-card mb-3">
-                            <div class="card-body text-center">
-                                <div class="metric-icon text-primary mb-2">
-                                    <i class="bi bi-list-check-fill fs-1"></i>
-                                </div>
-                                <h3 class="metric-value">{{ data.requerimientos|length }}</h3>
-                                <p class="metric-label text-muted mb-0">Requerimientos</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card metric-card mb-3">
-                            <div class="card-body text-center">
-                                <div class="metric-icon text-info mb-2">
-                                    <i class="bi bi-diagram-3-fill fs-1"></i>
-                                </div>
-                                <h3 class="metric-value">{{ data.casos_de_uso|length }}</h3>
-                                <p class="metric-label text-muted mb-0">Casos de Uso</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card metric-card huerfanos-card mb-3">
-                            <div class="card-body text-center">
-                                <div class="metric-icon text-danger mb-2">
-                                    <i class="bi bi-exclamation-triangle-fill fs-1"></i>
-                                </div>
-                                <h3 class="metric-value">{{ data.total_huerfanos }}</h3>
-                                <p class="metric-label text-muted mb-1">Huérfanos</p>
-                                <small class="text-muted">
-                                    Reqs: {{ data.reqs_huerfanos|length }} | CUs: {{ data.casos_huerfanos|length }}
-                                </small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-md-4">
-                        <div class="card metric-card mb-3">
-                            <div class="card-body text-center">
-                                <div class="metric-icon text-warning mb-2">
-                                    <i class="bi bi-clock-fill fs-1"></i>
-                                </div>
-                                <h3 class="metric-value">{{ data.reqs_sin_validar }}</h3>
-                                <p class="metric-label text-muted mb-0">Sin Validar</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card metric-card mb-3">
-                            <div class="card-body text-center">
-                                <div class="metric-icon text-success mb-2">
-                                    <i class="bi bi-check-circle-fill fs-1"></i>
-                                </div>
-                                <h3 class="metric-value">{{ data.reqs_completados }}</h3>
-                                <p class="metric-label text-muted mb-0">Completados</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card metric-card mb-3">
-                            <div class="card-body text-center">
-                                <div class="metric-icon text-secondary mb-2">
-                                    <i class="bi bi-hourglass-split fs-1"></i>
-                                </div>
-                                <h3 class="metric-value">{{ data.reqs_sin_completar }}</h3>
-                                <p class="metric-label text-muted mb-0">Sin Completar</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <div class="card text-bg-light mb-3">
+                        <div class="metric-card card bg-gradient-primary text-white shadow hover-shadow" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                             <div class="card-body">
-                                <h6 class="card-title">
-                                    <i class="bi bi-pie-chart me-2"></i> Distribución Requerimientos
-                                </h6>
-                                <canvas id="grafico-req-{{ forloop.counter0 }}" width="80" height="80" style="max-width:80px;max-height:80px;display:block;margin:auto;"></canvas>
+                                <h5 class="card-title mb-3"><i class="bi bi-list-check"></i> Requerimientos</h5>
+                                <p class="display-4 fw-bold mb-0">{{ data.requerimientos|length }}</p>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="card text-bg-light mb-3">
+                    <div class="col-md-4">
+                        <div class="metric-card card bg-gradient-primary text-white shadow hover-shadow" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                             <div class="card-body">
-                                <h6 class="card-title">
-                                    <i class="bi bi-pie-chart-fill me-2"></i> Distribución Casos de Uso
-                                </h6>
-                                <canvas id="grafico-cu-{{ forloop.counter0 }}" width="80" height="80" style="max-width:80px;max-height:80px;display:block;margin:auto;"></canvas>
+                                <h5 class="card-title mb-3"><i class="bi bi-diagram-3"></i> Casos de Uso</h5>
+                                <p class="display-4 fw-bold mb-0">{{ data.casos_de_uso|length }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="metric-card card huerfanos-card shadow hover-shadow" style="border: none;">
+                            <div class="card-body">
+                                <h5 class="card-title text-danger mb-3"><i class="bi bi-exclamation-triangle"></i> Huérfanos</h5>
+                                <p class="display-4 fw-bold text-danger mb-2">{{ data.total_huerfanos }}</p>
+                                <small class="text-muted">Reqs: {{ data.reqs_huerfanos|length }} | CUs: {{ data.casos_huerfanos|length }}</small>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="row">
-                    <div class="col-md-6">
+                
+                {# Estados de requerimientos - 3 columnas #}
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="metric-card card bg-gradient-primary text-white shadow hover-shadow" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <div class="card-body">
+                                <h5 class="card-title mb-3"><i class="bi bi-clock"></i> Sin Validar</h5>
+                                <p class="display-4 fw-bold mb-0">{{ data.reqs_sin_validar }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="metric-card card bg-gradient-primary text-white shadow hover-shadow" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <div class="card-body">
+                                <h5 class="card-title mb-3"><i class="bi bi-check-circle"></i> Completados</h5>
+                                <p class="display-4 fw-bold mb-0">{{ data.reqs_completados }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="metric-card card bg-gradient-primary text-white shadow hover-shadow" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <div class="card-body">
+                                <h5 class="card-title mb-3"><i class="bi bi-hourglass-split"></i> Sin Completar</h5>
+                                <p class="display-4 fw-bold mb-0">{{ data.reqs_sin_completar }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                {# Gráficos y estado - 3 columnas #}
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="metric-card card bg-gradient-primary text-white shadow hover-shadow" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 240px;">
+                            <div class="card-body">
+                                <h6 class="card-title mb-3"><i class="bi bi-pie-chart"></i> Distribución Requerimientos</h6>
+                                <canvas id="grafico-req-{{ forloop.counter0 }}" width="120" height="120" style="max-width: 120px; max-height: 120px; margin: 0 auto; display: block;"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="metric-card card bg-gradient-primary text-white shadow hover-shadow" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 240px;">
+                            <div class="card-body">
+                                <h6 class="card-title mb-3"><i class="bi bi-pie-chart-fill"></i> Distribución Casos de Uso</h6>
+                                <canvas id="grafico-cu-{{ forloop.counter0 }}" width="120" height="120" style="max-width: 120px; max-height: 120px; margin: 0 auto; display: block;"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="metric-card card bg-gradient-primary text-white shadow hover-shadow" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 240px;">
+                            <div class="card-body">
+                                <h5 class="card-title mb-3"><i class="bi bi-bar-chart-line"></i> Estado General</h5>
+                                <p class="small mb-3 text-white-50">{{ data.proyecto.nombre|truncatechars:25 }}</p>
+                                <div class="d-flex justify-content-center flex-wrap gap-2">
+                                    <span class="badge bg-white text-primary px-3 py-2">
+                                        <i class="bi bi-check-circle me-1"></i> Activo
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-12">
                         <h5>Requerimientos huérfanos <span class="badge bg-danger">{{ data.reqs_huerfanos|length }}</span></h5>
                         <ul class="list-group mb-3">
                             {% for req in data.reqs_huerfanos %}
@@ -331,7 +276,7 @@
                             {% endfor %}
                         </ul>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-12">
                         <h5>Casos de uso huérfanos <span class="badge bg-danger">{{ data.casos_huerfanos|length }}</span></h5>
                         <ul class="list-group mb-3">
                             {% for cu in data.casos_huerfanos %}

@@ -1,4 +1,5 @@
 {% extends "core/base.html" %}
+
 {% load static %}
 
 {% block title %}
@@ -80,6 +81,12 @@
                                     {{ form.descripcion.label }}
                                 </label>
                                 {{ form.descripcion }}
+                                <div class="form-text d-flex justify-content-between align-items-center">
+                                    <span>
+                                        <i class="bi bi-info-circle"></i> Descripción general del caso de uso
+                                    </span>
+                                    <span id="descripcion-contador" class="badge bg-secondary">0 / 2500</span>
+                                </div>
                                 {% if form.descripcion.errors %}
                                     <div class="text-danger small mt-1">{{ form.descripcion.errors.0 }}</div>
                                 {% endif %}
@@ -174,6 +181,18 @@
                                     <label for="{{ form.imagen.id_for_label }}" class="form-label">
                                         <i class="bi bi-image"></i> {{ form.imagen.label }}
                                     </label>
+                                    
+                                    {% if is_edit and imagen_existente %}
+                                        <div class="alert alert-info mb-2">
+                                            <i class="bi bi-info-circle"></i> <strong>Imagen actual:</strong>
+                                            <a href="{{ imagen_existente.url }}" target="_blank" class="text-decoration-none">
+                                                Ver imagen <i class="bi bi-box-arrow-up-right"></i>
+                                            </a>
+                                            <br>
+                                            <small class="text-muted">Si subes una nueva imagen, reemplazará la actual</small>
+                                        </div>
+                                    {% endif %}
+                                    
                                     {{ form.imagen }}
                                     {% if form.imagen.help_text %}
                                         <div class="help-text">{{ form.imagen.help_text }}</div>
@@ -229,4 +248,8 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'casos_de_uso/js/caso_de_uso_create.js' %}?v=1.0"></script>
 {% endblock %}

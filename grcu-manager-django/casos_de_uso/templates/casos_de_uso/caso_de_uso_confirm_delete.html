@@ -1,4 +1,5 @@
 {% extends "core/base.html" %}
+
 {% load static %}
 
 {% block title %}{{ page_title }}{% endblock %}
@@ -164,40 +165,12 @@
     </div>
 </div>
 
-<!-- Script para validación en tiempo real -->
+
+{% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const confirmInput = document.getElementById('confirmText');
-    const deleteBtn = document.getElementById('deleteBtn');
-    const expectedText = "{{ caso.nombre }}";
-    
-    function validateConfirmation() {
-        const inputValue = confirmInput.value.trim();
-        const isValid = inputValue === expectedText;
-        
-        deleteBtn.disabled = !isValid;
-        
-        if (isValid) {
-            deleteBtn.classList.remove('btn-danger');
-            deleteBtn.classList.add('btn-outline-danger');
-        } else {
-            deleteBtn.classList.remove('btn-outline-danger');
-            deleteBtn.classList.add('btn-danger');
-        }
-    }
-    
-    confirmInput.addEventListener('input', validateConfirmation);
-    
-    // Validación adicional en el envío del formulario
-    document.getElementById('deleteForm').addEventListener('submit', function(e) {
-        const inputValue = confirmInput.value.trim();
-        if (inputValue !== expectedText) {
-            e.preventDefault();
-            alert('El texto de confirmación no coincide. Por favor, escribe exactamente: "' + expectedText + '"');
-            confirmInput.focus();
-        }
-    });
-});
+    window.CASO_NOMBRE = {{ caso.nombre|safe|escapejs }};
 </script>
+<script src="{% static 'casos_de_uso/js/caso_de_uso_confirm_delete.js' %}"></script>
+{% endblock %}
 
 {% endblock %}

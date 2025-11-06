@@ -1,5 +1,6 @@
-/* Select múltiple de participantes */
-.proyecto-select-multiple {
+/* Select múltiple de participantes y clientes */
+.proyecto-select-multiple,
+#id_clientes {
     width: 100%;
     min-height: 120px;
     border-radius: 8px;
@@ -10,7 +11,8 @@
     box-shadow: 0 1px 4px rgba(68,76,138,0.04);
     margin-bottom: 6px;
 }
-.proyecto-select-multiple:focus {
+.proyecto-select-multiple:focus,
+#id_clientes:focus {
     border-color: #444c8a;
     outline: none;
 }

@@ -78,7 +78,7 @@ def caso_de_uso_update(request, pk):
     es_agil = proyecto.metodologia == 'AGIL'
 
     if request.method == 'POST':
-        # Instanciar el formulario apropiado
+        # Instanciar el formulario apropiado con datos POST y archivos
         if es_tradicional:
             form = CasoDeUsoUnificadoForm(request.POST, request.FILES)
         elif es_agil:
@@ -142,12 +142,14 @@ def caso_de_uso_update(request, pk):
 
             messages.success(request, f'✅ Caso de Uso "{caso.nombre}" actualizado exitosamente.')
             return redirect('casos_de_uso:caso_de_uso_detail', pk=pk)
+        else:
+            # Si el formulario no es válido, se mantendrá con los datos POST
+            messages.error(request, 'Por favor, corrige los errores del formulario.')
     else:
         # GET: Instanciar formulario con datos existentes
         initial_data = {
             'nombre': caso.nombre,
             'descripcion': caso.descripcion,
-            'imagen': caso.imagen,
             'link_externo': caso.link_externo,
         }
 
@@ -188,7 +190,8 @@ def caso_de_uso_update(request, pk):
         'es_agil': es_agil,
         'metodologia_display': proyecto.get_metodologia_display(),
         'page_title': page_title,
-        'is_edit': True
+        'is_edit': True,
+        'imagen_existente': caso.imagen,  # Para mostrar la imagen actual
     }
 
     return render(request, 'casos_de_uso/caso_de_uso_create.html', context)
@@ -301,6 +304,10 @@ def caso_de_uso_create(request, proyecto_id=None, requerimiento_id=None):
 
             messages.success(request, f'✅ Caso de Uso "{caso.nombre}" creado exitosamente.')
             return redirect('casos_de_uso:caso_de_uso_detail', pk=caso.pk)
+        else:
+            # Si el formulario no es válido, se mantendrá con los datos POST
+            # Los valores ingresados se conservarán para que el usuario los corrija
+            messages.error(request, 'Por favor, corrige los errores del formulario.')
     else:
         # Generar nombre automático CU-<número>
         initial_data = {}

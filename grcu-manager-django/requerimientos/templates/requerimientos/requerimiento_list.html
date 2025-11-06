@@ -31,14 +31,14 @@
       transition: all 0.2s ease;
     }
 
-    .requerimiento-row.estado-creado {
+    .requerimiento-row.estado-borrador {
       background: linear-gradient(90deg, #fff3cd 0%, #ffeaa7 100%) !important;
       border-left: 5px solid #ffc107;
       box-shadow: 0 2px 4px rgba(255, 193, 7, 0.1);
       animation: pulse-bg 3s ease-in-out infinite;
     }
 
-    .requerimiento-row.estado-creado:hover {
+    .requerimiento-row.estado-borrador:hover {
       background: linear-gradient(90deg, #ffeaa7 0%, #ffd633 100%) !important;
       box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
       transform: translateY(-1px);
@@ -70,8 +70,8 @@
       opacity: 0.7;
     }
 
-    /* Badge para estado CREADO - más prominente */
-    .badge-estado-creado {
+    /* Badge para estado BORRADOR - más prominente */
+    .badge-estado-borrador {
       background: linear-gradient(45deg, #ffc107, #ff8c00);
       color: #212529;
       font-weight: bold;
@@ -83,8 +83,8 @@
       position: relative;
     }
 
-    .badge-estado-creado::after {
-      content: "⚠️";
+    .badge-estado-borrador::after {
+      content: "📝";
       margin-left: 5px;
     }
 
@@ -168,6 +168,64 @@
       font-weight: bold;
       color: #dc3545;
     }
+
+    /* Estilos para badge de comentarios */
+    .comentarios-badge {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.9em;
+      font-weight: bold;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+      transition: all 0.3s ease;
+    }
+
+    .comentarios-badge-link {
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .comentarios-badge-link:hover .comentarios-badge {
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
+    }
+
+    .comentarios-pulse {
+      animation: pulse-comentarios 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-comentarios {
+      0% {
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+      }
+      50% {
+        box-shadow: 0 4px 16px rgba(102, 126, 234, 0.6), 
+                    0 0 20px rgba(102, 126, 234, 0.4);
+        transform: scale(1.05);
+      }
+      100% {
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+      }
+    }
+
+    .comentarios-count {
+      background: rgba(255, 255, 255, 0.3);
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.85em;
+      min-width: 24px;
+      text-align: center;
+    }
+
+    /* Icono cuando no hay comentarios */
+    td .text-muted i {
+      font-size: 1.2em;
+      opacity: 0.4;
+    }
   </style>
 {% endblock %}
 
@@ -216,7 +274,7 @@
       {# Filtros opcionales #}
       <select id="filtroEstado" class="form-select" style="max-width: 180px;">
         <option value="">Todos los estados</option>
-        <option value="CREADO">Creado</option>
+        <option value="BORRADOR">Borrador</option>
         <option value="VALIDADO">Validado</option>
         <option value="PRIORIZADO">Priorizado</option>
         <option value="EN_PROCESO">En proceso</option>
@@ -227,6 +285,7 @@
         <option value="">Todos los tipos</option>
         <option value="FUNCIONAL">Funcional</option>
         <option value="NO_FUNCIONAL">No Funcional</option>
+        <option value="SISTEMA">Sistema</option>
       </select>
       </div>
       
@@ -250,6 +309,8 @@
             <th><i class="bi bi-file-earmark-text me-1"></i> Nombre</th>
             <th><i class="bi bi-tag me-1"></i> Tipo</th>
             <th><i class="bi bi-flag me-1"></i> Estado</th>
+            <th><i class="bi bi-arrow-up me-1"></i> Prioridad</th>
+            <th><i class="bi bi-chat-dots me-1"></i> Comentarios</th>
             <th><i class="bi bi-card-text me-1"></i> Descripción</th>
             <th><i class="bi bi-calendar me-1"></i> Fecha</th>
             <th><i class="bi bi-link-45deg me-1"></i> Huérfano / Caso de Uso</th>
@@ -274,9 +335,9 @@
               </td>
               <td>{{ req.get_tipo_display }}</td>
               <td>
-                {% if req.estado == 'CREADO' %}
-                  <span class="badge badge-estado-creado">
-                    <i class="bi bi-exclamation-circle-fill me-1"></i>{{ req.get_estado_display }}
+                {% if req.estado == 'BORRADOR' %}
+                  <span class="badge badge-estado-borrador">
+                    <i class="bi bi-file-earmark-text me-1"></i>{{ req.get_estado_display }}
                   </span>
                 {% elif req.estado == 'VALIDADO' %}
                   <span class="badge bg-info">
@@ -296,6 +357,37 @@
                   </span>
                 {% else %}
                   <span class="badge bg-light text-dark">{{ req.get_estado_display }}</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if req.detalle_tradicional.prioridad %}
+                  {% for val, label in MOSCOW_CHOICES %}
+                    {% if val == req.detalle_tradicional.prioridad %}{{ label }}{% endif %}
+                  {% endfor %}
+                {% elif req.detalle_agil.prioridad %}
+                  {% for val, label in MOSCOW_CHOICES %}
+                    {% if val == req.detalle_agil.prioridad %}{{ label }}{% endif %}
+                  {% endfor %}
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td class="text-center">
+                {% if req.num_comentarios > 0 %}
+                  <a href="{% url 'requerimientos:requerimiento_discusion' req.pk %}" 
+                     class="comentarios-badge-link"
+                     data-bs-toggle="tooltip" 
+                     data-bs-placement="top"
+                     title="Ver {{ req.num_comentarios }} comentario{{ req.num_comentarios|pluralize:'s' }}">
+                    <span class="badge comentarios-badge comentarios-pulse">
+                      <i class="bi bi-chat-dots-fill"></i>
+                      <span class="comentarios-count">{{ req.num_comentarios }}</span>
+                    </span>
+                  </a>
+                {% else %}
+                  <span class="text-muted">
+                    <i class="bi bi-chat"></i>
+                  </span>
                 {% endif %}
               </td>
               <td>{{ req.descripcion|default:'-'|truncatechars:60 }}</td>
@@ -337,8 +429,8 @@
                   </a>
                   {% endif %}
                   
-                  {# Botones de validación para requerimientos CREADO #}
-                  {% if req.estado == 'CREADO' %}
+                  {# Botones de validación para requerimientos BORRADOR #}
+                  {% if req.estado == 'BORRADOR' %}
                     {% if user == req.proyecto.lider %}
                       <a href="{% url 'requerimientos:requerimiento_validar_lider_proyecto' req.proyecto.id %}" 
                          class="btn btn-validar-lider btn-sm btn-action-req" 
@@ -391,7 +483,7 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="7">
+              <td colspan="9">
                 <div class="empty-state-req">
                   <i class="bi bi-inbox"></i>
                   <p class="mb-0">No hay requerimientos disponibles.</p>

@@ -17,6 +17,7 @@ urlpatterns = [
     path('validar/lider/<int:proyecto_id>/', views.requerimiento_validar_lider, name='requerimiento_validar_lider_proyecto'),
     path('<int:pk>/discusion/', views.requerimiento_discusion, name='requerimiento_discusion'),
     path('buscar/', views.buscar_requerimientos_ajax, name='buscar_requerimientos_ajax'),
+    path('siguiente-numero/', views.obtener_siguiente_numero_requerimiento, name='obtener_siguiente_numero'),
     # Relacionar casos de uso existentes
     path('<int:pk>/relacionar-casos/', views.relacionar_casos_existentes, name='relacionar_casos_existentes'),
     # Historial

@@ -54,6 +54,13 @@
                                 {% if form.nombre.errors %}
                                     <div class="text-danger small mt-1">{{ form.nombre.errors.0 }}</div>
                                 {% endif %}
+                                <div class="form-text">
+                                    <i class="bi bi-info-circle"></i> 
+                                    <span id="nombre-sugerido-text">
+                                        Formato sugerido según tipo: <strong id="nombre-sugerido">RF-##</strong> (Funcional), 
+                                        <strong>RNF-##</strong> (No Funcional), <strong>RS-##</strong> (Sistema)
+                                    </span>
+                                </div>
                             </div>
                             
                             <!-- Tipo -->
@@ -78,6 +85,12 @@
                                     {{ form.descripcion.label }}
                                 </label>
                                 {{ form.descripcion }}
+                                <div class="form-text d-flex justify-content-between align-items-center">
+                                    <span>
+                                        <i class="bi bi-info-circle"></i> Describe detalladamente el requerimiento
+                                    </span>
+                                    <span id="descripcion-contador" class="badge bg-secondary">0 / 2500</span>
+                                </div>
                                 {% if form.descripcion.errors %}
                                     <div class="text-danger small mt-1">{{ form.descripcion.errors.0 }}</div>
                                 {% endif %}
@@ -106,24 +119,6 @@
                             Detalles Tradicionales
                         </div>
                         
-                        <!-- Prioridad se asigna después de validación -->
-                        {% comment %} REMOVIDO: La prioridad se asigna en la fase de priorización {% endcomment %}
-                        {% comment %}
-                        <!-- Prioridad (MoSCoW) -->
-                        <div class="mb-3">
-                            <label for="{{ form.prioridad.id_for_label }}" class="form-label required-field">
-                                {{ form.prioridad.label }}
-                            </label>
-                            {{ form.prioridad }}
-                            {% if form.prioridad.help_text %}
-                                <div class="help-text">{{ form.prioridad.help_text }}</div>
-                            {% endif %}
-                            {% if form.prioridad.errors %}
-                                <div class="text-danger small mt-1">{{ form.prioridad.errors.0 }}</div>
-                            {% endif %}
-                        </div>
-                        {% endcomment %}
-                        
                         <div class="row">
                             <!-- Fuente -->
                             <div class="col-md-6 mb-3">
@@ -136,12 +131,15 @@
                                 {% endif %}
                             </div>
                             
-                            <!-- Categoría -->
-                            <div class="col-md-6 mb-3">
+                            <!-- Categoría (Solo para NO_FUNCIONAL) -->
+                            <div class="col-md-6 mb-3" id="categoria-container" style="display: none;">
                                 <label for="{{ form.categoria.id_for_label }}" class="form-label">
                                     {{ form.categoria.label }}
                                 </label>
                                 {{ form.categoria }}
+                                <div class="form-text">
+                                    <i class="bi bi-info-circle"></i> Ej: Rendimiento, Seguridad, Usabilidad, Disponibilidad
+                                </div>
                             </div>
                         </div>
                         
@@ -330,4 +328,144 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Obtener elementos
+    const nombreInput = document.querySelector('input[name="nombre"]');
+    const tipoRadios = document.querySelectorAll('input[name="tipo"]');
+    
+    // Función para obtener el siguiente número de requerimiento por tipo
+    async function obtenerSiguienteNumero(tipo) {
+        try {
+            const response = await fetch(`/requerimientos/siguiente-numero/?proyecto_id={{ proyecto.id }}&tipo=${tipo}`);
+            if (response.ok) {
+                const data = await response.json();
+                return data.siguiente_nombre;
+            }
+        } catch (error) {
+            console.error('Error al obtener siguiente número:', error);
+        }
+        return null;
+    }
+    
+    // Función para actualizar el nombre según el tipo seleccionado
+    async function actualizarNombreSugerido() {
+        const tipoSeleccionado = document.querySelector('input[name="tipo"]:checked');
+        
+        if (tipoSeleccionado && nombreInput) {
+            const tipo = tipoSeleccionado.value;
+            const nombreActual = nombreInput.value.trim();
+            
+            // Solo actualizar si el campo está vacío o tiene un formato de código (RF-##, RNF-##, RS-##)
+            const esFormatoCodigo = /^(RF|RNF|RS)-\d+$/.test(nombreActual);
+            
+            if (!nombreActual || esFormatoCodigo) {
+                const siguienteNombre = await obtenerSiguienteNumero(tipo);
+                if (siguienteNombre) {
+                    nombreInput.value = siguienteNombre;
+                }
+            }
+        }
+    }
+    
+    // Escuchar cambios en los radio buttons de tipo
+    tipoRadios.forEach(radio => {
+        radio.addEventListener('change', actualizarNombreSugerido);
+    });
+    
+    // Ejecutar al cargar si hay un tipo seleccionado
+    actualizarNombreSugerido();
+    
+    // ===== Control de límite de caracteres en Descripción =====
+    const descripcionTextarea = document.querySelector('textarea[name="descripcion"]');
+    const descripcionContador = document.getElementById('descripcion-contador');
+    const maxCaracteres = 2500;
+    
+    if (descripcionTextarea && descripcionContador) {
+        // Función para actualizar el contador
+        function actualizarContador() {
+            const longitudActual = descripcionTextarea.value.length;
+            descripcionContador.textContent = `${longitudActual} / ${maxCaracteres}`;
+            
+            // Cambiar color según el progreso
+            if (longitudActual >= maxCaracteres) {
+                descripcionContador.classList.remove('bg-secondary', 'bg-warning');
+                descripcionContador.classList.add('bg-danger');
+            } else if (longitudActual >= maxCaracteres * 0.9) {
+                descripcionContador.classList.remove('bg-secondary', 'bg-danger');
+                descripcionContador.classList.add('bg-warning');
+            } else {
+                descripcionContador.classList.remove('bg-warning', 'bg-danger');
+                descripcionContador.classList.add('bg-secondary');
+            }
+        }
+        
+        // Función para prevenir exceso de caracteres
+        function controlarLimite(e) {
+            const longitudActual = descripcionTextarea.value.length;
+            
+            // Permitir teclas especiales (backspace, delete, arrows, etc.)
+            const teclasPermitidas = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab'];
+            
+            if (longitudActual >= maxCaracteres && !teclasPermitidas.includes(e.key) && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+                return false;
+            }
+        }
+        
+        // Función para truncar si se pega texto que excede el límite
+        function controlarPegado(e) {
+            setTimeout(() => {
+                if (descripcionTextarea.value.length > maxCaracteres) {
+                    descripcionTextarea.value = descripcionTextarea.value.substring(0, maxCaracteres);
+                    actualizarContador();
+                }
+            }, 10);
+        }
+        
+        // Agregar event listeners
+        descripcionTextarea.addEventListener('input', actualizarContador);
+        descripcionTextarea.addEventListener('keydown', controlarLimite);
+        descripcionTextarea.addEventListener('paste', controlarPegado);
+        
+        // Actualizar contador al cargar
+        actualizarContador();
+    }
+    
+    // ===== Control de visibilidad del campo Categoría (solo para NO_FUNCIONAL) =====
+    const categoriaContainer = document.getElementById('categoria-container');
+    const tipoRadios = document.querySelectorAll('input[name="tipo"]');
+    
+    if (categoriaContainer && tipoRadios.length > 0) {
+        function actualizarVisibilidadCategoria() {
+            const tipoSeleccionado = document.querySelector('input[name="tipo"]:checked');
+            
+            if (tipoSeleccionado) {
+                // Solo mostrar categoría para requerimientos NO_FUNCIONAL
+                if (tipoSeleccionado.value === 'NO_FUNCIONAL') {
+                    categoriaContainer.style.display = 'block';
+                } else {
+                    categoriaContainer.style.display = 'none';
+                    // Limpiar el campo si se oculta
+                    const categoriaInput = categoriaContainer.querySelector('input[name="categoria"]');
+                    if (categoriaInput && tipoSeleccionado.value !== 'NO_FUNCIONAL') {
+                        categoriaInput.value = '';
+                    }
+                }
+            }
+        }
+        
+        // Escuchar cambios en los radio buttons de tipo
+        tipoRadios.forEach(radio => {
+            radio.addEventListener('change', actualizarVisibilidadCategoria);
+        });
+        
+        // Ejecutar al cargar para establecer estado inicial
+        actualizarVisibilidadCategoria();
+    }
+});
+</script>
 {% endblock %}

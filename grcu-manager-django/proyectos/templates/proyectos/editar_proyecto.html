@@ -61,6 +61,17 @@
             <small class="form-text text-muted">El líder será seleccionado entre los integrantes del grupo elegido (opcional si no hay grupo).</small>
         </div>
 
+        <div class="proyecto-form-group">
+            {{ form.clientes.label_tag }}
+            {{ form.clientes }}
+            {% if form.clientes.help_text %}
+                <small class="form-text text-muted">{{ form.clientes.help_text }}</small>
+            {% endif %}
+            {% if form.clientes.errors %}
+                <div class="text-danger">{{ form.clientes.errors.as_text }}</div>
+            {% endif %}
+        </div>
+
         <div class="proyecto-form-acciones">
             <button type="submit" class="proyecto-form-btn-crear" title="Guardar proyecto" data-bs-toggle="tooltip">
                 <i class="bi bi-check-lg"></i> Guardar

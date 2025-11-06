@@ -22,6 +22,10 @@ import json
 from accounts.models import Usuario
 from proyectos.models import Proyecto
 from grupos.models import Grupo
+from requerimientos.models import Requerimiento
+from casos_de_uso.models import CasoDeUso
+from django.utils import timezone
+from datetime import timedelta
 
 @login_required
 def admin_dashboard(request):
@@ -33,6 +37,67 @@ def admin_dashboard(request):
     total_grupos = Grupo.objects.count()
     grupos_activos = Grupo.objects.filter(activo=True).count()
     grupos_inactivos = Grupo.objects.filter(activo=False).count()
+
+    # Nuevas métricas solicitadas
+    usuarios_sin_grupos = Usuario.objects.exclude(grupos__isnull=False).distinct().count()
+    proyectos_sin_grupo = Proyecto.objects.filter(grupo__isnull=True).count()
+    proyectos_sin_requerimientos = Proyecto.objects.annotate(
+        num_requerimientos=Count('requerimientos')
+    ).filter(num_requerimientos=0).count()
+    
+    # Proyectos actuales (creados en el año actual)
+    from django.utils import timezone
+    anio_actual = timezone.now().year
+    proyectos_actuales = Proyecto.objects.filter(fecha_creacion__year=anio_actual).count()
+
+    # Calcular proyectos más activos en los últimos 10 días
+    fecha_limite = timezone.now() - timedelta(days=10)
+    
+    # Contar actividad por proyecto (requerimientos creados/modificados)
+    proyectos_requerimientos = (
+        Requerimiento.objects.filter(
+            proyecto__activo=True,
+            fecha_creacion__gte=fecha_limite
+        )
+        .values('proyecto__nombre')
+        .annotate(actividad=Count('id'))
+        .order_by('-actividad')[:4]
+    )
+    
+    # Contar actividad por proyecto (casos de uso creados/modificados)
+    proyectos_casos = (
+        CasoDeUso.objects.filter(
+            proyecto__activo=True,
+            fecha_creacion__gte=fecha_limite
+        )
+        .values('proyecto__nombre')
+        .annotate(actividad=Count('id'))
+        .order_by('-actividad')[:4]
+    )
+    
+    # Combinar y sumar actividades por proyecto
+    actividad_proyectos = {}
+    for item in proyectos_requerimientos:
+        nombre = item['proyecto__nombre']
+        actividad_proyectos[nombre] = actividad_proyectos.get(nombre, 0) + item['actividad']
+    
+    for item in proyectos_casos:
+        nombre = item['proyecto__nombre']
+        actividad_proyectos[nombre] = actividad_proyectos.get(nombre, 0) + item['actividad']
+    
+    # Obtener los 4 proyectos más activos
+    proyectos_mas_activos = sorted(actividad_proyectos.items(), key=lambda x: x[1], reverse=True)[:4]
+    
+    # Preparar datos para el gráfico de dona
+    if proyectos_mas_activos:
+        proyectos_activos_labels = [proyecto[0] for proyecto in proyectos_mas_activos]
+        proyectos_activos_values = [proyecto[1] for proyecto in proyectos_mas_activos]
+    else:
+        proyectos_activos_labels = ["Sin actividad"]
+        proyectos_activos_values = [0]
+    
+    proyectos_activos_labels_json = json.dumps(proyectos_activos_labels)
+    proyectos_activos_values_json = json.dumps(proyectos_activos_values)
 
     # Roles esperados
     roles_labels = ["Admin", "Líder", "Desarrollador", "Visitante"]
@@ -69,6 +134,10 @@ def admin_dashboard(request):
         "total_usuarios": total_usuarios,
         "total_proyectos": total_proyectos,
         "total_grupos": total_grupos,
+        "usuarios_sin_grupos": usuarios_sin_grupos,
+        "proyectos_sin_grupo": proyectos_sin_grupo,
+        "proyectos_sin_requerimientos": proyectos_sin_requerimientos,
+        "proyectos_actuales": proyectos_actuales,
         "usuarios_roles_labels": roles_labels,
         "usuarios_roles_labels_json": roles_labels_json,
         "usuarios_roles_values_json": usuarios_por_rol_json,
@@ -78,6 +147,9 @@ def admin_dashboard(request):
         "grupos_estado_labels": grupos_estado_labels,
         "grupos_estado_labels_json": grupos_estado_labels_json,
         "grupos_estado_values_json": grupos_estado_values_json,
+        "proyectos_activos_labels": proyectos_activos_labels,
+        "proyectos_activos_labels_json": proyectos_activos_labels_json,
+        "proyectos_activos_values_json": proyectos_activos_values_json,
         "ultimas_acciones": ultimas_acciones,
         "page_title": "Panel de Administración",
     }
@@ -123,12 +195,15 @@ def lider_dashboard(request):
     dashboard_data = []
 
     for proyecto in proyectos:
-        integrantes = list(proyecto.participantes.all())
+        # Separar integrantes del equipo de desarrollo de los clientes
+        integrantes_desarrollo = list(proyecto.participantes.exclude(id__in=proyecto.clientes.all()))
+        clientes = list(proyecto.clientes.all())
+        
         requerimientos = Requerimiento.objects.filter(proyecto=proyecto)
         casos_de_uso = CasoDeUso.objects.filter(proyecto=proyecto)
 
-        # Acciones recientes de los integrantes del proyecto
-        acciones = RegistroActividad.objects.filter(usuario__in=integrantes).order_by('-fecha')[:20]
+        # Acciones recientes de los integrantes del proyecto (solo equipo de desarrollo)
+        acciones = RegistroActividad.objects.filter(usuario__in=integrantes_desarrollo).order_by('-fecha')[:20]
 
         # Huérfanos definidos por ausencia de relación en la tabla intermedia RequerimientoCaso
         reqs_huerfanos = requerimientos.annotate(rel_count=Count('relaciones_casos')).filter(rel_count=0)
@@ -147,7 +222,8 @@ def lider_dashboard(request):
 
         dashboard_data.append({
             "proyecto": proyecto,
-            "integrantes": integrantes,
+            "integrantes": integrantes_desarrollo,
+            "clientes": clientes,
             "requerimientos": requerimientos,
             "casos_de_uso": casos_de_uso,
             "acciones": acciones,
@@ -317,6 +393,59 @@ def developer_matriz(request):
     
     # Redirigir a la matriz del proyecto
     return redirect('proyectos:matriz_trazabilidad', proyecto_id=proyecto.pk)
+
+@login_required
+def stakeholder_dashboard(request):
+    """
+    Dashboard para clientes/stakeholders.
+    Muestra los proyectos donde el usuario es cliente.
+    Los clientes pueden ver requerimientos pero no editarlos.
+    """
+    from requerimientos.models import Requerimiento
+    from casos_de_uso.models import CasoDeUso
+    
+    # Obtener proyectos donde el usuario es cliente
+    proyectos = Proyecto.objects.filter(clientes=request.user)
+    dashboard_data = []
+    
+    for proyecto in proyectos:
+        requerimientos = Requerimiento.objects.filter(proyecto=proyecto)
+        casos_de_uso = CasoDeUso.objects.filter(proyecto=proyecto)
+        
+        # Calcular huérfanos
+        reqs_huerfanos = requerimientos.annotate(rel_count=Count('relaciones_casos')).filter(rel_count=0)
+        casos_huerfanos = casos_de_uso.annotate(rel_count=Count('relaciones_requerimientos')).filter(rel_count=0)
+        
+        reqs_relacionados = requerimientos.count() - reqs_huerfanos.count()
+        casos_relacionados = casos_de_uso.count() - casos_huerfanos.count()
+        
+        # Métricas por estado
+        reqs_pendientes = requerimientos.filter(estado='CREADO').count()
+        reqs_validados = requerimientos.filter(estado='VALIDADO').count()
+        reqs_completados = requerimientos.filter(estado__in=['TERMINADO', 'COMPLETADO']).count()
+        
+        dashboard_data.append({
+            "proyecto": proyecto,
+            "requerimientos": requerimientos,
+            "casos_de_uso": casos_de_uso,
+            "reqs_huerfanos": reqs_huerfanos,
+            "casos_huerfanos": casos_huerfanos,
+            "reqs_relacionados": reqs_relacionados,
+            "casos_relacionados": casos_relacionados,
+            "reqs_pendientes": reqs_pendientes,
+            "reqs_validados": reqs_validados,
+            "reqs_completados": reqs_completados,
+        })
+    
+    # Obtener el primer proyecto para el título
+    primer_proyecto = proyectos.first()
+    titulo_proyecto = primer_proyecto.nombre if primer_proyecto else "Sin Proyecto"
+    
+    return render(request, "dashboards/stakeholder_dashboard.html", {
+        "dashboard_data": dashboard_data,
+        "page_title": f"{titulo_proyecto} - Dashboard Cliente",
+    })
+
 
 @login_required
 def limpiar_base_datos(request):

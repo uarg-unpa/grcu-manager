@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 
 class UsuarioCrearForm(forms.ModelForm):
     roles = forms.ModelMultipleChoiceField(
-        queryset=Rol.objects.filter(nombre__in=["Admin", "Desarrollador"]),  # Roles Admin y Desarrollador disponibles
+        queryset=Rol.objects.filter(nombre__in=["Admin", "Desarrollador", "Stakeholder"]),  # Roles disponibles
         widget=forms.CheckboxSelectMultiple,
         required=False
     )
@@ -19,14 +19,15 @@ class UsuarioCrearForm(forms.ModelForm):
         email = self.cleaned_data.get("email")
         if not email:
             raise ValidationError("El email es obligatorio.")
-        if not email.lower().endswith("@gmail.com"):
-            raise ValidationError("Solo se permiten correos de Gmail.")
+        allowed_domains = ["gmail.com", "uarg.unpa.edu.ar"]
+        if not any(email.lower().endswith(f"@{domain}") for domain in allowed_domains):
+            raise ValidationError("Solo se permiten emails de los dominios: @gmail.com o @uarg.unpa.edu.ar")
         return email
 
 
 class UsuarioEditarForm(forms.ModelForm):
     roles = forms.ModelMultipleChoiceField(
-        queryset=Rol.objects.filter(nombre__in=["Admin", "Desarrollador"]),  # Roles Admin y Desarrollador disponibles
+        queryset=Rol.objects.filter(nombre__in=["Admin", "Desarrollador", "Stakeholder"]),  # Roles disponibles
         widget=forms.CheckboxSelectMultiple,
         required=False
     )
@@ -39,7 +40,8 @@ class UsuarioEditarForm(forms.ModelForm):
         email = self.cleaned_data.get("email")
         if not email:
             raise ValidationError("El email es obligatorio.")
-        if not email.lower().endswith("@gmail.com"):
-            raise ValidationError("Solo se permiten correos de Gmail.")
+        allowed_domains = ["gmail.com", "uarg.unpa.edu.ar"]
+        if not any(email.lower().endswith(f"@{domain}") for domain in allowed_domains):
+            raise ValidationError("Solo se permiten emails de los dominios: @gmail.com o @uarg.unpa.edu.ar")
         return email
 

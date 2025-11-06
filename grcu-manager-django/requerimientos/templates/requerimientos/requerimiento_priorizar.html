@@ -5,7 +5,7 @@
 {% block title %}{{ page_title }}{% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'requerimientos/css/priorizar_styles.css' %}?v=1.0">
+    <link rel="stylesheet" href="{% static 'requerimientos/css/priorizar_styles.css' %}?v=1.1">
 {% endblock %}
 
 {% block content %}
@@ -14,27 +14,61 @@
     <div class="mb-3">
         <span class="badge-proyecto"><i class="bi bi-diagram-3 me-1"></i> Proyecto: {{ proyecto.nombre }}</span>
     </div>
+    
+    <div class="alert alert-info mb-3">
+        <i class="bi bi-info-circle me-2"></i>
+        <strong>Nota:</strong> Solo puedes priorizar requerimientos que hayan sido <strong>validados</strong>. 
+        Los requerimientos en estado <span class="badge bg-secondary">📝 Borrador</span> deben ser validados primero.
+    </div>
+    
     <form method="post" class="card priorizar-card">
         {% csrf_token %}
         <div class="table-responsive">
         <table class="table table-bordered align-middle mb-0">
-            <thead>
+            <thead class="table-primary">
                 <tr>
                     <th><i class="bi bi-file-earmark-text me-1"></i> Requerimiento</th>
                     <th><i class="bi bi-card-text me-1"></i> Descripción</th>
+                    <th><i class="bi bi-info-circle me-1"></i> Estado</th>
                     <th><i class="bi bi-flag me-1"></i> Prioridad</th>
                     <th><i class="bi bi-chat-left-text me-1"></i> Comentarios</th>
                 </tr>
             </thead>
             <tbody>
                 {% for req in requerimientos %}
-                <tr>
-                    <td>{{ req.nombre }}</td>
+                <tr {% if req.estado == 'BORRADOR' %}class="table-secondary"{% endif %}>
+                    <td>
+                        <strong>{{ req.nombre }}</strong>
+                        {% if req.estado == 'BORRADOR' %}
+                        <span class="badge bg-secondary ms-2" title="Este requerimiento debe ser validado antes de priorizarse">
+                            <i class="bi bi-lock"></i> No validado
+                        </span>
+                        {% endif %}
+                    </td>
                     <td>{{ req.descripcion|truncatechars:60 }}</td>
                     <td>
-                        <select name="prioridad_{{ req.pk }}" class="form-select">
+                        {% if req.estado == 'VALIDADO' %}
+                            <span class="badge badge-estado-validado"><i class="bi bi-check-circle"></i> Validado</span>
+                        {% elif req.estado == 'PRIORIZADO' %}
+                            <span class="badge badge-estado-priorizado"><i class="bi bi-list-ol"></i> Priorizado</span>
+                        {% elif req.estado == 'EN_PROCESO' %}
+                            <span class="badge badge-estado-en-proceso"><i class="bi bi-hourglass-split"></i> En Proceso</span>
+                        {% elif req.estado == 'TERMINADO' %}
+                            <span class="badge badge-estado-terminado"><i class="bi bi-check-all"></i> Terminado</span>
+                        {% else %}
+                            <span class="badge badge-estado-borrador">📝 Borrador</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <select name="prioridad_{{ req.pk }}" 
+                                class="form-select prioridad-select"
+                                {% if req.estado == 'BORRADOR' %}disabled title="Debe validarse primero"{% endif %}>
                             {% for val, label in MOSCOW_CHOICES %}
-                                <option value="{{ val }}" {% if req.detalle_tradicional and req.detalle_tradicional.prioridad == val or req.detalle_agil and req.detalle_agil.prioridad == val %}selected{% endif %}>{{ label }}</option>
+                                <option value="{{ val }}" 
+                                        class="prioridad-{{ val|lower }}"
+                                        {% if req.detalle_tradicional and req.detalle_tradicional.prioridad == val or req.detalle_agil and req.detalle_agil.prioridad == val %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
                             {% endfor %}
                         </select>
                     </td>
@@ -49,7 +83,7 @@
                     </td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="4" class="text-center">No hay requerimientos para priorizar.</td></tr>
+                <tr><td colspan="5" class="text-center">No hay requerimientos validados para priorizar.</td></tr>
                 {% endfor %}
             </tbody>
         </table>

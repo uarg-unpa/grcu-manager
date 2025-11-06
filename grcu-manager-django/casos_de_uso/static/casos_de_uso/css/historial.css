@@ -1,0 +1,25 @@
+/* Estilos para el timeline de historial de versiones de casos de uso */
+.timeline-badge {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2rem;
+}
+
+.timeline-item {
+    position: relative;
+}
+
+.timeline-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: calc(16.666% + 30px);
+    top: 60px;
+    bottom: -30px;
+    width: 2px;
+    background: #dee2e6;
+}

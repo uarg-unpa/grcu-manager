@@ -255,8 +255,6 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
 document.addEventListener('DOMContentLoaded', function() {
     const chartOptions = {
         responsive: true,
@@ -330,5 +328,36 @@ document.addEventListener('DOMContentLoaded', function() {
         options: chartOptions
     });
 });
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+window.tipoChartData = {
+    labels: {{ tipo_labels_json|safe }},
+    datasets: [{
+        data: {{ tipo_values_json|safe }},
+        backgroundColor: {{ tipo_colors_json|safe }}
+    }]
+};
+window.estadoChartData = {
+    labels: {{ estado_labels_json|safe }},
+    datasets: [{
+        data: {{ estado_values_json|safe }},
+        backgroundColor: {{ estado_colors_json|safe }}
+    }]
+};
+window.trazabilidadReqsChartData = {
+    labels: {{ trazabilidad_labels_json|safe }},
+    datasets: [{
+        data: {{ trazabilidad_reqs_values_json|safe }},
+        backgroundColor: ['#27ae60', '#e74c3c']
+    }]
+};
+window.trazabilidadCasosChartData = {
+    labels: {{ trazabilidad_labels_json|safe }},
+    datasets: [{
+        data: {{ trazabilidad_casos_values_json|safe }},
+        backgroundColor: ['#3498db', '#95a5a6']
+    }]
+};
 </script>
+<script src="{% static 'proyectos/js/proyecto_reportes.js' %}?v=1.0"></script>
 {% endblock %}

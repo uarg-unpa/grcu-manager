@@ -100,6 +100,107 @@
                 {% endif %}
             </div>
             {% endif %}
+            
+            <!-- Sección de Comentarios y Discusión -->
+            {% if tiene_permiso and total_comentarios > 0 %}
+            <hr class="my-4">
+            <h4 class="mb-3">
+                <i class="bi bi-chat-left-text text-primary"></i>
+                Comentarios y Discusión
+                <span class="badge bg-primary">{{ total_comentarios }}</span>
+            </h4>
+            
+            <div class="comentarios-container">
+                {% for hilo in comentarios_hilo %}
+                <!-- Comentario principal -->
+                <div class="card mb-3 border-start border-4 {% if hilo.comentario.tipo_accion == 'RECHAZAR' %}border-danger{% elif hilo.comentario.tipo_accion == 'VALIDAR' %}border-success{% else %}border-primary{% endif %}">
+                    <div class="card-body">
+                        <div class="d-flex align-items-start mb-2">
+                            <div class="me-3">
+                                {% if hilo.comentario.autor.avatar %}
+                                    <img src="{{ hilo.comentario.autor.avatar }}" 
+                                         alt="{{ hilo.comentario.autor.nombre }}"
+                                         class="rounded-circle"
+                                         style="width: 48px; height: 48px; object-fit: cover;">
+                                {% else %}
+                                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
+                                         style="width: 48px; height: 48px;">
+                                        <strong>{{ hilo.comentario.autor.nombre|first|upper }}</strong>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <strong>{{ hilo.comentario.autor.nombre }}</strong>
+                                        <span class="badge bg-{% if hilo.comentario.tipo_accion == 'VALIDAR' %}success{% elif hilo.comentario.tipo_accion == 'RECHAZAR' %}danger{% elif hilo.comentario.tipo_accion == 'ACLARACION' %}info{% else %}secondary{% endif %} ms-2">
+                                            {{ hilo.comentario.get_tipo_accion_display }}
+                                        </span>
+                                    </div>
+                                    <small class="text-muted">
+                                        <i class="bi bi-clock"></i>
+                                        {{ hilo.comentario.fecha_creacion|date:"d/m/Y H:i" }}
+                                    </small>
+                                </div>
+                                <p class="mb-0 mt-2">{{ hilo.comentario.comentario|linebreaks }}</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Respuestas anidadas -->
+                        {% if hilo.respuestas %}
+                        <div class="ms-5 mt-3">
+                            {% for respuesta in hilo.respuestas %}
+                            <div class="card mb-2 bg-light border-0">
+                                <div class="card-body py-2">
+                                    <div class="d-flex align-items-start">
+                                        <div class="me-2">
+                                            {% if respuesta.autor.avatar %}
+                                                <img src="{{ respuesta.autor.avatar }}" 
+                                                     alt="{{ respuesta.autor.nombre }}"
+                                                     class="rounded-circle"
+                                                     style="width: 32px; height: 32px; object-fit: cover;">
+                                            {% else %}
+                                                <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center"
+                                                     style="width: 32px; height: 32px; font-size: 12px;">
+                                                    <strong>{{ respuesta.autor.nombre|first|upper }}</strong>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div>
+                                                    <strong class="small">{{ respuesta.autor.nombre }}</strong>
+                                                    <span class="badge bg-secondary badge-sm ms-1">Respuesta</span>
+                                                </div>
+                                                <small class="text-muted">
+                                                    {{ respuesta.fecha_creacion|date:"d/m/Y H:i" }}
+                                                </small>
+                                            </div>
+                                            <p class="mb-0 mt-1 small">{{ respuesta.comentario|linebreaks }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div class="alert alert-info mt-3">
+                <i class="bi bi-info-circle"></i>
+                Para agregar comentarios o responder, usa el botón <strong>"Discusión"</strong> al final de esta página.
+            </div>
+            {% elif tiene_permiso %}
+            <hr class="my-4">
+            <div class="alert alert-secondary">
+                <i class="bi bi-chat-square-text"></i>
+                Aún no hay comentarios en este requerimiento. 
+                Usa el botón <strong>"Discusión"</strong> para iniciar una conversación.
+            </div>
+            {% endif %}
         </div>
         <div class="card-footer">
             <div class="d-flex justify-content-between">
@@ -130,6 +231,9 @@
                     <a href="{% url 'requerimientos:requerimiento_discusion' requerimiento.pk %}" 
                        class="btn btn-info me-2">
                         <i class="bi bi-chat-dots"></i> Discusión
+                        {% if total_comentarios > 0 %}
+                        <span class="badge bg-light text-dark">{{ total_comentarios }}</span>
+                        {% endif %}
                     </a>
                     <a href="{% url 'requerimientos:requerimiento_historial' requerimiento.pk %}" 
                        class="btn btn-info text-white">

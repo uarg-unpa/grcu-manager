@@ -1,0 +1,17 @@
+/* Estilos para la tabla de comparación de versiones */
+.table-bordered th,
+.table-bordered td {
+    vertical-align: middle;
+}
+
+del {
+    background-color: rgba(255, 0, 0, 0.1);
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+strong.text-success {
+    background-color: rgba(0, 255, 0, 0.1);
+    padding: 2px 4px;
+    border-radius: 3px;
+}

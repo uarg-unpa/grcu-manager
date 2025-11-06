@@ -58,28 +58,7 @@
     </div>
 </div>
 
-<style>
-.card {
-    border-radius: 15px;
-    overflow: hidden;
-}
-
-.card-header {
-    border-bottom: 3px solid #f0ad4e;
-}
-
-.bi-tools {
-    animation: rotate 2s linear infinite;
-}
-
-@keyframes rotate {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-.alert-info {
-    border-left: 4px solid #0dcaf0;
-    background-color: #e7f6fd;
-}
-</style>
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'core/css/under_development.css' %}?v=1.0">
+{% endblock %}
 {% endblock %}

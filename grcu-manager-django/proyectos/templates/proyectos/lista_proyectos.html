@@ -19,6 +19,7 @@
                 <th>Logo</th>
                 <th>Nombre</th>
                 <th>Líder</th>
+                <th>Clientes</th>
                 <th>Creado por</th>
                 <th>Fecha de creación</th>
                 <th>Acciones</th>
@@ -40,6 +41,20 @@
                         {{ proyecto.lider.nombre }}
                     {% else %}
                         <span class="text-muted">No asignado</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if proyecto.clientes.exists %}
+                        <ul class="list-unstyled mb-0">
+                            {% for cliente in proyecto.clientes.all %}
+                                <li>
+                                    <i class="bi bi-person-badge text-info"></i>
+                                    {{ cliente.nombre }}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <span class="text-muted">Sin clientes</span>
                     {% endif %}
                 </td>
                 <td>

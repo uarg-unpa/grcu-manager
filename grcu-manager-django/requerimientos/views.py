@@ -61,11 +61,17 @@ def requerimiento_list(request, proyecto_id=None):
             # Stakeholders solo ven requerimientos pendientes de validación
             requerimientos = Requerimiento.objects.filter(
                 proyecto=proyecto,
-                estado='CREADO'
-            ).select_related('proyecto')
+                estado='BORRADOR'
+            ).select_related('proyecto').annotate(
+                num_comentarios=Count('comentarios_validacion', distinct=True)
+            )
         else:
             # Líderes y desarrolladores ven todos los requerimientos
-            requerimientos = Requerimiento.objects.filter(proyecto=proyecto).select_related('proyecto')
+            requerimientos = Requerimiento.objects.filter(proyecto=proyecto).select_related(
+                'proyecto', 'detalle_tradicional', 'detalle_agil'
+            ).annotate(
+                num_comentarios=Count('comentarios_validacion', distinct=True)
+            )
         
         # Estadísticas adicionales para líderes
         stats = None
@@ -92,7 +98,11 @@ def requerimiento_list(request, proyecto_id=None):
                 'req_por_tipo': list(req_tipo_qs),
             }
     else:
-        requerimientos = Requerimiento.objects.all().select_related('proyecto')
+        requerimientos = Requerimiento.objects.all().select_related(
+            'proyecto', 'detalle_tradicional', 'detalle_agil'
+        ).annotate(
+            num_comentarios=Count('comentarios_validacion', distinct=True)
+        )
         proyecto = None
         stats = None
         
@@ -109,14 +119,60 @@ def requerimiento_list(request, proyecto_id=None):
         "is_stakeholder": es_stakeholder,
         "page_title": page_title,
         # Agregar conteo de requerimientos pendientes de validación
-        "pendientes_validacion": Requerimiento.objects.filter(proyecto=proyecto, estado='CREADO').count() if proyecto else 0,
+        "pendientes_validacion": Requerimiento.objects.filter(proyecto=proyecto, estado='BORRADOR').count() if proyecto else 0,
+        "MOSCOW_CHOICES": [
+            ("MUST", "Crítico"),
+            ("SHOULD", "Importante"),
+            ("COULD", "Deseable"),
+            ("WONT", "Descartado")
+        ],
     }
     return render(request, "requerimientos/requerimiento_list.html", context)
 
 @login_required
 def requerimiento_detail(request, pk):
+    """
+    Vista de detalle del requerimiento que muestra información completa
+    incluyendo comentarios y conversaciones de validación.
+    """
     requerimiento = get_object_or_404(Requerimiento, pk=pk)
-    return render(request, "requerimientos/requerimiento_detail.html", {"requerimiento": requerimiento})
+    proyecto = requerimiento.proyecto
+    
+    # Verificar permisos: solo participantes del proyecto pueden ver detalles completos
+    es_lider = request.user == proyecto.lider
+    es_participante = proyecto.participantes.filter(id=request.user.id).exists()
+    tiene_permiso = es_lider or es_participante
+    
+    # Obtener comentarios si el usuario tiene permiso
+    comentarios = []
+    comentarios_hilo = []
+    
+    if tiene_permiso:
+        # Obtener comentarios ordenados por fecha con información completa del autor
+        comentarios = ComentarioValidacion.objects.filter(
+            requerimiento=requerimiento
+        ).select_related('autor', 'comentario_padre').order_by('fecha_creacion')
+        
+        # Organizar comentarios en hilos
+        comentarios_raiz = comentarios.filter(comentario_padre__isnull=True)
+        
+        for comentario in comentarios_raiz:
+            hilo = {
+                'comentario': comentario,
+                'respuestas': list(comentarios.filter(comentario_padre=comentario))
+            }
+            comentarios_hilo.append(hilo)
+    
+    context = {
+        'requerimiento': requerimiento,
+        'comentarios_hilo': comentarios_hilo,
+        'total_comentarios': len(comentarios),
+        'tiene_permiso': tiene_permiso,
+        'es_lider': es_lider,
+        'es_participante': es_participante,
+    }
+    
+    return render(request, "requerimientos/requerimiento_detail.html", context)
 
 
 @login_required
@@ -160,7 +216,7 @@ def requerimiento_create(request, proyecto_id=None):
     es_agil = proyecto.metodologia == 'AGIL'
     
     if request.method == 'POST':
-        # Instanciar el formulario apropiado
+        # Instanciar el formulario apropiado con datos POST y archivos
         if es_tradicional:
             form = RequerimientoTradicionalForm(request.POST, request.FILES)
         elif es_agil:
@@ -175,7 +231,7 @@ def requerimiento_create(request, proyecto_id=None):
                 nombre=form.cleaned_data['nombre'],
                 descripcion=form.cleaned_data.get('descripcion', ''),
                 tipo=form.cleaned_data['tipo'],
-                estado='CREADO',  # Forzar estado inicial como CREADO
+                estado='BORRADOR',  # Forzar estado inicial como BORRADOR
                 proyecto=proyecto,
                 creado_por=request.user,
                 imagen=form.cleaned_data.get('imagen'),
@@ -210,12 +266,47 @@ def requerimiento_create(request, proyecto_id=None):
             
             # Redirigir al dashboard del líder
             return redirect('dashboards:lider_dashboard')
+        else:
+            # Si el formulario no es válido, se mantendrá con los datos POST
+            # Los valores ingresados se conservarán para que el usuario los corrija
+            messages.error(request, 'Por favor, corrige los errores del formulario.')
     else:
-        # GET: Instanciar formulario vacío
+        # GET: Generar nombre automático según tipo más frecuente del proyecto
+        initial_data = {}
+        
+        # Analizar qué tipo de requerimiento es más común para sugerir el siguiente
+        # Contar requerimientos por tipo en el proyecto
+        from django.db.models import Count
+        tipos_count = Requerimiento.objects.filter(proyecto=proyecto).values('tipo').annotate(
+            count=Count('tipo')
+        ).order_by('-count')
+        
+        # Determinar el tipo sugerido (el más común, o FUNCIONAL por defecto)
+        tipo_sugerido = tipos_count[0]['tipo'] if tipos_count else 'FUNCIONAL'
+        
+        # Generar nombre automático basado en el tipo
+        # RF-01 para FUNCIONAL, RNF-01 para NO_FUNCIONAL, RS-01 para SISTEMA
+        prefijos = {
+            'FUNCIONAL': 'RF',
+            'NO_FUNCIONAL': 'RNF',
+            'SISTEMA': 'RS'
+        }
+        
+        for tipo_key, prefijo in prefijos.items():
+            count = Requerimiento.objects.filter(proyecto=proyecto, tipo=tipo_key).count()
+            nuevo_num = count + 1
+            initial_data[f'nombre_sugerido_{tipo_key.lower()}'] = f'{prefijo}-{nuevo_num:02d}'
+        
+        # Nombre por defecto según el tipo más común
+        prefijo_default = prefijos.get(tipo_sugerido, 'RF')
+        count_default = Requerimiento.objects.filter(proyecto=proyecto, tipo=tipo_sugerido).count()
+        initial_data['nombre'] = f'{prefijo_default}-{count_default + 1:02d}'
+        
+        # Instanciar formulario con datos iniciales
         if es_tradicional:
-            form = RequerimientoTradicionalForm()
+            form = RequerimientoTradicionalForm(initial=initial_data)
         elif es_agil:
-            form = RequerimientoAgilForm()
+            form = RequerimientoAgilForm(initial=initial_data)
         else:
             messages.error(request, 'Metodología no reconocida.')
             return redirect('dashboards:lider_dashboard')
@@ -242,10 +333,10 @@ def requerimiento_priorizar(request, proyecto_id=None):
     from requerimientos.models import Requerimiento, DetalleRequerimientoTradicional
     from proyectos.models import Proyecto
     MOSCOW_CHOICES = [
-        ("MUST", "Must have"),
-        ("SHOULD", "Should have"),
-        ("COULD", "Could have"),
-        ("WONT", "Won't have")
+        ("MUST", "Crítico"),
+        ("SHOULD", "Importante"),
+        ("COULD", "Deseable"),
+        ("WONT", "Descartado")
     ]
 
     # Determinar el proyecto
@@ -263,29 +354,65 @@ def requerimiento_priorizar(request, proyecto_id=None):
     if request.user != proyecto.lider:
         return render(request, "requerimientos/requerimiento_priorizar.html", {"proyecto": None})
 
-    # Obtener requerimientos validados que pueden ser priorizados
+    # Obtener requerimientos del proyecto que estén VALIDADOS (listos para priorizar)
+    # Los requerimientos en estado BORRADOR no pueden priorizarse
     requerimientos = Requerimiento.objects.filter(
-        proyecto=proyecto,
-        estado='VALIDADO'
+        proyecto=proyecto
+    ).exclude(
+        estado='BORRADOR'
     ).select_related('detalle_tradicional', 'detalle_agil')
 
     if request.method == 'POST':
         for req in requerimientos:
+            # Solo permitir priorizar requerimientos validados
+            if req.estado == 'BORRADOR':
+                continue
+                
             prioridad = request.POST.get(f'prioridad_{req.pk}')
-            # Actualizar prioridad según el tipo de detalle que exista
-            if req.detalle_tradicional and prioridad:
-                if req.detalle_tradicional.prioridad != prioridad:
-                    req.detalle_tradicional.prioridad = prioridad
-                    req.detalle_tradicional.save()
-                    # Cambiar estado a PRIORIZADO
-                    req.estado = 'PRIORIZADO'
-                    req.save()
-            elif req.detalle_agil and prioridad:
-                # Para metodología ágil, la priorización se maneja diferente
-                # Solo cambiar el estado a PRIORIZADO sin modificar campos específicos
+            if prioridad:
+                detalle_actualizado = False
+                
+                # Intentar acceder a detalle tradicional usando hasattr
+                if hasattr(req, 'detalle_tradicional'):
+                    try:
+                        detalle_trad = req.detalle_tradicional
+                        if detalle_trad:
+                            detalle_trad.prioridad = prioridad
+                            detalle_trad.save()
+                            detalle_actualizado = True
+                    except DetalleRequerimientoTradicional.DoesNotExist:
+                        pass
+                
+                # Intentar acceder a detalle ágil si no se actualizó tradicional
+                if not detalle_actualizado and hasattr(req, 'detalle_agil'):
+                    try:
+                        detalle_agil = req.detalle_agil
+                        if detalle_agil:
+                            detalle_agil.prioridad = prioridad
+                            detalle_agil.save()
+                            detalle_actualizado = True
+                    except DetalleRequerimientoAgil.DoesNotExist:
+                        pass
+                
+                # Si no tiene ningún detalle, crear según metodología del proyecto
+                if not detalle_actualizado:
+                    if proyecto.metodologia == 'TRADICIONAL':
+                        DetalleRequerimientoTradicional.objects.create(
+                            requerimiento_padre=req, 
+                            prioridad=prioridad
+                        )
+                    elif proyecto.metodologia == 'AGIL':
+                        DetalleRequerimientoAgil.objects.create(
+                            requerimiento_padre=req, 
+                            prioridad=prioridad
+                        )
+                
+                # Cambiar estado a PRIORIZADO si no lo está
                 if req.estado != 'PRIORIZADO':
                     req.estado = 'PRIORIZADO'
                     req.save()
+        
+        messages.success(request, '✅ Priorización realizada con éxito. Los requerimientos han sido actualizados.')
         return redirect(f"{reverse('requerimientos:requerimiento_priorizar')}?proyecto_id={proyecto.pk}")
 
     context = {
@@ -296,6 +423,36 @@ def requerimiento_priorizar(request, proyecto_id=None):
     }
     return render(request, "requerimientos/requerimiento_priorizar.html", context)
 
+
+@login_required
+def obtener_siguiente_numero_requerimiento(request):
+    """Endpoint AJAX para obtener el siguiente número de requerimiento según el tipo"""
+    proyecto_id = request.GET.get('proyecto_id', '').strip()
+    tipo = request.GET.get('tipo', 'FUNCIONAL').strip()
+    
+    if not proyecto_id:
+        return JsonResponse({'error': 'Se requiere proyecto_id'}, status=400)
+    
+    # Definir prefijos según tipo
+    prefijos = {
+        'FUNCIONAL': 'RF',
+        'NO_FUNCIONAL': 'RNF',
+        'SISTEMA': 'RS'
+    }
+    
+    prefijo = prefijos.get(tipo, 'RF')
+    
+    # Contar requerimientos del mismo tipo en el proyecto
+    count = Requerimiento.objects.filter(proyecto_id=proyecto_id, tipo=tipo).count()
+    siguiente_numero = count + 1
+    siguiente_nombre = f'{prefijo}-{siguiente_numero:02d}'
+    
+    return JsonResponse({
+        'siguiente_nombre': siguiente_nombre,
+        'tipo': tipo,
+        'prefijo': prefijo,
+        'numero': siguiente_numero
+    })
 
 @login_required
 def buscar_requerimientos_ajax(request):
@@ -717,7 +874,7 @@ def requerimiento_update(request, pk):
     es_agil = proyecto.metodologia == 'AGIL'
     
     if request.method == 'POST':
-        # Instanciar el formulario apropiado
+        # Instanciar el formulario apropiado con datos POST y archivos
         if es_tradicional:
             form = RequerimientoTradicionalForm(request.POST, request.FILES)
         elif es_agil:
@@ -766,14 +923,18 @@ def requerimiento_update(request, pk):
             
             messages.success(request, f'✅ Requerimiento "{requerimiento.nombre}" actualizado exitosamente.')
             return redirect('requerimientos:requerimiento_detail', pk=pk)
+        else:
+            # Si el formulario no es válido, se mantendrá con los datos POST
+            # Agregar mensaje de error
+            messages.error(request, 'Por favor, corrige los errores del formulario.')
     else:
         # GET: Cargar datos existentes en el formulario
-        initial_data = {
+        from typing import Any, Dict
+        initial_data: Dict[str, Any] = {
             'nombre': requerimiento.nombre,
             'descripcion': requerimiento.descripcion,
             'tipo': requerimiento.tipo,
             'estado': requerimiento.estado,
-            'imagen': requerimiento.imagen,
             'link_externo': requerimiento.link_externo,
         }
         
@@ -817,6 +978,7 @@ def requerimiento_update(request, pk):
         'es_tradicional': es_tradicional,
         'es_agil': es_agil,
         'page_title': f'Editar Requerimiento: {requerimiento.nombre}',
+        'imagen_existente': requerimiento.imagen,  # Para mostrar la imagen actual
     }
     return render(request, 'requerimientos/requerimiento_edit.html', context)
 
@@ -888,10 +1050,10 @@ def requerimiento_validar_cliente(request, proyecto_id=None):
         messages.error(request, 'No tienes permiso para validar requerimientos de este proyecto.')
         return redirect('dashboards:cliente_dashboard')
 
-    # Obtener requerimientos pendientes de validación (estado CREADO)
+    # Obtener requerimientos pendientes de validación (estado BORRADOR)
     requerimientos = Requerimiento.objects.filter(
         proyecto=proyecto,
-        estado='CREADO'
+        estado='BORRADOR'
     ).select_related('detalle_tradicional', 'detalle_agil', 'creado_por')
 
     if request.method == 'POST':
@@ -948,10 +1110,10 @@ def requerimiento_validar_lider(request, proyecto_id=None):
         messages.error(request, 'Solo el líder del proyecto puede validar requerimientos.')
         return redirect('dashboards:lider_dashboard')
 
-    # Obtener requerimientos pendientes de validación (estado CREADO)
+    # Obtener requerimientos pendientes de validación (estado BORRADOR)
     requerimientos = Requerimiento.objects.filter(
         proyecto=proyecto,
-        estado='CREADO'
+        estado='BORRADOR'
     ).select_related('detalle_tradicional', 'detalle_agil', 'creado_por')
 
     if request.method == 'POST':
@@ -1045,18 +1207,62 @@ def requerimiento_discusion(request, pk):
         return redirect('requerimientos:requerimiento_detail', pk=pk)
 
     # Obtener comentarios ordenados por fecha con información completa del autor
-    comentarios = ComentarioValidacion.objects.filter(
+    # Filtrar según permisos de visualización
+    comentarios_query = ComentarioValidacion.objects.filter(
         requerimiento=requerimiento
     ).select_related('autor', 'comentario_padre').prefetch_related('autor__roles').order_by('fecha_creacion')
+    
+    # Aplicar filtro de visibilidad según rol del usuario
+    comentarios_visibles = []
+    for comentario in comentarios_query:
+        puede_ver = False
+        
+        if comentario.tipo_comentario == 'DISCUSION_INTERNA':
+            # Solo líder y desarrolladores
+            puede_ver = es_lider or es_participante
+            
+        elif comentario.tipo_comentario == 'VALIDACION_CLIENTE':
+            # Todos pueden ver (líder, cliente, desarrolladores)
+            puede_ver = True
+            
+        elif comentario.tipo_comentario == 'IMPLEMENTACION':
+            # Solo líder y desarrolladores
+            puede_ver = es_lider or es_participante
+        
+        if puede_ver:
+            comentarios_visibles.append(comentario)
+    
+    # Convertir de nuevo a lista para mantener compatibilidad con el código existente
+    comentarios = comentarios_visibles
 
     if request.method == 'POST':
         comentario_texto = request.POST.get('comentario', '').strip()
         comentario_padre_id = request.POST.get('comentario_padre')
+        tipo_comentario_seleccionado = request.POST.get('tipo_comentario', 'DISCUSION_INTERNA')
         
         if comentario_texto:
+            # Validar permisos según tipo de comentario
+            puede_comentar = False
+            
+            if tipo_comentario_seleccionado == 'DISCUSION_INTERNA':
+                # Solo líder y desarrolladores
+                puede_comentar = es_lider or es_participante
+                
+            elif tipo_comentario_seleccionado == 'VALIDACION_CLIENTE':
+                # Solo líder y cliente (stakeholder)
+                puede_comentar = es_lider or es_stakeholder
+                
+            elif tipo_comentario_seleccionado == 'IMPLEMENTACION':
+                # Solo líder y desarrolladores
+                puede_comentar = es_lider or es_participante
+            
+            if not puede_comentar:
+                messages.error(request, 'No tienes permiso para comentar en este contexto.')
+                return redirect('requerimientos:requerimiento_discusion', pk=pk)
+            
             # Determinar el tipo de acción basado en el contexto
             tipo_accion = 'RESPUESTA'
-            if not comentario_padre_id and requerimiento.estado == 'CREADO':
+            if not comentario_padre_id and requerimiento.estado == 'BORRADOR':
                 tipo_accion = 'ACLARACION'
             
             comentario_padre = None
@@ -1066,6 +1272,8 @@ def requerimiento_discusion(request, pk):
                         pk=comentario_padre_id,
                         requerimiento=requerimiento
                     )
+                    # Heredar el tipo de comentario del padre
+                    tipo_comentario_seleccionado = comentario_padre.tipo_comentario
                 except ComentarioValidacion.DoesNotExist:
                     pass
             
@@ -1075,6 +1283,7 @@ def requerimiento_discusion(request, pk):
                 autor=request.user,
                 comentario=comentario_texto,
                 tipo_accion=tipo_accion,
+                tipo_comentario=tipo_comentario_seleccionado,
                 comentario_padre=comentario_padre
             )
             
@@ -1085,7 +1294,7 @@ def requerimiento_discusion(request, pk):
 
     # Organizar comentarios en hilos con información completa del autor
     comentarios_hilo = []
-    comentarios_raiz = comentarios.filter(comentario_padre__isnull=True)
+    comentarios_raiz = [c for c in comentarios if c.comentario_padre is None]
     
     for comentario in comentarios_raiz:
         # Obtener roles del autor como lista de nombres
@@ -1101,11 +1310,14 @@ def requerimiento_discusion(request, pk):
                 'roles': roles_autor,
                 'rol_principal': rol_principal,
             },
-            'respuestas': []
+            'respuestas': [],
+            'tipo_comentario': comentario.tipo_comentario,
+            'tipo_comentario_display': comentario.get_tipo_comentario_display(),
         }
         
         # Agregar información del autor a cada respuesta
-        for respuesta in comentarios.filter(comentario_padre=comentario):
+        respuestas_del_comentario = [r for r in comentarios if r.comentario_padre and r.comentario_padre.pk == comentario.pk]
+        for respuesta in respuestas_del_comentario:
             roles_respuesta = list(respuesta.autor.roles.values_list('nombre', flat=True))
             rol_respuesta = roles_respuesta[0] if roles_respuesta else 'Sin rol'
             
@@ -1126,8 +1338,13 @@ def requerimiento_discusion(request, pk):
         'requerimiento': requerimiento,
         'proyecto': proyecto,
         'comentarios_hilo': comentarios_hilo,
-        'total_comentarios': comentarios.count(),
+        'total_comentarios': len(comentarios),
         'page_title': f'{proyecto.nombre} - Discusión: {requerimiento.nombre}',
+        'es_lider': es_lider,
+        'es_participante': es_participante,
+        'es_stakeholder': es_stakeholder,
+        'puede_comentar_interno': es_lider or es_participante,
+        'puede_comentar_cliente': es_lider or es_stakeholder,
     }
     
     return render(request, 'requerimientos/requerimiento_discusion.html', context)

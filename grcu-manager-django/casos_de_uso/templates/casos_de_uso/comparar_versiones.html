@@ -189,22 +189,7 @@
     </div>
 </div>
 
-<style>
-.table-bordered th,
-.table-bordered td {
-    vertical-align: middle;
-}
-
-del {
-    background-color: rgba(255, 0, 0, 0.1);
-    padding: 2px 4px;
-    border-radius: 3px;
-}
-
-strong.text-success {
-    background-color: rgba(0, 255, 0, 0.1);
-    padding: 2px 4px;
-    border-radius: 3px;
-}
-</style>
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'casos_de_uso/css/comparar_versiones.css' %}?v=1.0">
+{% endblock %}
 {% endblock %}
