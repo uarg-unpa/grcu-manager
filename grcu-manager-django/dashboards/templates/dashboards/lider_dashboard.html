@@ -21,7 +21,7 @@
                 }{% if not forloop.last %},{% endif %}
             {% endfor %}
         ]</script>
-        <script src="{% static 'dashboards/js/lider_dashboard.js' %}?v=1.0"></script>
+        <script src="{% static 'dashboards/js/lider_dashboard.js' %}?v=2.0"></script>
 {% endblock %}
 {% block content %}
 <div class="mt-4 px-4">
@@ -174,26 +174,35 @@
                 {# Métricas principales - 3 columnas #}
                 <div class="row g-3 mb-4">
                     <div class="col-md-4">
-                        <div class="metric-card card bg-gradient-primary text-white shadow hover-shadow" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                            <div class="card-body">
-                                <h5 class="card-title mb-3"><i class="bi bi-list-check"></i> Requerimientos</h5>
-                                <p class="display-4 fw-bold mb-0">{{ data.requerimientos|length }}</p>
+                        <div class="metric-card card shadow hover-shadow" style="border: 3px solid #667eea; background: white;">
+                            <div class="card-body text-center">
+                                <div class="mb-3">
+                                    <i class="bi bi-list-check" style="font-size: 3rem; color: #667eea;"></i>
+                                </div>
+                                <h5 class="card-title mb-2 text-muted">Requerimientos</h5>
+                                <p class="display-4 fw-bold mb-0" style="color: #667eea;">{{ data.requerimientos|length }}</p>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="metric-card card bg-gradient-primary text-white shadow hover-shadow" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                            <div class="card-body">
-                                <h5 class="card-title mb-3"><i class="bi bi-diagram-3"></i> Casos de Uso</h5>
-                                <p class="display-4 fw-bold mb-0">{{ data.casos_de_uso|length }}</p>
+                        <div class="metric-card card shadow hover-shadow" style="border: 3px solid #764ba2; background: white;">
+                            <div class="card-body text-center">
+                                <div class="mb-3">
+                                    <i class="bi bi-diagram-3" style="font-size: 3rem; color: #764ba2;"></i>
+                                </div>
+                                <h5 class="card-title mb-2 text-muted">Casos de Uso</h5>
+                                <p class="display-4 fw-bold mb-0" style="color: #764ba2;">{{ data.casos_de_uso|length }}</p>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="metric-card card huerfanos-card shadow hover-shadow" style="border: none;">
-                            <div class="card-body">
-                                <h5 class="card-title text-danger mb-3"><i class="bi bi-exclamation-triangle"></i> Huérfanos</h5>
-                                <p class="display-4 fw-bold text-danger mb-2">{{ data.total_huerfanos }}</p>
+                        <div class="metric-card card shadow hover-shadow" style="border: 3px solid #dc3545; background: white;">
+                            <div class="card-body text-center">
+                                <div class="mb-3">
+                                    <i class="bi bi-exclamation-triangle-fill" style="font-size: 3rem; color: #dc3545;"></i>
+                                </div>
+                                <h5 class="card-title mb-2 text-muted">Huérfanos</h5>
+                                <p class="display-4 fw-bold mb-2" style="color: #dc3545;">{{ data.total_huerfanos }}</p>
                                 <small class="text-muted">Reqs: {{ data.reqs_huerfanos|length }} | CUs: {{ data.casos_huerfanos|length }}</small>
                             </div>
                         </div>
@@ -203,26 +212,35 @@
                 {# Estados de requerimientos - 3 columnas #}
                 <div class="row g-3 mb-4">
                     <div class="col-md-4">
-                        <div class="metric-card card bg-gradient-primary text-white shadow hover-shadow" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                            <div class="card-body">
-                                <h5 class="card-title mb-3"><i class="bi bi-clock"></i> Sin Validar</h5>
-                                <p class="display-4 fw-bold mb-0">{{ data.reqs_sin_validar }}</p>
+                        <div class="metric-card card shadow hover-shadow" style="border: 3px solid #ffc107; background: white;">
+                            <div class="card-body text-center">
+                                <div class="mb-3">
+                                    <i class="bi bi-clock-history" style="font-size: 3rem; color: #ffc107;"></i>
+                                </div>
+                                <h5 class="card-title mb-2 text-muted">Sin Validar</h5>
+                                <p class="display-4 fw-bold mb-0" style="color: #ffc107;">{{ data.reqs_sin_validar }}</p>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="metric-card card bg-gradient-primary text-white shadow hover-shadow" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                            <div class="card-body">
-                                <h5 class="card-title mb-3"><i class="bi bi-check-circle"></i> Completados</h5>
-                                <p class="display-4 fw-bold mb-0">{{ data.reqs_completados }}</p>
+                        <div class="metric-card card shadow hover-shadow" style="border: 3px solid #28a745; background: white;">
+                            <div class="card-body text-center">
+                                <div class="mb-3">
+                                    <i class="bi bi-check-circle-fill" style="font-size: 3rem; color: #28a745;"></i>
+                                </div>
+                                <h5 class="card-title mb-2 text-muted">Completados</h5>
+                                <p class="display-4 fw-bold mb-0" style="color: #28a745;">{{ data.reqs_completados }}</p>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="metric-card card bg-gradient-primary text-white shadow hover-shadow" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                            <div class="card-body">
-                                <h5 class="card-title mb-3"><i class="bi bi-hourglass-split"></i> Sin Completar</h5>
-                                <p class="display-4 fw-bold mb-0">{{ data.reqs_sin_completar }}</p>
+                        <div class="metric-card card shadow hover-shadow" style="border: 3px solid #17a2b8; background: white;">
+                            <div class="card-body text-center">
+                                <div class="mb-3">
+                                    <i class="bi bi-hourglass-split" style="font-size: 3rem; color: #17a2b8;"></i>
+                                </div>
+                                <h5 class="card-title mb-2 text-muted">Sin Completar</h5>
+                                <p class="display-4 fw-bold mb-0" style="color: #17a2b8;">{{ data.reqs_sin_completar }}</p>
                             </div>
                         </div>
                     </div>
@@ -231,29 +249,38 @@
                 {# Gráficos y estado - 3 columnas #}
                 <div class="row g-3 mb-4">
                     <div class="col-md-4">
-                        <div class="metric-card card bg-gradient-primary text-white shadow hover-shadow" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 240px;">
+                        <div class="metric-card card shadow hover-shadow" style="border: 3px solid #6f42c1; background: white; height: 280px;">
                             <div class="card-body">
-                                <h6 class="card-title mb-3"><i class="bi bi-pie-chart"></i> Distribución Requerimientos</h6>
+                                <div class="d-flex align-items-center mb-3">
+                                    <i class="bi bi-pie-chart-fill me-2" style="font-size: 1.5rem; color: #6f42c1;"></i>
+                                    <h6 class="card-title mb-0 text-muted">Distribución de Requerimientos</h6>
+                                </div>
                                 <canvas id="grafico-req-{{ forloop.counter0 }}" width="120" height="120" style="max-width: 120px; max-height: 120px; margin: 0 auto; display: block;"></canvas>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="metric-card card bg-gradient-primary text-white shadow hover-shadow" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 240px;">
+                        <div class="metric-card card shadow hover-shadow" style="border: 3px solid #e83e8c; background: white; height: 280px;">
                             <div class="card-body">
-                                <h6 class="card-title mb-3"><i class="bi bi-pie-chart-fill"></i> Distribución Casos de Uso</h6>
+                                <div class="d-flex align-items-center mb-3">
+                                    <i class="bi bi-pie-chart-fill me-2" style="font-size: 1.5rem; color: #e83e8c;"></i>
+                                    <h6 class="card-title mb-0 text-muted">Distribución Casos de Uso</h6>
+                                </div>
                                 <canvas id="grafico-cu-{{ forloop.counter0 }}" width="120" height="120" style="max-width: 120px; max-height: 120px; margin: 0 auto; display: block;"></canvas>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="metric-card card bg-gradient-primary text-white shadow hover-shadow" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 240px;">
-                            <div class="card-body">
-                                <h5 class="card-title mb-3"><i class="bi bi-bar-chart-line"></i> Estado General</h5>
-                                <p class="small mb-3 text-white-50">{{ data.proyecto.nombre|truncatechars:25 }}</p>
+                        <div class="metric-card card shadow hover-shadow" style="border: 3px solid #20c997; background: white; height: 280px;">
+                            <div class="card-body text-center">
+                                <div class="mb-3">
+                                    <i class="bi bi-bar-chart-line-fill" style="font-size: 3rem; color: #20c997;"></i>
+                                </div>
+                                <h5 class="card-title mb-2 text-muted">Estado General</h5>
+                                <p class="small mb-3 text-muted">{{ data.proyecto.nombre|truncatechars:25 }}</p>
                                 <div class="d-flex justify-content-center flex-wrap gap-2">
-                                    <span class="badge bg-white text-primary px-3 py-2">
-                                        <i class="bi bi-check-circle me-1"></i> Activo
+                                    <span class="badge px-3 py-2" style="background-color: #20c997; color: white;">
+                                        <i class="bi bi-check-circle-fill me-1"></i> Activo
                                     </span>
                                 </div>
                             </div>

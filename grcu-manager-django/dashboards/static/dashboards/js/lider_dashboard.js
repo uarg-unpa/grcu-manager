@@ -80,10 +80,46 @@ function renderGraficoRequerimientos(proyecto, index) {
             }]
         },
         options: {
+            responsive: true,
+            maintainAspectRatio: true,
             plugins: {
                 legend: { 
                     display: true, 
-                    position: 'bottom' 
+                    position: 'bottom',
+                    labels: {
+                        boxWidth: 12,
+                        padding: 8,
+                        font: {
+                            size: 11
+                        },
+                        generateLabels: function(chart) {
+                            const data = chart.data;
+                            if (data.labels.length && data.datasets.length) {
+                                return data.labels.map((label, i) => {
+                                    const meta = chart.getDatasetMeta(0);
+                                    const style = meta.controller.getStyle(i);
+                                    return {
+                                        text: label,
+                                        fillStyle: style.backgroundColor,
+                                        strokeStyle: style.borderColor,
+                                        lineWidth: style.borderWidth,
+                                        hidden: false,
+                                        index: i
+                                    };
+                                });
+                            }
+                            return [];
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed || 0;
+                            return `${label}: ${value}`;
+                        }
+                    }
                 }
             },
             cutout: '65%'
@@ -124,10 +160,46 @@ function renderGraficoCasosUso(proyecto, index) {
             }]
         },
         options: {
+            responsive: true,
+            maintainAspectRatio: true,
             plugins: {
                 legend: { 
                     display: true, 
-                    position: 'bottom' 
+                    position: 'bottom',
+                    labels: {
+                        boxWidth: 12,
+                        padding: 8,
+                        font: {
+                            size: 11
+                        },
+                        generateLabels: function(chart) {
+                            const data = chart.data;
+                            if (data.labels.length && data.datasets.length) {
+                                return data.labels.map((label, i) => {
+                                    const meta = chart.getDatasetMeta(0);
+                                    const style = meta.controller.getStyle(i);
+                                    return {
+                                        text: label,
+                                        fillStyle: style.backgroundColor,
+                                        strokeStyle: style.borderColor,
+                                        lineWidth: style.borderWidth,
+                                        hidden: false,
+                                        index: i
+                                    };
+                                });
+                            }
+                            return [];
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed || 0;
+                            return `${label}: ${value}`;
+                        }
+                    }
                 }
             },
             cutout: '65%'

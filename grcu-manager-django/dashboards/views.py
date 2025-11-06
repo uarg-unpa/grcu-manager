@@ -192,6 +192,14 @@ def lider_dashboard(request):
     from auditoria.models import RegistroActividad
 
     proyectos = Proyecto.objects.filter(lider=request.user)
+    
+    # Verificar si hay proyectos que necesitan metodología asignada
+    proyecto_necesita_metodologia = proyectos.filter(metodologia__isnull=True).first()
+    if proyecto_necesita_metodologia:
+        from django.contrib import messages
+        messages.info(request, f"El proyecto '{proyecto_necesita_metodologia.nombre}' necesita que asignes una metodología antes de continuar.")
+        return redirect('proyectos:asignar_metodologia', proyecto_id=proyecto_necesita_metodologia.pk)
+    
     dashboard_data = []
 
     for proyecto in proyectos:

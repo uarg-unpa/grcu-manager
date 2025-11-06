@@ -42,7 +42,7 @@ function initializeCharts() {
             return;
         }
 
-        // Configuración simple sin opciones problemáticas
+        // Configuración con leyendas completas
         const config = {
             type: type,
             data: {
@@ -54,10 +54,46 @@ function initializeCharts() {
                 }]
             },
             options: {
-                responsive: false,  // Desactivar responsive para evitar loops
+                responsive: true,
+                maintainAspectRatio: true,
                 plugins: {
                     legend: {
-                        display: false  // Ocultar leyenda para ahorrar espacio
+                        display: true,
+                        position: 'bottom',
+                        labels: {
+                            boxWidth: 12,
+                            padding: 6,
+                            font: {
+                                size: 10
+                            },
+                            generateLabels: function(chart) {
+                                const data = chart.data;
+                                if (data.labels.length && data.datasets.length) {
+                                    return data.labels.map((label, i) => {
+                                        const meta = chart.getDatasetMeta(0);
+                                        const style = meta.controller.getStyle(i);
+                                        return {
+                                            text: label,
+                                            fillStyle: style.backgroundColor,
+                                            strokeStyle: style.borderColor,
+                                            lineWidth: style.borderWidth,
+                                            hidden: false,
+                                            index: i
+                                        };
+                                    });
+                                }
+                                return [];
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed || 0;
+                                return `${label}: ${value}`;
+                            }
+                        }
                     }
                 }
             }

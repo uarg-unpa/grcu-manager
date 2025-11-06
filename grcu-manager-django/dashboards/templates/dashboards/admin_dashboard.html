@@ -14,10 +14,13 @@
   <div class="row mb-4">
     <!-- Tarjeta Usuarios -->
     <div class="col-lg-4 col-xl-3">
-      <div class="card bg-gradient-primary text-white mb-3 shadow hover-shadow" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+      <div class="card mb-3 shadow hover-shadow" style="border: 3px solid #667eea; background: white;">
         <div class="card-body text-center d-flex flex-column justify-content-center">
-          <h5 class="card-title"><i class="bi bi-person"></i> Usuarios</h5>
-          <p class="card-text display-6 mb-3">{{ total_usuarios }}</p>
+          <div class="mb-3">
+            <i class="bi bi-people-fill" style="font-size: 3rem; color: #667eea;"></i>
+          </div>
+          <h5 class="card-title text-muted mb-2">Usuarios</h5>
+          <p class="card-text display-6 mb-3 fw-bold" style="color: #667eea;">{{ total_usuarios }}</p>
 
           <div class="chart-container mb-3">
             <canvas id="usuariosRolesChart" width="90" height="90"
@@ -25,13 +28,13 @@
                     data-labels='{{ usuarios_roles_labels_json|safe }}'
                     data-values='{{ usuarios_roles_values_json|safe }}'
                     data-type="doughnut"
-                    data-colors='["rgba(255,255,255,0.8)", "rgba(255,255,255,0.6)", "rgba(255,255,255,0.4)", "rgba(255,255,255,0.2)"]'></canvas>
+                    data-colors='["#667eea", "#764ba2", "#17a2b8", "#ffc107"]'></canvas>
           </div>
 
           <div class="d-flex justify-content-center flex-wrap gap-1">
             {% for label in usuarios_roles_labels %}
-              <span class="badge bg-white text-primary"
-                style="font-size: 0.85em; min-width: 80px; text-align: center; border: 1px solid rgba(255,255,255,0.3);">
+              <span class="badge"
+                style="background-color: #667eea; color: white; font-size: 0.85em; min-width: 80px; text-align: center;">
                 {{ label }}
               </span>
             {% endfor %}
@@ -42,10 +45,13 @@
 
     <!-- Tarjeta Proyectos -->
     <div class="col-lg-4 col-xl-3">
-      <div class="card bg-gradient-primary text-white mb-3 shadow hover-shadow" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+      <div class="card mb-3 shadow hover-shadow" style="border: 3px solid #764ba2; background: white;">
         <div class="card-body text-center d-flex flex-column justify-content-center">
-          <h5 class="card-title"><i class="bi bi-kanban"></i> Proyectos</h5>
-          <p class="card-text display-6 mb-3">{{ total_grupos }}</p>
+          <div class="mb-3">
+            <i class="bi bi-kanban-fill" style="font-size: 3rem; color: #764ba2;"></i>
+          </div>
+          <h5 class="card-title text-muted mb-2">Proyectos</h5>
+          <p class="card-text display-6 mb-3 fw-bold" style="color: #764ba2;">{{ total_grupos }}</p>
 
           <div class="chart-container mb-3">
             <canvas id="proyectosEstadoChart" width="90" height="90"
@@ -53,13 +59,13 @@
                     data-labels='{{ proyectos_estado_labels_json|safe }}'
                     data-values='{{ proyectos_estado_values_json|safe }}'
                     data-type="doughnut"
-                    data-colors='["rgba(255,255,255,0.8)", "rgba(255,255,255,0.4)"]'></canvas>
+                    data-colors='["#764ba2", "#e83e8c"]'></canvas>
           </div>
 
           <div class="d-flex justify-content-center flex-wrap gap-1">
             {% for label in proyectos_estado_labels %}
-              <span class="badge bg-white text-primary"
-                style="font-size: 0.85em; min-width: 80px; text-align: center; border: 1px solid rgba(255,255,255,0.3);">
+              <span class="badge"
+                style="background-color: #764ba2; color: white; font-size: 0.85em; min-width: 80px; text-align: center;">
                 {{ label }}
               </span>
             {% endfor %}
@@ -70,10 +76,13 @@
 
     <!-- Tarjeta Grupos -->
     <div class="col-lg-4 col-xl-3">
-      <div class="card bg-gradient-primary text-white mb-3 shadow hover-shadow" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+      <div class="card mb-3 shadow hover-shadow" style="border: 3px solid #20c997; background: white;">
         <div class="card-body text-center d-flex flex-column justify-content-center">
-          <h5 class="card-title"><i class="bi bi-people"></i> Grupos</h5>
-          <p class="card-text display-6 mb-3">{{ total_grupos }}</p>
+          <div class="mb-3">
+            <i class="bi bi-people-fill" style="font-size: 3rem; color: #20c997;"></i>
+          </div>
+          <h5 class="card-title text-muted mb-2">Grupos</h5>
+          <p class="card-text display-6 mb-3 fw-bold" style="color: #20c997;">{{ total_grupos }}</p>
 
           <div class="chart-container mb-3">
             <canvas id="gruposEstadoChart" width="90" height="90"
@@ -81,13 +90,13 @@
                     data-labels='{{ grupos_estado_labels_json|safe }}'
                     data-values='{{ grupos_estado_values_json|safe }}'
                     data-type="doughnut"
-                    data-colors='["rgba(255,255,255,0.8)", "rgba(255,255,255,0.4)"]'></canvas>
+                    data-colors='["#20c997", "#17a2b8"]'></canvas>
           </div>
 
           <div class="d-flex justify-content-center flex-wrap gap-1">
             {% for label in grupos_estado_labels %}
-              <span class="badge bg-white text-primary"
-                style="font-size: 0.85em; min-width: 80px; text-align: center; border: 1px solid rgba(255,255,255,0.3);">
+              <span class="badge"
+                style="background-color: #20c997; color: white; font-size: 0.85em; min-width: 80px; text-align: center;">
                 {{ label }}
               </span>
             {% endfor %}
@@ -96,10 +105,13 @@
       </div>
     </div>    <!-- Tarjeta Resumen General -->
     <div class="col-lg-12 col-xl-3">
-      <div class="card bg-gradient-primary text-white mb-3 shadow hover-shadow" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+      <div class="card mb-3 shadow hover-shadow" style="border: 3px solid #6f42c1; background: white;">
         <div class="card-body text-center d-flex flex-column justify-content-center">
-          <h5 class="card-title"><i class="bi bi-bar-chart-line"></i> Proyectos Más Activos</h5>
-          <p class="card-text small mb-3 text-white-50">(Últimos 10 días)</p>
+          <div class="mb-3">
+            <i class="bi bi-bar-chart-line-fill" style="font-size: 3rem; color: #6f42c1;"></i>
+          </div>
+          <h5 class="card-title text-muted mb-2">Proyectos Más Activos</h5>
+          <p class="card-text small mb-3 text-muted">(Últimos 10 días)</p>
 
           <div class="chart-container mb-3">
             <canvas id="proyectosActivosChart" width="90" height="90"
@@ -107,13 +119,13 @@
                     data-labels='{{ proyectos_activos_labels_json|safe }}'
                     data-values='{{ proyectos_activos_values_json|safe }}'
                     data-type="doughnut"
-                    data-colors='["rgba(255,255,255,0.9)", "rgba(255,255,255,0.7)", "rgba(255,255,255,0.5)", "rgba(255,255,255,0.3)"]'></canvas>
+                    data-colors='["#6f42c1", "#e83e8c", "#20c997", "#ffc107"]'></canvas>
           </div>
 
           <div class="d-flex justify-content-center flex-wrap gap-1">
             {% for label in proyectos_activos_labels %}
-              <span class="badge bg-white text-primary"
-                style="font-size: 0.75em; min-width: 70px; text-align: center; border: 1px solid rgba(255,255,255,0.3);">
+              <span class="badge"
+                style="background-color: #6f42c1; color: white; font-size: 0.75em; min-width: 70px; text-align: center;">
                 {{ label|truncatechars:12 }}
               </span>
             {% endfor %}
@@ -128,40 +140,52 @@
   <div class="row mb-4">
     <!-- Usuarios sin grupos -->
     <div class="col-lg-4 col-xl-3">
-      <div class="card bg-gradient-primary text-white mb-3 shadow hover-shadow" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+      <div class="card mb-3 shadow hover-shadow" style="border: 3px solid #ffc107; background: white;">
         <div class="card-body text-center d-flex flex-column justify-content-center">
-          <h5 class="card-title"><i class="bi bi-person-dash"></i> Usuarios sin Grupos</h5>
-          <p class="card-text display-6 mb-0">{{ usuarios_sin_grupos }}</p>
+          <div class="mb-3">
+            <i class="bi bi-person-x-fill" style="font-size: 3rem; color: #ffc107;"></i>
+          </div>
+          <h5 class="card-title text-muted mb-2">Usuarios sin Grupos</h5>
+          <p class="card-text display-6 mb-0 fw-bold" style="color: #ffc107;">{{ usuarios_sin_grupos }}</p>
         </div>
       </div>
     </div>
 
     <!-- Proyectos sin grupo -->
     <div class="col-lg-4 col-xl-3">
-      <div class="card bg-gradient-primary text-white mb-3 shadow hover-shadow" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+      <div class="card mb-3 shadow hover-shadow" style="border: 3px solid #dc3545; background: white;">
         <div class="card-body text-center d-flex flex-column justify-content-center">
-          <h5 class="card-title"><i class="bi bi-folder-x"></i> Proyectos sin Grupo</h5>
-          <p class="card-text display-6 mb-0">{{ proyectos_sin_grupo }}</p>
+          <div class="mb-3">
+            <i class="bi bi-folder-x" style="font-size: 3rem; color: #dc3545;"></i>
+          </div>
+          <h5 class="card-title text-muted mb-2">Proyectos sin Grupo</h5>
+          <p class="card-text display-6 mb-0 fw-bold" style="color: #dc3545;">{{ proyectos_sin_grupo }}</p>
         </div>
       </div>
     </div>
 
     <!-- Proyectos sin requerimientos -->
     <div class="col-lg-4 col-xl-3">
-      <div class="card bg-gradient-primary text-white mb-3 shadow hover-shadow" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+      <div class="card mb-3 shadow hover-shadow" style="border: 3px solid #e83e8c; background: white;">
         <div class="card-body text-center d-flex flex-column justify-content-center">
-          <h5 class="card-title"><i class="bi bi-file-earmark-x"></i> Sin Requerimientos</h5>
-          <p class="card-text display-6 mb-0">{{ proyectos_sin_requerimientos }}</p>
+          <div class="mb-3">
+            <i class="bi bi-file-earmark-x-fill" style="font-size: 3rem; color: #e83e8c;"></i>
+          </div>
+          <h5 class="card-title text-muted mb-2">Sin Requerimientos</h5>
+          <p class="card-text display-6 mb-0 fw-bold" style="color: #e83e8c;">{{ proyectos_sin_requerimientos }}</p>
         </div>
       </div>
     </div>
 
     <!-- Proyectos actuales -->
     <div class="col-lg-4 col-xl-3">
-      <div class="card bg-gradient-primary text-white mb-3 shadow hover-shadow" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+      <div class="card mb-3 shadow hover-shadow" style="border: 3px solid #28a745; background: white;">
         <div class="card-body text-center d-flex flex-column justify-content-center">
-          <h5 class="card-title"><i class="bi bi-calendar-check"></i> Proyectos Actuales</h5>
-          <p class="card-text display-6 mb-0">{{ proyectos_actuales }}</p>
+          <div class="mb-3">
+            <i class="bi bi-calendar-check-fill" style="font-size: 3rem; color: #28a745;"></i>
+          </div>
+          <h5 class="card-title text-muted mb-2">Proyectos Actuales</h5>
+          <p class="card-text display-6 mb-0 fw-bold" style="color: #28a745;">{{ proyectos_actuales }}</p>
         </div>
       </div>
     </div>
@@ -173,11 +197,12 @@
   <!-- Últimas acciones del admin (Django Admin logs) -->
   <div class="row mb-4">
     <div class="col-12">
-      <div class="card shadow-sm hover-shadow" style="border-radius: 12px;">
-        <div class="card-header bg-gradient-primary text-white" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-          <h6 class="mb-0">
-            <i class="bi bi-clock-history"></i> Últimas Acciones Administrativas
-          </h6>
+      <div class="card shadow-sm hover-shadow" style="border-radius: 12px; border: 3px solid #667eea;">
+        <div class="card-header text-white" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 9px 9px 0 0;">
+          <div class="d-flex align-items-center">
+            <i class="bi bi-clock-history me-2" style="font-size: 1.5rem;"></i>
+            <h6 class="mb-0">Últimas Acciones Administrativas</h6>
+          </div>
         </div>
         <div class="card-body p-0">
           {% if ultimas_acciones %}
@@ -218,5 +243,5 @@
 {% block extra_js %}
 <!-- === Scripts === -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
-<script src="{% static 'dashboards/js/charts.js' %}?v=6.0"></script>
+<script src="{% static 'dashboards/js/charts.js' %}?v=7.0"></script>
 {% endblock %}
