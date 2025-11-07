@@ -107,7 +107,6 @@ def caso_de_uso_update(request, pk):
                         'flujo_principal': form.cleaned_data.get('flujo_principal', ''),
                         'flujo_alternativo': form.cleaned_data.get('flujo_alternativo', ''),
                         'postcondiciones': form.cleaned_data.get('postcondiciones', ''),
-                        'prioridad': form.cleaned_data.get('prioridad', ''),
                         'observaciones': form.cleaned_data.get('observaciones', '')
                     }
                 )
@@ -128,7 +127,6 @@ def caso_de_uso_update(request, pk):
                         'criterio_aceptacion': form.cleaned_data.get('criterio_aceptacion', ''),
                         'responsable': form.cleaned_data.get('responsable', ''),
                         'estado_scrum': form.cleaned_data.get('estado_scrum', ''),
-                        'prioridad': form.cleaned_data.get('prioridad', ''),
                         'observaciones': form.cleaned_data.get('observaciones', '')
                     }
                 )
@@ -400,6 +398,7 @@ def caso_de_uso_historial(request, pk):
         
         # Información del usuario que hizo el cambio
         usuario = version.history_user if version.history_user else None
+        usuario_nombre = usuario.nombre if usuario else 'Sistema'
         
         # Tipo de cambio
         tipo_cambio = {
@@ -412,6 +411,7 @@ def caso_de_uso_historial(request, pk):
             'version': version,
             'numero': numero_version,
             'usuario': usuario,
+            'usuario_nombre': usuario_nombre,
             'tipo_cambio': tipo_cambio,
             'history_id': version.history_id,
         })
