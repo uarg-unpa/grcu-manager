@@ -46,22 +46,6 @@ class RequerimientoTradicionalForm(forms.Form):
     )
     
     # Campos específicos del DetalleRequerimientoTradicional
-    PRIORIDAD_MOSCOW = [
-        ('', '-- Seleccionar prioridad --'),
-        ('MUST', 'Crítico'),
-        ('SHOULD', 'Importante'),
-        ('COULD', 'Deseable'),
-        ('WONT', 'Descartado')
-    ]
-    
-    prioridad = forms.ChoiceField(
-        choices=PRIORIDAD_MOSCOW,
-        required=False,  # La prioridad se asigna en la fase de priorización
-        widget=forms.Select(attrs={'class': 'form-select'}),
-        label='Prioridad (MoSCoW)',
-        help_text='La prioridad se asigna después de la validación del requerimiento'
-    )
-    
     fuente = forms.CharField(
         max_length=255,
         required=False,
@@ -91,22 +75,6 @@ class RequerimientoTradicionalForm(forms.Form):
         }),
         label='Fecha de Compromiso',
         help_text='Fecha estimada de entrega'
-    )
-    
-    ESTADO_VALIDACION_CHOICES = [
-        ('', '-- Seleccionar estado --'),
-        ('PENDIENTE', 'Pendiente de validación'),
-        ('EN_REVISION', 'En revisión'),
-        ('APROBADO', 'Aprobado'),
-        ('RECHAZADO', 'Rechazado'),
-        ('REQUIERE_CAMBIOS', 'Requiere cambios')
-    ]
-    
-    estado_validacion = forms.ChoiceField(
-        choices=ESTADO_VALIDACION_CHOICES,
-        required=False,
-        widget=forms.Select(attrs={'class': 'form-select'}),
-        label='Estado de Validación'
     )
     
     observaciones = forms.CharField(

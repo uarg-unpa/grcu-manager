@@ -904,9 +904,8 @@ def requerimiento_update(request, pk):
             requerimiento.nombre = form.cleaned_data['nombre']
             requerimiento.descripcion = form.cleaned_data.get('descripcion', '')
             requerimiento.tipo = form.cleaned_data['tipo']
-            requerimiento.estado = form.cleaned_data['estado']
-            
-            # Manejar imagen (solo si se subió una nueva)
+           
+           
             nueva_imagen = form.cleaned_data.get('imagen')
             if nueva_imagen:
                 requerimiento.imagen = nueva_imagen
@@ -919,11 +918,10 @@ def requerimiento_update(request, pk):
                 detalle, created = DetalleRequerimientoTradicional.objects.get_or_create(
                     requerimiento_padre=requerimiento
                 )
-                detalle.prioridad = form.cleaned_data.get('prioridad', '')
+                # NO actualizar prioridad ni estado_validacion - se manejan en vistas específicas
                 detalle.fuente = form.cleaned_data.get('fuente', '')
                 detalle.categoria = form.cleaned_data.get('categoria', '')
                 detalle.fecha_compromiso = form.cleaned_data.get('fecha_compromiso')
-                detalle.estado_validacion = form.cleaned_data.get('estado_validacion', '')
                 detalle.observaciones = form.cleaned_data.get('observaciones', '')
                 detalle.save()
                 
@@ -950,7 +948,7 @@ def requerimiento_update(request, pk):
             'nombre': requerimiento.nombre,
             'descripcion': requerimiento.descripcion,
             'tipo': requerimiento.tipo,
-            'estado': requerimiento.estado,
+            # NO incluir estado - no se edita aquí
             'link_externo': requerimiento.link_externo,
         }
         
@@ -960,11 +958,10 @@ def requerimiento_update(request, pk):
                 detalle = requerimiento.detalle_tradicional
                 if detalle:
                     initial_data.update({
-                        'prioridad': detalle.prioridad,
+                        # NO incluir prioridad ni estado_validacion
                         'fuente': detalle.fuente,
                         'categoria': detalle.categoria,
                         'fecha_compromiso': detalle.fecha_compromiso,
-                        'estado_validacion': detalle.estado_validacion,
                         'observaciones': detalle.observaciones,
                     })
             except DetalleRequerimientoTradicional.DoesNotExist:
