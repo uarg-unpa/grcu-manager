@@ -35,7 +35,8 @@
                 </tr>
             </thead>
             <tbody>
-                {% for req in requerimientos %}
+                {% for item in requerimientos %}
+                {% with req=item.requerimiento %}
                 <tr {% if req.estado == 'BORRADOR' %}class="table-secondary"{% endif %}>
                     <td>
                         <strong>{{ req.nombre }}</strong>
@@ -73,15 +74,29 @@
                         </select>
                     </td>
                     <td>
+                        {% if item.ultimo_comentario %}
+                            <div class="mb-1">
+                                <small class="text-muted"><i class="bi bi-chat-left-text"></i> Validación:</small>
+                                <div>{{ item.ultimo_comentario|truncatechars:100 }}</div>
+                            </div>
+                        {% endif %}
                         {% if req.detalle_tradicional and req.detalle_tradicional.observaciones %}
-                            {{ req.detalle_tradicional.observaciones }}
+                            <div>
+                                <small class="text-muted"><i class="bi bi-sticky"></i> Observaciones:</small>
+                                <div>{{ req.detalle_tradicional.observaciones|truncatechars:100 }}</div>
+                            </div>
                         {% elif req.detalle_agil and req.detalle_agil.observaciones %}
-                            {{ req.detalle_agil.observaciones }}
-                        {% else %}
+                            <div>
+                                <small class="text-muted"><i class="bi bi-sticky"></i> Observaciones:</small>
+                                <div>{{ req.detalle_agil.observaciones|truncatechars:100 }}</div>
+                            </div>
+                        {% endif %}
+                        {% if not item.ultimo_comentario and not req.detalle_tradicional.observaciones and not req.detalle_agil.observaciones %}
                             -
                         {% endif %}
                     </td>
                 </tr>
+                {% endwith %}
                 {% empty %}
                 <tr><td colspan="5" class="text-center">No hay requerimientos validados para priorizar.</td></tr>
                 {% endfor %}

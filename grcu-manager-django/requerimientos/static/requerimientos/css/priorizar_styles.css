@@ -124,3 +124,29 @@
     font-weight: bold;
     border-color: #95A5A6;
 }
+
+/* Estilos para badges de estado */
+.badge-estado-borrador {
+    background-color: #6c757d;
+    color: white;
+}
+
+.badge-estado-validado {
+    background-color: #28a745;
+    color: white;
+}
+
+.badge-estado-priorizado {
+    background-color: #007bff;
+    color: white;
+}
+
+.badge-estado-en-proceso {
+    background-color: #17a2b8;
+    color: white;
+}
+
+.badge-estado-terminado {
+    background-color: #343a40;
+    color: white;
+}

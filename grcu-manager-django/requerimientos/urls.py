@@ -11,6 +11,7 @@ urlpatterns = [
     path('<int:pk>/editar/', views.requerimiento_update, name='requerimiento_update'),
     path('<int:pk>/eliminar/', views.requerimiento_delete, name='requerimiento_delete'),
     path('priorizar/', views.requerimiento_priorizar, name='requerimiento_priorizar'),
+    path('dependencias/', views.requerimiento_dependencias, name='requerimiento_dependencias'),
     path('validar/cliente/', views.requerimiento_validar_cliente, name='requerimiento_validar_cliente'),
     path('validar/cliente/<int:proyecto_id>/', views.requerimiento_validar_cliente, name='requerimiento_validar_cliente_proyecto'),
     path('validar/lider/', views.requerimiento_validar_lider, name='requerimiento_validar_lider'),

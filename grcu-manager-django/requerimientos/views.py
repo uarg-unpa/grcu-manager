@@ -360,10 +360,26 @@ def requerimiento_priorizar(request, proyecto_id=None):
         proyecto=proyecto
     ).exclude(
         estado='BORRADOR'
-    ).select_related('detalle_tradicional', 'detalle_agil')
+    ).select_related('detalle_tradicional', 'detalle_agil').prefetch_related('comentarios_validacion')
+    
+    # Agregar comentarios de validación a cada requerimiento
+    from requerimientos.models import ComentarioValidacion
+    requerimientos_con_comentarios = []
+    for req in requerimientos:
+        # Obtener el último comentario de validación (si existe)
+        ultimo_comentario = ComentarioValidacion.objects.filter(
+            requerimiento=req,
+            tipo_accion__in=['VALIDAR', 'ACLARACION']
+        ).order_by('-fecha_creacion').first()
+        
+        requerimientos_con_comentarios.append({
+            'requerimiento': req,
+            'ultimo_comentario': ultimo_comentario.comentario if ultimo_comentario else None
+        })
 
     if request.method == 'POST':
-        for req in requerimientos:
+        for item in requerimientos_con_comentarios:
+            req = item['requerimiento']
             # Solo permitir priorizar requerimientos validados
             if req.estado == 'BORRADOR':
                 continue
@@ -417,7 +433,7 @@ def requerimiento_priorizar(request, proyecto_id=None):
 
     context = {
         "proyecto": proyecto,
-        "requerimientos": requerimientos,
+        "requerimientos": requerimientos_con_comentarios,
         "MOSCOW_CHOICES": MOSCOW_CHOICES,
         "page_title": f"{proyecto.nombre} - Priorización de Requerimientos",
     }
@@ -1348,3 +1364,104 @@ def requerimiento_discusion(request, pk):
     }
     
     return render(request, 'requerimientos/requerimiento_discusion.html', context)
+
+
+# ============================================================================
+# VISTAS DE GESTIÓN DE DEPENDENCIAS
+# ============================================================================
+
+@login_required
+def requerimiento_dependencias(request, proyecto_id=None):
+    """
+    Vista para que líderes gestionen dependencias entre requerimientos.
+    Permite definir qué requerimientos dependen de otros para planificación y priorización.
+    """
+    # Determinar el proyecto
+    if not proyecto_id:
+        proyecto_id = request.GET.get('proyecto_id')
+    
+    if not proyecto_id and hasattr(request.user, 'lidera_proyectos'):
+        proyectos_liderados = request.user.lidera_proyectos.all()
+        if proyectos_liderados.exists():
+            primer_proyecto = proyectos_liderados.first()
+            if primer_proyecto:
+                proyecto_id = primer_proyecto.pk
+    
+    if not proyecto_id:
+        messages.error(request, 'Debe especificar un proyecto para gestionar dependencias.')
+        return redirect('dashboards:lider_dashboard')
+    
+    proyecto = get_object_or_404(Proyecto, id=proyecto_id)
+    
+    # Verificar que el usuario sea líder del proyecto
+    if request.user != proyecto.lider:
+        messages.error(request, 'Solo el líder del proyecto puede gestionar dependencias de requerimientos.')
+        return redirect('dashboards:lider_dashboard')
+    
+    # Obtener todos los requerimientos del proyecto
+    requerimientos = Requerimiento.objects.filter(
+        proyecto=proyecto
+    ).select_related('proyecto').prefetch_related('dependencias', 'dependientes').order_by('nombre')
+    
+    if request.method == 'POST':
+        # Procesar las dependencias establecidas
+        dependencias_actualizadas = 0
+        
+        for req in requerimientos:
+            # Obtener las dependencias seleccionadas para este requerimiento
+            dependencias_seleccionadas = request.POST.getlist(f'dependencias_{req.pk}')
+            
+            # Limpiar dependencias actuales
+            req.dependencias.clear()
+            
+            # Agregar nuevas dependencias
+            for dep_id in dependencias_seleccionadas:
+                try:
+                    dep_id_int = int(dep_id)
+                    # Evitar auto-dependencias
+                    if dep_id_int != req.pk:
+                        dependencia = Requerimiento.objects.get(pk=dep_id_int, proyecto=proyecto)
+                        req.dependencias.add(dependencia)
+                        dependencias_actualizadas += 1
+                except (ValueError, Requerimiento.DoesNotExist):
+                    continue
+        
+        if dependencias_actualizadas > 0:
+            messages.success(
+                request, 
+                f'✅ Se establecieron {dependencias_actualizadas} dependencia(s) entre requerimientos.'
+            )
+        else:
+            messages.info(request, 'No se establecieron nuevas dependencias.')
+        
+        return redirect(f"{reverse('requerimientos:requerimiento_dependencias')}?proyecto_id={proyecto.pk}")
+    
+    # Preparar datos para el template
+    requerimientos_con_info = []
+    for req in requerimientos:
+        # Obtener dependencias actuales (de los que depende este req)
+        dependencias_actuales = list(req.dependencias.all())
+        dependencias_ids = [d.pk for d in dependencias_actuales]
+        
+        # Obtener dependientes (requerimientos que dependen de este)
+        dependientes_actuales = list(req.dependientes.all())
+        
+        # Requerimientos disponibles para ser dependencias (todos menos él mismo)
+        disponibles = [r for r in requerimientos if r.pk != req.pk]
+        
+        requerimientos_con_info.append({
+            'requerimiento': req,
+            'dependencias_actuales': dependencias_actuales,
+            'dependencias_ids': dependencias_ids,
+            'dependientes': dependientes_actuales,
+            'disponibles': disponibles,
+        })
+    
+    context = {
+        'proyecto': proyecto,
+        'requerimientos_con_info': requerimientos_con_info,
+        'total_requerimientos': requerimientos.count(),
+        'page_title': f'{proyecto.nombre} - Gestión de Dependencias',
+    }
+    
+    return render(request, 'requerimientos/requerimiento_dependencias.html', context)
