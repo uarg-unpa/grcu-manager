@@ -1266,33 +1266,46 @@ def requerimiento_dependencias(request, proyecto_id=None):
     if request.method == 'POST':
         # Procesar las dependencias establecidas
         dependencias_actualizadas = 0
+        dependencias_eliminadas = 0
         
         for req in requerimientos:
             # Obtener las dependencias seleccionadas para este requerimiento
             dependencias_seleccionadas = request.POST.getlist(f'dependencias_{req.pk}')
             
+            # Contar dependencias antes de limpiar
+            dependencias_antes = req.dependencias.count()
+            
             # Limpiar dependencias actuales
             req.dependencias.clear()
             
-            # Agregar nuevas dependencias
-            for dep_id in dependencias_seleccionadas:
-                try:
-                    dep_id_int = int(dep_id)
-                    # Evitar auto-dependencias
-                    if dep_id_int != req.pk:
-                        dependencia = Requerimiento.objects.get(pk=dep_id_int, proyecto=proyecto)
-                        req.dependencias.add(dependencia)
-                        dependencias_actualizadas += 1
-                except (ValueError, Requerimiento.DoesNotExist):
-                    continue
+            # Si se seleccionó la opción vacía ("Sin dependencias"), no agregar nada
+            if '' in dependencias_seleccionadas or len(dependencias_seleccionadas) == 0:
+                # Solo contar como eliminación si había dependencias antes
+                if dependencias_antes > 0:
+                    dependencias_eliminadas += dependencias_antes
+            else:
+                # Agregar nuevas dependencias (filtrando valores vacíos)
+                for dep_id in dependencias_seleccionadas:
+                    if dep_id:  # Saltar valores vacíos
+                        try:
+                            dep_id_int = int(dep_id)
+                            # Evitar auto-dependencias
+                            if dep_id_int != req.pk:
+                                dependencia = Requerimiento.objects.get(pk=dep_id_int, proyecto=proyecto)
+                                req.dependencias.add(dependencia)
+                                dependencias_actualizadas += 1
+                        except (ValueError, Requerimiento.DoesNotExist):
+                            continue
         
-        if dependencias_actualizadas > 0:
-            messages.success(
-                request, 
-                f'✅ Se establecieron {dependencias_actualizadas} dependencia(s) entre requerimientos.'
-            )
+        if dependencias_actualizadas > 0 or dependencias_eliminadas > 0:
+            mensaje = []
+            if dependencias_actualizadas > 0:
+                mensaje.append(f'✅ Se establecieron {dependencias_actualizadas} dependencia(s)')
+            if dependencias_eliminadas > 0:
+                mensaje.append(f'🗑️ Se eliminaron {dependencias_eliminadas} dependencia(s)')
+            messages.success(request, ' y '.join(mensaje) + '.')
         else:
-            messages.info(request, 'No se establecieron nuevas dependencias.')
+            messages.info(request, 'No se realizaron cambios en las dependencias.')
         
         return redirect(f"{reverse('requerimientos:requerimiento_dependencias')}?proyecto_id={proyecto.pk}")
     

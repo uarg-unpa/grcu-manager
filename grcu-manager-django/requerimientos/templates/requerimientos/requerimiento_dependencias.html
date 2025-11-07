@@ -66,6 +66,18 @@
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
         
+        /* Estilo especial para la opción "Sin dependencias" */
+        .select-dependencias option.sin-dependencias-option {
+            background-color: #fee2e2;
+            color: #991b1b;
+            font-weight: bold;
+            border-bottom: 2px solid #f87171;
+        }
+        
+        .select-dependencias option.sin-dependencias-option:hover {
+            background-color: #fecaca;
+        }
+        
         .btn-guardar-dependencias {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -121,10 +133,12 @@
     <div class="info-box">
         <i class="bi bi-info-circle me-2"></i>
         <strong>Gestión de Dependencias:</strong> Define qué requerimientos dependen de otros para una mejor planificación. 
-        <br><small class="text-muted">
+        <br><small class="text-muted mt-2 d-block">
             • <strong>Depende de:</strong> Requerimientos que deben completarse antes de este.
             <br>
             • <strong>Es dependencia de:</strong> Requerimientos que dependen de este (se actualizan automáticamente).
+            <br>
+            • <strong>🚫 Sin dependencias:</strong> Selecciona esta opción para eliminar todas las dependencias de un requerimiento.
         </small>
     </div>
     
@@ -161,10 +175,36 @@
                             {% endif %}
                         </td>
                         <td>
+                            <!-- Dependencias actuales -->
+                            {% if item.dependencias_ids %}
+                            <div class="mb-2">
+                                <small class="text-muted d-block mb-2"><strong>Dependencias actuales:</strong></small>
+                                {% for dep_id in item.dependencias_ids %}
+                                    {% for disponible in item.disponibles %}
+                                        {% if disponible.pk == dep_id %}
+                                            <span class="badge badge-dependencia mb-1">
+                                                <i class="bi bi-arrow-down-circle me-1"></i>{{ disponible.nombre }}
+                                            </span>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endfor %}
+                            </div>
+                            <hr class="my-2">
+                            {% endif %}
+                            
+                            <!-- Selector de dependencias con opción "Sin dependencias" -->
+                            <small class="text-muted d-block mb-1">
+                                <i class="bi bi-gear me-1"></i><strong>Configurar dependencias:</strong>
+                            </small>
                             <select name="dependencias_{{ item.requerimiento.pk }}" 
                                     class="form-select select-dependencias" 
                                     multiple
-                                    size="3">
+                                    size="4">
+                                <option value="" 
+                                        class="sin-dependencias-option"
+                                        {% if not item.dependencias_ids %}selected{% endif %}>
+                                    🚫 Sin dependencias (eliminar todas)
+                                </option>
                                 {% for disponible in item.disponibles %}
                                     <option value="{{ disponible.pk }}"
                                             {% if disponible.pk in item.dependencias_ids %}selected{% endif %}>
@@ -173,7 +213,8 @@
                                 {% endfor %}
                             </select>
                             <small class="text-muted d-block mt-1">
-                                <i class="bi bi-hand-index me-1"></i>Mantén presionado Ctrl/Cmd para seleccionar múltiples
+                                <i class="bi bi-info-circle me-1"></i>Selecciona <strong>"Sin dependencias"</strong> para eliminar todas
+                                <br><i class="bi bi-hand-index me-1"></i><strong>Ctrl/Cmd + Click</strong> para seleccionar varios requerimientos
                             </small>
                         </td>
                         <td>
@@ -225,4 +266,70 @@
     </div>
     {% endif %}
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const selects = document.querySelectorAll('.select-dependencias');
+    
+    // Agregar lógica para manejar la opción "Sin dependencias"
+    selects.forEach(select => {
+        select.addEventListener('change', function() {
+            const selectedOptions = Array.from(this.selectedOptions);
+            const sinDependenciasOption = this.querySelector('option[value=""]');
+            
+            // Si se seleccionó "Sin dependencias"
+            if (selectedOptions.some(opt => opt.value === '')) {
+                // Deseleccionar todas las demás opciones
+                Array.from(this.options).forEach(opt => {
+                    if (opt.value !== '') {
+                        opt.selected = false;
+                    }
+                });
+                // Cambiar color del select
+                this.style.borderColor = '#f87171';
+                this.style.backgroundColor = '#fef2f2';
+            } 
+            // Si se selecciona cualquier otra opción
+            else if (selectedOptions.length > 0 && selectedOptions.some(opt => opt.value !== '')) {
+                // Deseleccionar "Sin dependencias"
+                if (sinDependenciasOption) {
+                    sinDependenciasOption.selected = false;
+                }
+                // Color normal
+                this.style.borderColor = '#667eea';
+                this.style.backgroundColor = '#f0f4ff';
+            }
+            // Si no hay nada seleccionado
+            else {
+                this.style.borderColor = '#e2e8f0';
+                this.style.backgroundColor = '';
+            }
+        });
+    });
+    
+    // Envío del formulario
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            let totalCambios = 0;
+            
+            selects.forEach(select => {
+                const selectedOptions = Array.from(select.selectedOptions);
+                const conSinDependencias = selectedOptions.some(opt => opt.value === '');
+                
+                if (conSinDependencias) {
+                    console.log(`${select.name}: SIN DEPENDENCIAS (eliminando todas)`);
+                } else {
+                    console.log(`${select.name}: ${selectedOptions.length} dependencia(s) seleccionadas`);
+                    totalCambios += selectedOptions.length;
+                }
+            });
+            
+            return true; // Permitir envío
+        });
+    }
+});
+</script>
 {% endblock %}

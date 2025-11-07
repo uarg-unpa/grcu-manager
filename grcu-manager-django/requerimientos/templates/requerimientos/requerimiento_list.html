@@ -26,6 +26,24 @@
       cursor: help;
     }
 
+    /* Optimización del ancho de columnas */
+    table th:nth-child(1) { width: 20%; } /* Nombre */
+    table th:nth-child(2) { width: 8%; } /* Tipo */
+    table th:nth-child(3) { width: 9%; } /* Estado */
+    table th:nth-child(4) { width: 10%; } /* Prioridad */
+    table th:nth-child(5) { width: 10%; } /* Dependencias */
+    table th:nth-child(6) { width: 8%; } /* Comentarios */
+    table th:nth-child(7) { width: 12%; } /* Descripción */
+    table th:nth-child(8) { width: 8%; } /* Fecha */
+    table th:nth-child(9) { width: 8%; } /* Huérfano/CU */
+    table th:nth-child(10) { width: 7%; min-width: 180px; } /* Acciones - ancho mínimo garantizado */
+
+    /* Asegurar que las acciones no se corten */
+    td:nth-child(10) {
+      white-space: nowrap;
+      min-width: 180px;
+    }
+
     /* Estilos para estados de requerimientos */
     .requerimiento-row {
       transition: all 0.2s ease;
@@ -291,7 +309,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container-fluid py-4" style="max-width: 98%;">
   {# Indicador de requerimientos pendientes de validación - solo para líderes y stakeholders #}
   {% if proyecto %}
     {% if is_lider or is_stakeholder %}
@@ -423,15 +441,47 @@
               </td>
               <td>
                 {% if req.detalle_tradicional.prioridad %}
-                  {% for val, label in MOSCOW_CHOICES %}
-                    {% if val == req.detalle_tradicional.prioridad %}{{ label }}{% endif %}
-                  {% endfor %}
+                  {% with prioridad=req.detalle_tradicional.prioridad %}
+                    {% if prioridad == 'MUST' %}
+                      <span class="badge" style="background-color: #4A90E2; color: white; font-weight: bold;">
+                        <i class="bi bi-exclamation-circle-fill"></i> Crítico (Must)
+                      </span>
+                    {% elif prioridad == 'SHOULD' %}
+                      <span class="badge" style="background-color: #9B59B6; color: white; font-weight: bold;">
+                        <i class="bi bi-star-fill"></i> Importante (Should)
+                      </span>
+                    {% elif prioridad == 'COULD' %}
+                      <span class="badge" style="background-color: #5DADE2; color: white; font-weight: bold;">
+                        <i class="bi bi-check-circle"></i> Deseable (Could)
+                      </span>
+                    {% elif prioridad == 'WONT' %}
+                      <span class="badge" style="background-color: #95A5A6; color: white; font-weight: bold;">
+                        <i class="bi bi-x-circle"></i> Descartado (Won't)
+                      </span>
+                    {% endif %}
+                  {% endwith %}
                 {% elif req.detalle_agil.prioridad %}
-                  {% for val, label in MOSCOW_CHOICES %}
-                    {% if val == req.detalle_agil.prioridad %}{{ label }}{% endif %}
-                  {% endfor %}
+                  {% with prioridad=req.detalle_agil.prioridad %}
+                    {% if prioridad == 'MUST' %}
+                      <span class="badge" style="background-color: #4A90E2; color: white; font-weight: bold;">
+                        <i class="bi bi-exclamation-circle-fill"></i> Crítico (Must)
+                      </span>
+                    {% elif prioridad == 'SHOULD' %}
+                      <span class="badge" style="background-color: #9B59B6; color: white; font-weight: bold;">
+                        <i class="bi bi-star-fill"></i> Importante (Should)
+                      </span>
+                    {% elif prioridad == 'COULD' %}
+                      <span class="badge" style="background-color: #5DADE2; color: white; font-weight: bold;">
+                        <i class="bi bi-check-circle"></i> Deseable (Could)
+                      </span>
+                    {% elif prioridad == 'WONT' %}
+                      <span class="badge" style="background-color: #95A5A6; color: white; font-weight: bold;">
+                        <i class="bi bi-x-circle"></i> Descartado (Won't)
+                      </span>
+                    {% endif %}
+                  {% endwith %}
                 {% else %}
-                  -
+                  <span class="text-muted">-</span>
                 {% endif %}
               </td>
               <td>
@@ -448,7 +498,7 @@
                            data-bs-toggle="tooltip" 
                            data-bs-placement="left"
                            title="Depende de: {{ dep.nombre }} ({{ dep.get_estado_display }})">
-                          <i class="bi bi-arrow-left-circle me-1"></i>{{ dep.nombre|truncatechars:25 }}
+                          <i class="bi bi-arrow-left-circle me-1"></i>{{ dep.nombre|truncatechars:20 }}
                         </a>
                       {% endfor %}
                     </div>
@@ -473,8 +523,8 @@
                   </span>
                 {% endif %}
               </td>
-              <td>{{ req.descripcion|default:'-'|truncatechars:60 }}</td>
-              <td>{{ req.fecha_creacion|date:'d/m/Y' }}</td>
+              <td class="small text-muted">{{ req.descripcion|default:'-'|truncatechars:40 }}</td>
+              <td>{{ req.fecha_creacion|date:"d/m/Y" }}</td>
               <td>
                 {% with casos=req.casos_relacionados.all %}
                   {% if casos|length == 0 %}
@@ -533,8 +583,8 @@
                     {% endif %}
                   {% endif %}
                   
-                  {# Solo mostrar botones de casos de uso para requerimientos FUNCIONALES VALIDADOS #}
-                  {% if req.tipo == 'FUNCIONAL' and req.estado == 'VALIDADO' %}
+                  {# Solo mostrar botones de casos de uso para requerimientos FUNCIONALES que NO estén en BORRADOR #}
+                  {% if req.tipo == 'FUNCIONAL' and req.estado != 'BORRADOR' %}
                   {% with casos=req.casos_relacionados.all %}
                     {% if casos|length == 0 %}
                       <a href="{% url 'casos_de_uso:caso_de_uso_create_con_requerimiento' req.proyecto.id req.id %}" 
