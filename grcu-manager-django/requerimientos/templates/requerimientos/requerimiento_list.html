@@ -65,9 +65,14 @@
     }
 
     .requerimiento-row.estado-terminado {
-      background-color: #e2e3e5 !important;
-      border-left: 4px solid #6c757d;
-      opacity: 0.7;
+      background: linear-gradient(90deg, #d4edda 0%, #c3e6cb 100%) !important;
+      border-left: 5px solid #28a745;
+      opacity: 0.85;
+    }
+
+    .requerimiento-row.estado-terminado:hover {
+      opacity: 1;
+      box-shadow: 0 2px 8px rgba(40, 167, 69, 0.2);
     }
 
     /* Badge para estado BORRADOR - más prominente */
@@ -110,6 +115,44 @@
 
     .badge.bg-primary i {
       font-size: 0.9em;
+    }
+
+    /* Badges de dependencias según estado */
+    .badge-dep-borrador {
+      background: linear-gradient(135deg, #ffc107 0%, #ff8c00 100%) !important;
+      color: #212529 !important;
+    }
+
+    .badge-dep-validado {
+      background: linear-gradient(135deg, #17a2b8 0%, #138496 100%) !important;
+      color: white !important;
+    }
+
+    .badge-dep-priorizado {
+      background: linear-gradient(135deg, #28a745 0%, #218838 100%) !important;
+      color: white !important;
+    }
+
+    .badge-dep-en_proceso {
+      background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%) !important;
+      color: white !important;
+    }
+
+    .badge-dep-terminado {
+      background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
+      color: white !important;
+      opacity: 0.9;
+      position: relative;
+    }
+
+    .badge-dep-terminado::after {
+      content: "✓";
+      margin-left: 4px;
+      font-weight: bold;
+    }
+
+    .badge-dep-terminado:hover {
+      opacity: 1;
     }
 
     /* Botones de validación más prominentes */
@@ -371,8 +414,8 @@
                     <i class="bi bi-gear-fill me-1"></i>{{ req.get_estado_display }}
                   </span>
                 {% elif req.estado == 'TERMINADO' %}
-                  <span class="badge bg-dark">
-                    <i class="bi bi-check-circle-fill me-1"></i>{{ req.get_estado_display }}
+                  <span class="badge bg-success">
+                    <i class="bi bi-check-circle-fill me-1"></i>{{ req.get_estado_display }} ✓
                   </span>
                 {% else %}
                   <span class="badge bg-light text-dark">{{ req.get_estado_display }}</span>
@@ -401,10 +444,10 @@
                     <div class="d-flex flex-column gap-1">
                       {% for dep in deps %}
                         <a href="{% url 'requerimientos:requerimiento_detail' dep.pk %}" 
-                           class="badge bg-primary text-decoration-none"
+                           class="badge badge-dep-{{ dep.estado|lower }} text-decoration-none"
                            data-bs-toggle="tooltip" 
                            data-bs-placement="left"
-                           title="Este requerimiento depende de: {{ dep.nombre }}">
+                           title="Depende de: {{ dep.nombre }} ({{ dep.get_estado_display }})">
                           <i class="bi bi-arrow-left-circle me-1"></i>{{ dep.nombre|truncatechars:25 }}
                         </a>
                       {% endfor %}
