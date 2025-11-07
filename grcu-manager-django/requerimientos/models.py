@@ -60,6 +60,9 @@ class Requerimiento(models.Model):
     # Relación opcional con Casos de Uso (muchos a muchos) usando tabla intermedia para mantener 3FN
     casos_relacionados = models.ManyToManyField('casos_de_uso.CasoDeUso', through='RequerimientoCaso', blank=True, related_name='requerimientos_relacionados')
 
+    # Dependencias entre requerimientos (auto-referencial)
+    dependencias = models.ManyToManyField('self', symmetrical=False, blank=True, related_name='dependientes', help_text='Requerimientos de los que depende este requerimiento')
+
     # ⚡ HISTORIAL DE VERSIONES
     history = HistoricalRecords()
 

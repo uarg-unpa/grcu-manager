@@ -65,9 +65,14 @@
     }
 
     .requerimiento-row.estado-terminado {
-      background-color: #e2e3e5 !important;
-      border-left: 4px solid #6c757d;
-      opacity: 0.7;
+      background: linear-gradient(90deg, #d4edda 0%, #c3e6cb 100%) !important;
+      border-left: 5px solid #28a745;
+      opacity: 0.85;
+    }
+
+    .requerimiento-row.estado-terminado:hover {
+      opacity: 1;
+      box-shadow: 0 2px 8px rgba(40, 167, 69, 0.2);
     }
 
     /* Badge para estado BORRADOR - más prominente */
@@ -92,6 +97,62 @@
       0% { opacity: 1; transform: scale(1); }
       50% { opacity: 0.8; transform: scale(1.05); }
       100% { opacity: 1; transform: scale(1); }
+    }
+
+    /* Estilos para badges de dependencias */
+    .badge.bg-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+      padding: 5px 10px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    .badge.bg-primary:hover {
+      transform: translateX(-3px);
+      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+    }
+
+    .badge.bg-primary i {
+      font-size: 0.9em;
+    }
+
+    /* Badges de dependencias según estado */
+    .badge-dep-borrador {
+      background: linear-gradient(135deg, #ffc107 0%, #ff8c00 100%) !important;
+      color: #212529 !important;
+    }
+
+    .badge-dep-validado {
+      background: linear-gradient(135deg, #17a2b8 0%, #138496 100%) !important;
+      color: white !important;
+    }
+
+    .badge-dep-priorizado {
+      background: linear-gradient(135deg, #28a745 0%, #218838 100%) !important;
+      color: white !important;
+    }
+
+    .badge-dep-en_proceso {
+      background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%) !important;
+      color: white !important;
+    }
+
+    .badge-dep-terminado {
+      background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
+      color: white !important;
+      opacity: 0.9;
+      position: relative;
+    }
+
+    .badge-dep-terminado::after {
+      content: "✓";
+      margin-left: 4px;
+      font-weight: bold;
+    }
+
+    .badge-dep-terminado:hover {
+      opacity: 1;
     }
 
     /* Botones de validación más prominentes */
@@ -310,6 +371,7 @@
             <th><i class="bi bi-tag me-1"></i> Tipo</th>
             <th><i class="bi bi-flag me-1"></i> Estado</th>
             <th><i class="bi bi-arrow-up me-1"></i> Prioridad</th>
+            <th><i class="bi bi-diagram-2 me-1"></i> Dependencias</th>
             <th><i class="bi bi-chat-dots me-1"></i> Comentarios</th>
             <th><i class="bi bi-card-text me-1"></i> Descripción</th>
             <th><i class="bi bi-calendar me-1"></i> Fecha</th>
@@ -352,8 +414,8 @@
                     <i class="bi bi-gear-fill me-1"></i>{{ req.get_estado_display }}
                   </span>
                 {% elif req.estado == 'TERMINADO' %}
-                  <span class="badge bg-dark">
-                    <i class="bi bi-check-circle-fill me-1"></i>{{ req.get_estado_display }}
+                  <span class="badge bg-success">
+                    <i class="bi bi-check-circle-fill me-1"></i>{{ req.get_estado_display }} ✓
                   </span>
                 {% else %}
                   <span class="badge bg-light text-dark">{{ req.get_estado_display }}</span>
@@ -371,6 +433,27 @@
                 {% else %}
                   -
                 {% endif %}
+              </td>
+              <td>
+                {% with deps=req.dependencias.all %}
+                  {% if deps|length == 0 %}
+                    <span class="text-muted small">
+                      <i class="bi bi-dash-circle"></i> Sin dependencias
+                    </span>
+                  {% else %}
+                    <div class="d-flex flex-column gap-1">
+                      {% for dep in deps %}
+                        <a href="{% url 'requerimientos:requerimiento_detail' dep.pk %}" 
+                           class="badge badge-dep-{{ dep.estado|lower }} text-decoration-none"
+                           data-bs-toggle="tooltip" 
+                           data-bs-placement="left"
+                           title="Depende de: {{ dep.nombre }} ({{ dep.get_estado_display }})">
+                          <i class="bi bi-arrow-left-circle me-1"></i>{{ dep.nombre|truncatechars:25 }}
+                        </a>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                {% endwith %}
               </td>
               <td class="text-center">
                 {% if req.num_comentarios > 0 %}

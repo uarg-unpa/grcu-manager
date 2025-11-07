@@ -883,7 +883,7 @@ def exportar_matriz(request, proyecto_id, formato):
                 ['Métrica', 'Valor', 'Descripción'],
                 ['Total de Requerimientos', str(total_reqs), 'Requerimientos registrados en el proyecto'],
                 ['Total de Casos de Uso', str(total_casos), 'Casos de uso definidos'],
-                ['Requerimientos Creados', str(estado_counts.get('CREADO', 0)), 'Pendientes de validación'],
+                ['Requerimientos Borrador', str(estado_counts.get('BORRADOR', 0)), 'Pendientes de validación'],
                 ['Requerimientos en Progreso', str(estado_counts.get('EN_PROGRESO', 0)), 'En desarrollo activo'],
                 ['Requerimientos Validados', str(estado_counts.get('VALIDADO', 0)), 'Aprobados para implementación'],
                 ['Requerimientos Completados', str(estado_counts.get('COMPLETADO', 0)), 'Finalizados'],
@@ -1025,8 +1025,8 @@ def exportar_matriz(request, proyecto_id, formato):
                 recomendaciones.append(f"• Revisar {reqs_huerfanos} requerimiento(s) huérfano(s) sin casos de uso asociados")
             if casos_huerfanos > 0:
                 recomendaciones.append(f"• Revisar {casos_huerfanos} caso(s) de uso huérfano(s) sin requerimientos asociados")
-            if estado_counts.get('CREADO', 0) > total_reqs * 0.3:
-                recomendaciones.append("• Avanzar los requerimientos en estado 'Creado' hacia 'En Progreso'")
+            if estado_counts.get('BORRADOR', 0) > total_reqs * 0.3:
+                recomendaciones.append("• Avanzar los requerimientos en estado 'Borrador' hacia validación")
             
             if not recomendaciones:
                 recomendaciones.append("• El proyecto muestra una buena trazabilidad general")
