@@ -299,9 +299,23 @@ def caso_de_uso_create(request, proyecto_id=None, requerimiento_id=None):
                     estado_scrum=form.cleaned_data.get('estado_scrum', ''),
                     observaciones=form.cleaned_data.get('observaciones', '')
                 )
+            
+            # ⚡ CREAR RELACIÓN EN TABLA INTERMEDIA si se creó desde un requerimiento
+            if requerimiento:
+                from requerimientos.models import RequerimientoCaso
+                RequerimientoCaso.objects.create(
+                    requerimiento=requerimiento,
+                    caso_de_uso=caso,
+                    nota=f'Caso de uso creado desde el requerimiento {requerimiento.nombre}'
+                )
 
             messages.success(request, f'✅ Caso de Uso "{caso.nombre}" creado exitosamente.')
-            return redirect('casos_de_uso:caso_de_uso_detail', pk=caso.pk)
+            
+            # Redirigir al detalle del requerimiento si se creó desde ahí
+            if requerimiento:
+                return redirect('requerimientos:requerimiento_detail', pk=requerimiento.pk)
+            else:
+                return redirect('casos_de_uso:caso_de_uso_detail', pk=caso.pk)
         else:
             # Si el formulario no es válido, se mantendrá con los datos POST
             # Los valores ingresados se conservarán para que el usuario los corrija
