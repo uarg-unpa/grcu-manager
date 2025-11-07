@@ -570,7 +570,13 @@ def requerimiento_historial(request, pk):
         numero_version = len(historial) - idx
         
         # Información del usuario que hizo el cambio
-        usuario = version.history_user if version.history_user else None
+        # Manejar el caso cuando history_user es None (cambios por migraciones, scripts, etc.)
+        if version.history_user:
+            usuario = version.history_user
+            usuario_nombre = usuario.nombre if hasattr(usuario, 'nombre') else str(usuario)
+        else:
+            usuario = None
+            usuario_nombre = 'Sistema'
         
         # Tipo de cambio
         tipo_cambio = {
@@ -583,6 +589,7 @@ def requerimiento_historial(request, pk):
             'version': version,
             'numero': numero_version,
             'usuario': usuario,
+            'usuario_nombre': usuario_nombre,
             'tipo_cambio': tipo_cambio,
             'history_id': version.history_id,
         })
@@ -641,13 +648,13 @@ def requerimiento_version_detail(request, pk, history_id):
     cambios = []
     
     if version_anterior:
-        # Comparar campos importantes
+        # Comparar campos importantes del modelo Requerimiento
+        # NO incluir 'prioridad' porque no está en el modelo principal
         campos = [
             ('nombre', 'Nombre'),
             ('descripcion', 'Descripción'),
             ('tipo', 'Tipo'),
             ('estado', 'Estado'),
-            ('prioridad', 'Prioridad'),
         ]
         
         for campo, etiqueta in campos:
@@ -657,8 +664,8 @@ def requerimiento_version_detail(request, pk, history_id):
             if valor_actual != valor_anterior:
                 cambios.append({
                     'campo': etiqueta,
-                    'anterior': valor_anterior,
-                    'actual': valor_actual,
+                    'anterior': valor_anterior if valor_anterior else '(vacío)',
+                    'actual': valor_actual if valor_actual else '(vacío)',
                 })
     
     context = {
@@ -723,34 +730,32 @@ def requerimiento_comparar_versiones(request, pk):
         if v.history_id == version2.history_id:
             numero_v2 = len(historial_completo) - idx
     
-    # Comparar todos los campos importantes
+    # Comparar todos los campos importantes del modelo Requerimiento
+    # NO incluir 'prioridad' porque está en los detalles, no en el modelo principal
     campos = [
         ('nombre', 'Nombre'),
         ('descripcion', 'Descripción'),
         ('tipo', 'Tipo'),
         ('estado', 'Estado'),
-        ('prioridad', 'Prioridad'),
     ]
     
     diferencias = []
     for campo, etiqueta in campos:
-        valor_v1 = getattr(version1, campo, '')
-        valor_v2 = getattr(version2, campo, '')
+        valor_v1 = getattr(version1, campo, '') or ''
+        valor_v2 = getattr(version2, campo, '') or ''
         
-        if valor_v1 != valor_v2:
-            diferencias.append({
-                'campo': etiqueta,
-                'version1': valor_v1,
-                'version2': valor_v2,
-                'cambio': True,
-            })
-        else:
-            diferencias.append({
-                'campo': etiqueta,
-                'version1': valor_v1,
-                'version2': valor_v2,
-                'cambio': False,
-            })
+        # Convertir a string para mejor visualización
+        if hasattr(valor_v1, '__str__'):
+            valor_v1 = str(valor_v1) if valor_v1 else '(vacío)'
+        if hasattr(valor_v2, '__str__'):
+            valor_v2 = str(valor_v2) if valor_v2 else '(vacío)'
+        
+        diferencias.append({
+            'campo': etiqueta,
+            'version1': valor_v1,
+            'version2': valor_v2,
+            'cambio': valor_v1 != valor_v2,
+        })
     
     context = {
         'requerimiento': requerimiento,

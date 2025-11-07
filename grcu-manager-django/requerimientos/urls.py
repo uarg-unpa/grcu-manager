@@ -24,5 +24,5 @@ urlpatterns = [
     # Historial
     path('<int:pk>/historial/', views.requerimiento_historial, name='requerimiento_historial'),
     path('<int:pk>/version/<int:history_id>/', views.requerimiento_version_detail, name='requerimiento_version_detail'),
-    path('<int:pk>/comparar/<int:version_id1>/<int:version_id2>/', views.requerimiento_comparar_versiones, name='requerimiento_comparar_versiones'),
+    path('<int:pk>/comparar/', views.requerimiento_comparar_versiones, name='requerimiento_comparar_versiones'),
 ]

@@ -55,11 +55,7 @@
                                                     </h5>
                                                     <p class="card-text mb-2">
                                                         <strong>Usuario:</strong> 
-                                                        {% if item.usuario %}
-                                                            {{ item.usuario.get_full_name|default:item.usuario.username }}
-                                                        {% else %}
-                                                            <span class="text-muted">Sistema</span>
-                                                        {% endif %}
+                                                        {{ item.usuario_nombre }}
                                                     </p>
                                                     <p class="card-text mb-2">
                                                         <strong>Estado:</strong> <span class="badge bg-secondary">{{ item.version.get_estado_display }}</span>
@@ -156,7 +152,6 @@
 </style>
 
 <script>
-{% verbatim %}
 let versionSeleccionada = null;
 
 function seleccionarParaComparar(historyId, numeroVersion) {
@@ -167,18 +162,29 @@ function seleccionarParaComparar(historyId, numeroVersion) {
     const lista = document.getElementById('listaVersiones');
     lista.innerHTML = '';
     
-    // Obtener todas las versiones menos la seleccionada
-    {% for item in versiones %}
-    if ('{{ item.history_id }}' !== historyId) {
-        const btn = document.createElement('button');
-        btn.className = 'list-group-item list-group-item-action';
-        btn.innerHTML = '<strong>Versión #{{ item.numero }}</strong> - {{ item.version.history_date|date:"d/m/Y H:i" }}';
-        btn.onclick = function() {
-            compararVersiones('{{ item.history_id }}');
-        };
-        lista.appendChild(btn);
-    }
-    {% endfor %}
+    // Obtener todas las versiones disponibles
+    const versiones = [
+        {% for item in versiones %}
+        {
+            id: '{{ item.history_id }}',
+            numero: '{{ item.numero }}',
+            fecha: '{{ item.version.history_date|date:"d/m/Y H:i" }}'
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+    
+    // Agregar todas las versiones excepto la seleccionada
+    versiones.forEach(function(version) {
+        if (version.id !== historyId) {
+            const btn = document.createElement('button');
+            btn.className = 'list-group-item list-group-item-action';
+            btn.innerHTML = '<strong>Versión #' + version.numero + '</strong> - ' + version.fecha;
+            btn.onclick = function() {
+                compararVersiones(version.id);
+            };
+            lista.appendChild(btn);
+        }
+    });
     
     // Mostrar modal
     const modal = new bootstrap.Modal(document.getElementById('compararModal'));
@@ -186,10 +192,10 @@ function seleccionarParaComparar(historyId, numeroVersion) {
 }
 
 function compararVersiones(version2Id) {
-    const baseUrl = '{% endverbatim %}{% url "requerimientos:requerimiento_comparar_versiones" requerimiento.pk 0 0 %}{% verbatim %}';
-    const url = baseUrl.replace('/0/0/', '/' + versionSeleccionada + '/' + version2Id + '/');
+    const url = '{% url "requerimientos:requerimiento_comparar_versiones" requerimiento.pk %}' + 
+                '?version1_id=' + versionSeleccionada + 
+                '&version2_id=' + version2Id;
     window.location.href = url;
 }
-{% endverbatim %}
 </script>
 {% endblock %}
