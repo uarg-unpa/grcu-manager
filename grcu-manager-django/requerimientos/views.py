@@ -757,6 +757,9 @@ def requerimiento_comparar_versiones(request, pk):
             'cambio': valor_v1 != valor_v2,
         })
     
+    # Contar campos con cambios
+    campos_con_cambios = sum(1 for diff in diferencias if diff['cambio'])
+    
     context = {
         'requerimiento': requerimiento,
         'proyecto': proyecto,
@@ -765,6 +768,7 @@ def requerimiento_comparar_versiones(request, pk):
         'numero_v1': numero_v1,
         'numero_v2': numero_v2,
         'diferencias': diferencias,
+        'campos_con_cambios': campos_con_cambios,
         'page_title': f'{proyecto.nombre} - Comparar versiones de {requerimiento.nombre}',
     }
     

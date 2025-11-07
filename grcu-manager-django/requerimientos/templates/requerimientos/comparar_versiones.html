@@ -71,7 +71,7 @@
                         </h5>
                         <p class="mb-0">
                             Se encontraron <strong>{{ diferencias|length }}</strong> campo{{ diferencias|length|pluralize:"s" }} analizados,
-                            de los cuales <strong>{{ diferencias|selectattr:"cambio"|list|length }}</strong> tiene{{ diferencias|selectattr:"cambio"|list|length|pluralize:"n,n" }} cambios.
+                            de los cuales <strong>{{ campos_con_cambios }}</strong> tiene{{ campos_con_cambios|pluralize:"n,n" }} cambios.
                         </p>
                     </div>
 
