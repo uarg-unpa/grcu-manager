@@ -767,6 +767,8 @@ def requerimiento_comparar_versiones(request, pk):
         'version2': version2,
         'numero_v1': numero_v1,
         'numero_v2': numero_v2,
+        'usuario_v1': version1.history_user,  # Pasar objeto completo o None
+        'usuario_v2': version2.history_user,  # Pasar objeto completo o None
         'diferencias': diferencias,
         'campos_con_cambios': campos_con_cambios,
         'page_title': f'{proyecto.nombre} - Comparar versiones de {requerimiento.nombre}',
@@ -1082,6 +1084,7 @@ def requerimiento_validar_cliente(request, proyecto_id=None):
         # Procesar validaciones
         for req in requerimientos:
             accion = request.POST.get(f'accion_{req.pk}')
+            comentario = request.POST.get(f'comentario_{req.pk}', '')
             if accion == 'validar':
                 # Validar el requerimiento
                 req.estado = 'VALIDADO'

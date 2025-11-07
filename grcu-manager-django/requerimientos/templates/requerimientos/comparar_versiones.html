@@ -29,11 +29,17 @@
                                         <strong>Fecha:</strong> {{ version1.history_date|date:"d/m/Y H:i:s" }}
                                     </p>
                                     <p class="mb-0">
-                                        <strong>Usuario:</strong> 
-                                        {% if version1.history_user %}
-                                            {{ version1.history_user.get_full_name|default:version1.history_user.username }}
+                                        <strong>Usuario:</strong>
+                                        {% if usuario_v1 %}
+                                            {% if usuario_v1.avatar %}
+                                                <img src="{{ usuario_v1.avatar }}" alt="Avatar" class="rounded-circle" style="width: 24px; height: 24px; object-fit: cover;">
+                                            {% else %}
+                                                <i class="bi bi-person-circle text-secondary" style="font-size: 1.2rem;"></i>
+                                            {% endif %}
+                                            <span class="ms-1">{{ usuario_v1.nombre }}</span>
                                         {% else %}
-                                            <span class="text-muted">Sistema</span>
+                                            <i class="bi bi-person-circle text-muted" style="font-size: 1.2rem;"></i>
+                                            <span class="ms-1 text-muted">Sistema</span>
                                         {% endif %}
                                     </p>
                                 </div>
@@ -52,11 +58,17 @@
                                         <strong>Fecha:</strong> {{ version2.history_date|date:"d/m/Y H:i:s" }}
                                     </p>
                                     <p class="mb-0">
-                                        <strong>Usuario:</strong> 
-                                        {% if version2.history_user %}
-                                            {{ version2.history_user.get_full_name|default:version2.history_user.username }}
+                                        <strong>Usuario:</strong>
+                                        {% if usuario_v2 %}
+                                            {% if usuario_v2.avatar %}
+                                                <img src="{{ usuario_v2.avatar }}" alt="Avatar" class="rounded-circle" style="width: 24px; height: 24px; object-fit: cover;">
+                                            {% else %}
+                                                <i class="bi bi-person-circle text-success" style="font-size: 1.2rem;"></i>
+                                            {% endif %}
+                                            <span class="ms-1">{{ usuario_v2.nombre }}</span>
                                         {% else %}
-                                            <span class="text-muted">Sistema</span>
+                                            <i class="bi bi-person-circle text-muted" style="font-size: 1.2rem;"></i>
+                                            <span class="ms-1 text-muted">Sistema</span>
                                         {% endif %}
                                     </p>
                                 </div>
