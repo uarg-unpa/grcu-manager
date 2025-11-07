@@ -53,11 +53,7 @@
                                                     </h5>
                                                     <p class="card-text mb-2">
                                                         <strong>Usuario:</strong> 
-                                                        {% if item.usuario %}
-                                                            {{ item.usuario.get_full_name|default:item.usuario.username }}
-                                                        {% else %}
-                                                            <span class="text-muted">Sistema</span>
-                                                        {% endif %}
+                                                        {{ item.usuario_nombre }}
                                                     </p>
                                                     {% if item.version.descripcion %}
                                                     <p class="card-text small text-muted">

@@ -35,6 +35,82 @@
                 </div>
             </div>
             
+            <!-- Sección de Dependencias -->
+            <hr class="my-4">
+            <h4 class="mb-3">
+                <i class="bi bi-diagram-3 text-primary"></i>
+                Dependencias
+            </h4>
+            <div class="row">
+                <!-- Depende de -->
+                <div class="col-md-6">
+                    <div class="card border-primary">
+                        <div class="card-header bg-primary text-white">
+                            <i class="bi bi-arrow-down-circle"></i>
+                            Este requerimiento depende de:
+                        </div>
+                        <div class="card-body">
+                            {% if requerimiento.dependencias.all %}
+                                <ul class="list-group list-group-flush">
+                                    {% for dep in requerimiento.dependencias.all %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>{{ dep.nombre }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ dep.get_tipo_display }} - {{ dep.get_estado_display }}</small>
+                                        </div>
+                                        <a href="{% url 'requerimientos:requerimiento_detail' dep.pk %}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i> Ver
+                                        </a>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                <p class="text-muted mb-0">
+                                    <i class="bi bi-info-circle"></i>
+                                    Este requerimiento no depende de ningún otro.
+                                </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Es dependencia de -->
+                <div class="col-md-6">
+                    <div class="card border-success">
+                        <div class="card-header bg-success text-white">
+                            <i class="bi bi-arrow-up-circle"></i>
+                            Requerimientos que dependen de este:
+                        </div>
+                        <div class="card-body">
+                            {% if requerimiento.dependientes.all %}
+                                <ul class="list-group list-group-flush">
+                                    {% for dep in requerimiento.dependientes.all %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>{{ dep.nombre }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ dep.get_tipo_display }} - {{ dep.get_estado_display }}</small>
+                                        </div>
+                                        <a href="{% url 'requerimientos:requerimiento_detail' dep.pk %}" 
+                                           class="btn btn-sm btn-outline-success">
+                                            <i class="bi bi-eye"></i> Ver
+                                        </a>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                <p class="text-muted mb-0">
+                                    <i class="bi bi-info-circle"></i>
+                                    Ningún requerimiento depende de este.
+                                </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Adjuntos y Recursos -->
             {% if requerimiento.imagen or requerimiento.link_externo %}
             <hr class="my-4">

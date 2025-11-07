@@ -48,6 +48,34 @@ def actualizar_rol_lider(usuario):
             usuario.roles.remove(rol_lider)
             usuario.roles.add(rol_developer)
 
+
+def usuario_tiene_proyecto_activo(usuario, proyecto_actual=None):
+    """
+    Verifica si un usuario ya está asignado a un proyecto activo.
+    
+    Args:
+        usuario: El usuario a verificar
+        proyecto_actual: Proyecto a excluir de la verificación (para edición)
+    
+    Returns:
+        tuple: (tiene_proyecto_activo, nombre_proyecto)
+    """
+    # Buscar participaciones del usuario en proyectos activos
+    participaciones = ParticipacionProyecto.objects.filter(
+        usuario=usuario,
+        proyecto__activo=True
+    ).select_related('proyecto')
+    
+    # Excluir el proyecto actual si se está editando
+    if proyecto_actual:
+        participaciones = participaciones.exclude(proyecto=proyecto_actual)
+    
+    if participaciones.exists():
+        proyecto_activo = participaciones.first().proyecto
+        return True, proyecto_activo.nombre
+    
+    return False, None
+
 @login_required
 @user_passes_test(is_admin)
 def lista_proyectos(request):
@@ -80,7 +108,22 @@ def crear_proyecto(request):
 
                     # Validar que el líder no sea Admin
                     if lider.roles.filter(nombre__iexact="Admin").exists():
+                        proyecto.delete()  # Eliminar el proyecto creado
                         messages.error(request, "Un usuario con rol 'Admin' no puede ser líder de proyecto.")
+                        return render(request, "proyectos/crear_proyecto.html", {
+                            "form": form,
+                            "page_title": "Crear Proyecto"
+                        })
+                    
+                    # ⚡ VALIDAR: El líder no puede estar en otro proyecto activo
+                    tiene_proyecto, nombre_proyecto = usuario_tiene_proyecto_activo(lider)
+                    if tiene_proyecto:
+                        proyecto.delete()  # Eliminar el proyecto creado
+                        messages.error(
+                            request,
+                            f"El usuario '{lider.nombre}' ya está asignado al proyecto activo '{nombre_proyecto}'. "
+                            f"Una persona solo puede estar en un proyecto activo a la vez."
+                        )
                         return render(request, "proyectos/crear_proyecto.html", {
                             "form": form,
                             "page_title": "Crear Proyecto"
@@ -112,11 +155,24 @@ def crear_proyecto(request):
                         defaults={"color": "#ffc107"}
                     )
 
+                    # ⚡ VALIDAR: Cada integrante no puede estar en otro proyecto activo
+                    integrantes_con_conflicto = []
                     for integrante in grupo.integrantes.exclude(id=lider_id):
-                        ParticipacionProyecto.objects.create(
-                            usuario=integrante,
-                            proyecto=proyecto,
-                            rol=rol_dev
+                        tiene_proyecto, nombre_proyecto = usuario_tiene_proyecto_activo(integrante)
+                        if tiene_proyecto:
+                            integrantes_con_conflicto.append(f"{integrante.nombre} (en '{nombre_proyecto}')")
+                        else:
+                            ParticipacionProyecto.objects.create(
+                                usuario=integrante,
+                                proyecto=proyecto,
+                                rol=rol_dev
+                            )
+                    
+                    if integrantes_con_conflicto:
+                        messages.warning(
+                            request,
+                            f"Los siguientes integrantes ya están en proyectos activos y no fueron agregados: "
+                            f"{', '.join(integrantes_con_conflicto)}"
                         )
 
                 messages.success(request, f"Proyecto '{proyecto.nombre}' creado exitosamente con el grupo '{grupo.nombre}'.")
@@ -180,6 +236,20 @@ def editar_proyecto(request, proyecto_id):
                             "proyecto": proyecto,
                             "page_title": "Editar Proyecto"
                         })
+                    
+                    # ⚡ VALIDAR: El líder no puede estar en otro proyecto activo (excepto este)
+                    tiene_proyecto, nombre_proyecto = usuario_tiene_proyecto_activo(lider, proyecto)
+                    if tiene_proyecto:
+                        messages.error(
+                            request,
+                            f"El usuario '{lider.nombre}' ya está asignado al proyecto activo '{nombre_proyecto}'. "
+                            f"Una persona solo puede estar en un proyecto activo a la vez."
+                        )
+                        return render(request, "proyectos/editar_proyecto.html", {
+                            "form": form,
+                            "proyecto": proyecto,
+                            "page_title": "Editar Proyecto"
+                        })
 
                     # Guardar el líder anterior para actualizar su rol después
                     lider_anterior = proyecto.lider
@@ -217,11 +287,24 @@ def editar_proyecto(request, proyecto_id):
                         defaults={"color": "#ffc107"}
                     )
 
+                    # ⚡ VALIDAR: Cada integrante no puede estar en otro proyecto activo
+                    integrantes_con_conflicto = []
                     for integrante in grupo.integrantes.exclude(id=lider_id):
-                        ParticipacionProyecto.objects.create(
-                            usuario=integrante,
-                            proyecto=proyecto,
-                            rol=rol_dev
+                        tiene_proyecto, nombre_proyecto = usuario_tiene_proyecto_activo(integrante, proyecto)
+                        if tiene_proyecto:
+                            integrantes_con_conflicto.append(f"{integrante.nombre} (en '{nombre_proyecto}')")
+                        else:
+                            ParticipacionProyecto.objects.create(
+                                usuario=integrante,
+                                proyecto=proyecto,
+                                rol=rol_dev
+                            )
+                    
+                    if integrantes_con_conflicto:
+                        messages.warning(
+                            request,
+                            f"Los siguientes integrantes ya están en proyectos activos y no fueron agregados: "
+                            f"{', '.join(integrantes_con_conflicto)}"
                         )
 
                 messages.success(request, f"Proyecto '{proyecto.nombre}' actualizado exitosamente con el grupo '{grupo.nombre}'.")

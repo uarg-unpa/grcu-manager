@@ -1,0 +1,228 @@
+{% extends "core/base.html" %}
+
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+    <style>
+        .badge-proyecto {
+            font-size: 1.1rem;
+            padding: 0.5rem 1rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px;
+        }
+        
+        .dependencias-card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .req-row {
+            border-left: 4px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .req-row:hover {
+            background-color: #f8f9fa;
+            border-left-color: #667eea;
+        }
+        
+        .req-nombre {
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .badge-dependencia {
+            background-color: #667eea;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            margin: 0.2rem;
+            display: inline-block;
+        }
+        
+        .badge-dependiente {
+            background-color: #48bb78;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            margin: 0.2rem;
+            display: inline-block;
+        }
+        
+        .select-dependencias {
+            min-height: 100px;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+        }
+        
+        .select-dependencias:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .btn-guardar-dependencias {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-guardar-dependencias:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(102, 126, 234, 0.3);
+            color: white;
+        }
+        
+        .info-box {
+            background: linear-gradient(135deg, #e0e7ff 0%, #f3e8ff 100%);
+            border-left: 4px solid #667eea;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1.5rem;
+        }
+        
+        .tabla-dependencias {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .tabla-dependencias thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .tabla-dependencias th {
+            font-weight: 600;
+            padding: 1rem;
+        }
+        
+        .tabla-dependencias td {
+            padding: 0.75rem;
+            vertical-align: middle;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="mb-3">
+        <span class="badge-proyecto"><i class="bi bi-diagram-3 me-1"></i> Proyecto: {{ proyecto.nombre }}</span>
+    </div>
+    
+    <div class="info-box">
+        <i class="bi bi-info-circle me-2"></i>
+        <strong>Gestión de Dependencias:</strong> Define qué requerimientos dependen de otros para una mejor planificación. 
+        <br><small class="text-muted">
+            • <strong>Depende de:</strong> Requerimientos que deben completarse antes de este.
+            <br>
+            • <strong>Es dependencia de:</strong> Requerimientos que dependen de este (se actualizan automáticamente).
+        </small>
+    </div>
+    
+    <form method="post" class="card dependencias-card">
+        {% csrf_token %}
+        <div class="table-responsive">
+            <table class="table tabla-dependencias align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th style="width: 20%;"><i class="bi bi-file-earmark-text me-1"></i> Requerimiento</th>
+                        <th style="width: 15%;"><i class="bi bi-info-circle me-1"></i> Estado</th>
+                        <th style="width: 30%;"><i class="bi bi-arrow-down-circle me-1"></i> Depende de</th>
+                        <th style="width: 35%;"><i class="bi bi-arrow-up-circle me-1"></i> Es dependencia de</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in requerimientos_con_info %}
+                    <tr class="req-row">
+                        <td>
+                            <div class="req-nombre">{{ item.requerimiento.nombre }}</div>
+                            <small class="text-muted">{{ item.requerimiento.get_tipo_display }}</small>
+                        </td>
+                        <td>
+                            {% if item.requerimiento.estado == 'VALIDADO' %}
+                                <span class="badge bg-success"><i class="bi bi-check-circle"></i> Validado</span>
+                            {% elif item.requerimiento.estado == 'PRIORIZADO' %}
+                                <span class="badge bg-primary"><i class="bi bi-list-ol"></i> Priorizado</span>
+                            {% elif item.requerimiento.estado == 'EN_PROCESO' %}
+                                <span class="badge bg-info"><i class="bi bi-hourglass-split"></i> En Proceso</span>
+                            {% elif item.requerimiento.estado == 'TERMINADO' %}
+                                <span class="badge bg-dark"><i class="bi bi-check-all"></i> Terminado</span>
+                            {% else %}
+                                <span class="badge bg-secondary">📝 Borrador</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <select name="dependencias_{{ item.requerimiento.pk }}" 
+                                    class="form-select select-dependencias" 
+                                    multiple
+                                    size="3">
+                                {% for disponible in item.disponibles %}
+                                    <option value="{{ disponible.pk }}"
+                                            {% if disponible.pk in item.dependencias_ids %}selected{% endif %}>
+                                        {{ disponible.nombre }} ({{ disponible.get_estado_display }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted d-block mt-1">
+                                <i class="bi bi-hand-index me-1"></i>Mantén presionado Ctrl/Cmd para seleccionar múltiples
+                            </small>
+                        </td>
+                        <td>
+                            {% if item.dependientes %}
+                                {% for dependiente in item.dependientes %}
+                                    <span class="badge-dependiente">
+                                        <i class="bi bi-arrow-up me-1"></i>{{ dependiente.nombre }}
+                                    </span>
+                                {% endfor %}
+                            {% else %}
+                                <span class="text-muted fst-italic">
+                                    <i class="bi bi-dash-circle me-1"></i>Ningún requerimiento depende de este
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted py-4">
+                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                            No hay requerimientos en este proyecto
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if requerimientos_con_info %}
+        <div class="text-end p-3 bg-light">
+            <a href="{% url 'dashboards:lider_dashboard' %}" class="btn btn-outline-secondary me-2">
+                <i class="bi bi-x-circle me-1"></i> Cancelar
+            </a>
+            <button type="submit" class="btn btn-guardar-dependencias">
+                <i class="bi bi-save me-1"></i> Guardar Dependencias
+            </button>
+        </div>
+        {% endif %}
+    </form>
+    
+    {% if total_requerimientos > 0 %}
+    <div class="mt-4">
+        <div class="alert alert-light border">
+            <h6 class="mb-2"><i class="bi bi-graph-up me-2"></i>Estadísticas:</h6>
+            <p class="mb-0">
+                <strong>Total de requerimientos:</strong> {{ total_requerimientos }}
+            </p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

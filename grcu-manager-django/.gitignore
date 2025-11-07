@@ -9,6 +9,7 @@ db.sqlite3
 __pycache__/
 media/
 staticfiles/
+grcu_manager/settings.py
 
 # IDE
 .vscode/

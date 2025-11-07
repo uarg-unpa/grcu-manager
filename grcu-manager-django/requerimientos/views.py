@@ -360,10 +360,26 @@ def requerimiento_priorizar(request, proyecto_id=None):
         proyecto=proyecto
     ).exclude(
         estado='BORRADOR'
-    ).select_related('detalle_tradicional', 'detalle_agil')
+    ).select_related('detalle_tradicional', 'detalle_agil').prefetch_related('comentarios_validacion')
+    
+    # Agregar comentarios de validación a cada requerimiento
+    from requerimientos.models import ComentarioValidacion
+    requerimientos_con_comentarios = []
+    for req in requerimientos:
+        # Obtener el último comentario de validación (si existe)
+        ultimo_comentario = ComentarioValidacion.objects.filter(
+            requerimiento=req,
+            tipo_accion__in=['VALIDAR', 'ACLARACION']
+        ).order_by('-fecha_creacion').first()
+        
+        requerimientos_con_comentarios.append({
+            'requerimiento': req,
+            'ultimo_comentario': ultimo_comentario.comentario if ultimo_comentario else None
+        })
 
     if request.method == 'POST':
-        for req in requerimientos:
+        for item in requerimientos_con_comentarios:
+            req = item['requerimiento']
             # Solo permitir priorizar requerimientos validados
             if req.estado == 'BORRADOR':
                 continue
@@ -417,7 +433,7 @@ def requerimiento_priorizar(request, proyecto_id=None):
 
     context = {
         "proyecto": proyecto,
-        "requerimientos": requerimientos,
+        "requerimientos": requerimientos_con_comentarios,
         "MOSCOW_CHOICES": MOSCOW_CHOICES,
         "page_title": f"{proyecto.nombre} - Priorización de Requerimientos",
     }
@@ -554,7 +570,13 @@ def requerimiento_historial(request, pk):
         numero_version = len(historial) - idx
         
         # Información del usuario que hizo el cambio
-        usuario = version.history_user if version.history_user else None
+        # Manejar el caso cuando history_user es None (cambios por migraciones, scripts, etc.)
+        if version.history_user:
+            usuario = version.history_user
+            usuario_nombre = usuario.nombre if hasattr(usuario, 'nombre') else str(usuario)
+        else:
+            usuario = None
+            usuario_nombre = 'Sistema'
         
         # Tipo de cambio
         tipo_cambio = {
@@ -567,6 +589,7 @@ def requerimiento_historial(request, pk):
             'version': version,
             'numero': numero_version,
             'usuario': usuario,
+            'usuario_nombre': usuario_nombre,
             'tipo_cambio': tipo_cambio,
             'history_id': version.history_id,
         })
@@ -625,13 +648,13 @@ def requerimiento_version_detail(request, pk, history_id):
     cambios = []
     
     if version_anterior:
-        # Comparar campos importantes
+        # Comparar campos importantes del modelo Requerimiento
+        # NO incluir 'prioridad' porque no está en el modelo principal
         campos = [
             ('nombre', 'Nombre'),
             ('descripcion', 'Descripción'),
             ('tipo', 'Tipo'),
             ('estado', 'Estado'),
-            ('prioridad', 'Prioridad'),
         ]
         
         for campo, etiqueta in campos:
@@ -641,8 +664,8 @@ def requerimiento_version_detail(request, pk, history_id):
             if valor_actual != valor_anterior:
                 cambios.append({
                     'campo': etiqueta,
-                    'anterior': valor_anterior,
-                    'actual': valor_actual,
+                    'anterior': valor_anterior if valor_anterior else '(vacío)',
+                    'actual': valor_actual if valor_actual else '(vacío)',
                 })
     
     context = {
@@ -707,34 +730,32 @@ def requerimiento_comparar_versiones(request, pk):
         if v.history_id == version2.history_id:
             numero_v2 = len(historial_completo) - idx
     
-    # Comparar todos los campos importantes
+    # Comparar todos los campos importantes del modelo Requerimiento
+    # NO incluir 'prioridad' porque está en los detalles, no en el modelo principal
     campos = [
         ('nombre', 'Nombre'),
         ('descripcion', 'Descripción'),
         ('tipo', 'Tipo'),
         ('estado', 'Estado'),
-        ('prioridad', 'Prioridad'),
     ]
     
     diferencias = []
     for campo, etiqueta in campos:
-        valor_v1 = getattr(version1, campo, '')
-        valor_v2 = getattr(version2, campo, '')
+        valor_v1 = getattr(version1, campo, '') or ''
+        valor_v2 = getattr(version2, campo, '') or ''
         
-        if valor_v1 != valor_v2:
-            diferencias.append({
-                'campo': etiqueta,
-                'version1': valor_v1,
-                'version2': valor_v2,
-                'cambio': True,
-            })
-        else:
-            diferencias.append({
-                'campo': etiqueta,
-                'version1': valor_v1,
-                'version2': valor_v2,
-                'cambio': False,
-            })
+        # Convertir a string para mejor visualización
+        if hasattr(valor_v1, '__str__'):
+            valor_v1 = str(valor_v1) if valor_v1 else '(vacío)'
+        if hasattr(valor_v2, '__str__'):
+            valor_v2 = str(valor_v2) if valor_v2 else '(vacío)'
+        
+        diferencias.append({
+            'campo': etiqueta,
+            'version1': valor_v1,
+            'version2': valor_v2,
+            'cambio': valor_v1 != valor_v2,
+        })
     
     context = {
         'requerimiento': requerimiento,
@@ -888,9 +909,8 @@ def requerimiento_update(request, pk):
             requerimiento.nombre = form.cleaned_data['nombre']
             requerimiento.descripcion = form.cleaned_data.get('descripcion', '')
             requerimiento.tipo = form.cleaned_data['tipo']
-            requerimiento.estado = form.cleaned_data['estado']
-            
-            # Manejar imagen (solo si se subió una nueva)
+           
+           
             nueva_imagen = form.cleaned_data.get('imagen')
             if nueva_imagen:
                 requerimiento.imagen = nueva_imagen
@@ -903,11 +923,10 @@ def requerimiento_update(request, pk):
                 detalle, created = DetalleRequerimientoTradicional.objects.get_or_create(
                     requerimiento_padre=requerimiento
                 )
-                detalle.prioridad = form.cleaned_data.get('prioridad', '')
+                # NO actualizar prioridad ni estado_validacion - se manejan en vistas específicas
                 detalle.fuente = form.cleaned_data.get('fuente', '')
                 detalle.categoria = form.cleaned_data.get('categoria', '')
                 detalle.fecha_compromiso = form.cleaned_data.get('fecha_compromiso')
-                detalle.estado_validacion = form.cleaned_data.get('estado_validacion', '')
                 detalle.observaciones = form.cleaned_data.get('observaciones', '')
                 detalle.save()
                 
@@ -934,7 +953,7 @@ def requerimiento_update(request, pk):
             'nombre': requerimiento.nombre,
             'descripcion': requerimiento.descripcion,
             'tipo': requerimiento.tipo,
-            'estado': requerimiento.estado,
+            # NO incluir estado - no se edita aquí
             'link_externo': requerimiento.link_externo,
         }
         
@@ -944,11 +963,10 @@ def requerimiento_update(request, pk):
                 detalle = requerimiento.detalle_tradicional
                 if detalle:
                     initial_data.update({
-                        'prioridad': detalle.prioridad,
+                        # NO incluir prioridad ni estado_validacion
                         'fuente': detalle.fuente,
                         'categoria': detalle.categoria,
                         'fecha_compromiso': detalle.fecha_compromiso,
-                        'estado_validacion': detalle.estado_validacion,
                         'observaciones': detalle.observaciones,
                     })
             except DetalleRequerimientoTradicional.DoesNotExist:
@@ -1348,3 +1366,104 @@ def requerimiento_discusion(request, pk):
     }
     
     return render(request, 'requerimientos/requerimiento_discusion.html', context)
+
+
+# ============================================================================
+# VISTAS DE GESTIÓN DE DEPENDENCIAS
+# ============================================================================
+
+@login_required
+def requerimiento_dependencias(request, proyecto_id=None):
+    """
+    Vista para que líderes gestionen dependencias entre requerimientos.
+    Permite definir qué requerimientos dependen de otros para planificación y priorización.
+    """
+    # Determinar el proyecto
+    if not proyecto_id:
+        proyecto_id = request.GET.get('proyecto_id')
+    
+    if not proyecto_id and hasattr(request.user, 'lidera_proyectos'):
+        proyectos_liderados = request.user.lidera_proyectos.all()
+        if proyectos_liderados.exists():
+            primer_proyecto = proyectos_liderados.first()
+            if primer_proyecto:
+                proyecto_id = primer_proyecto.pk
+    
+    if not proyecto_id:
+        messages.error(request, 'Debe especificar un proyecto para gestionar dependencias.')
+        return redirect('dashboards:lider_dashboard')
+    
+    proyecto = get_object_or_404(Proyecto, id=proyecto_id)
+    
+    # Verificar que el usuario sea líder del proyecto
+    if request.user != proyecto.lider:
+        messages.error(request, 'Solo el líder del proyecto puede gestionar dependencias de requerimientos.')
+        return redirect('dashboards:lider_dashboard')
+    
+    # Obtener todos los requerimientos del proyecto
+    requerimientos = Requerimiento.objects.filter(
+        proyecto=proyecto
+    ).select_related('proyecto').prefetch_related('dependencias', 'dependientes').order_by('nombre')
+    
+    if request.method == 'POST':
+        # Procesar las dependencias establecidas
+        dependencias_actualizadas = 0
+        
+        for req in requerimientos:
+            # Obtener las dependencias seleccionadas para este requerimiento
+            dependencias_seleccionadas = request.POST.getlist(f'dependencias_{req.pk}')
+            
+            # Limpiar dependencias actuales
+            req.dependencias.clear()
+            
+            # Agregar nuevas dependencias
+            for dep_id in dependencias_seleccionadas:
+                try:
+                    dep_id_int = int(dep_id)
+                    # Evitar auto-dependencias
+                    if dep_id_int != req.pk:
+                        dependencia = Requerimiento.objects.get(pk=dep_id_int, proyecto=proyecto)
+                        req.dependencias.add(dependencia)
+                        dependencias_actualizadas += 1
+                except (ValueError, Requerimiento.DoesNotExist):
+                    continue
+        
+        if dependencias_actualizadas > 0:
+            messages.success(
+                request, 
+                f'✅ Se establecieron {dependencias_actualizadas} dependencia(s) entre requerimientos.'
+            )
+        else:
+            messages.info(request, 'No se establecieron nuevas dependencias.')
+        
+        return redirect(f"{reverse('requerimientos:requerimiento_dependencias')}?proyecto_id={proyecto.pk}")
+    
+    # Preparar datos para el template
+    requerimientos_con_info = []
+    for req in requerimientos:
+        # Obtener dependencias actuales (de los que depende este req)
+        dependencias_actuales = list(req.dependencias.all())
+        dependencias_ids = [d.pk for d in dependencias_actuales]
+        
+        # Obtener dependientes (requerimientos que dependen de este)
+        dependientes_actuales = list(req.dependientes.all())
+        
+        # Requerimientos disponibles para ser dependencias (todos menos él mismo)
+        disponibles = [r for r in requerimientos if r.pk != req.pk]
+        
+        requerimientos_con_info.append({
+            'requerimiento': req,
+            'dependencias_actuales': dependencias_actuales,
+            'dependencias_ids': dependencias_ids,
+            'dependientes': dependientes_actuales,
+            'disponibles': disponibles,
+        })
+    
+    context = {
+        'proyecto': proyecto,
+        'requerimientos_con_info': requerimientos_con_info,
+        'total_requerimientos': requerimientos.count(),
+        'page_title': f'{proyecto.nombre} - Gestión de Dependencias',
+    }
+    
+    return render(request, 'requerimientos/requerimiento_dependencias.html', context)

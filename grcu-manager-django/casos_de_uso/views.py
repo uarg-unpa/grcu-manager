@@ -107,7 +107,6 @@ def caso_de_uso_update(request, pk):
                         'flujo_principal': form.cleaned_data.get('flujo_principal', ''),
                         'flujo_alternativo': form.cleaned_data.get('flujo_alternativo', ''),
                         'postcondiciones': form.cleaned_data.get('postcondiciones', ''),
-                        'prioridad': form.cleaned_data.get('prioridad', ''),
                         'observaciones': form.cleaned_data.get('observaciones', '')
                     }
                 )
@@ -128,7 +127,6 @@ def caso_de_uso_update(request, pk):
                         'criterio_aceptacion': form.cleaned_data.get('criterio_aceptacion', ''),
                         'responsable': form.cleaned_data.get('responsable', ''),
                         'estado_scrum': form.cleaned_data.get('estado_scrum', ''),
-                        'prioridad': form.cleaned_data.get('prioridad', ''),
                         'observaciones': form.cleaned_data.get('observaciones', '')
                     }
                 )
@@ -301,9 +299,23 @@ def caso_de_uso_create(request, proyecto_id=None, requerimiento_id=None):
                     estado_scrum=form.cleaned_data.get('estado_scrum', ''),
                     observaciones=form.cleaned_data.get('observaciones', '')
                 )
+            
+            # ⚡ CREAR RELACIÓN EN TABLA INTERMEDIA si se creó desde un requerimiento
+            if requerimiento:
+                from requerimientos.models import RequerimientoCaso
+                RequerimientoCaso.objects.create(
+                    requerimiento=requerimiento,
+                    caso_de_uso=caso,
+                    nota=f'Caso de uso creado desde el requerimiento {requerimiento.nombre}'
+                )
 
             messages.success(request, f'✅ Caso de Uso "{caso.nombre}" creado exitosamente.')
-            return redirect('casos_de_uso:caso_de_uso_detail', pk=caso.pk)
+            
+            # Redirigir al detalle del requerimiento si se creó desde ahí
+            if requerimiento:
+                return redirect('requerimientos:requerimiento_detail', pk=requerimiento.pk)
+            else:
+                return redirect('casos_de_uso:caso_de_uso_detail', pk=caso.pk)
         else:
             # Si el formulario no es válido, se mantendrá con los datos POST
             # Los valores ingresados se conservarán para que el usuario los corrija
@@ -400,6 +412,7 @@ def caso_de_uso_historial(request, pk):
         
         # Información del usuario que hizo el cambio
         usuario = version.history_user if version.history_user else None
+        usuario_nombre = usuario.nombre if usuario else 'Sistema'
         
         # Tipo de cambio
         tipo_cambio = {
@@ -412,6 +425,7 @@ def caso_de_uso_historial(request, pk):
             'version': version,
             'numero': numero_version,
             'usuario': usuario,
+            'usuario_nombre': usuario_nombre,
             'tipo_cambio': tipo_cambio,
             'history_id': version.history_id,
         })
