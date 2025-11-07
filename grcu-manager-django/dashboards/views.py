@@ -209,6 +209,10 @@ def lider_dashboard(request):
         
         requerimientos = Requerimiento.objects.filter(proyecto=proyecto)
         casos_de_uso = CasoDeUso.objects.filter(proyecto=proyecto)
+        
+        # Calcular totales
+        total_requerimientos = requerimientos.count()
+        total_casos_de_uso = casos_de_uso.count()
 
         # Acciones recientes de los integrantes del proyecto (solo equipo de desarrollo)
         acciones = RegistroActividad.objects.filter(usuario__in=integrantes_desarrollo).order_by('-fecha')[:20]
@@ -216,17 +220,19 @@ def lider_dashboard(request):
         # Huérfanos definidos por ausencia de relación en la tabla intermedia RequerimientoCaso
         reqs_huerfanos = requerimientos.annotate(rel_count=Count('relaciones_casos')).filter(rel_count=0)
         casos_huerfanos = casos_de_uso.annotate(rel_count=Count('relaciones_requerimientos')).filter(rel_count=0)
+        reqs_huerfanos_count = reqs_huerfanos.count()
+        casos_huerfanos_count = casos_huerfanos.count()
         reqs_huerfanos_ids = list(reqs_huerfanos.values_list('pk', flat=True))
         casos_huerfanos_ids = list(casos_huerfanos.values_list('pk', flat=True))
-        total_huerfanos = reqs_huerfanos.count() + casos_huerfanos.count()
+        total_huerfanos = reqs_huerfanos_count + casos_huerfanos_count
 
-        reqs_relacionados = requerimientos.count() - reqs_huerfanos.count()
-        casos_relacionados = casos_de_uso.count() - casos_huerfanos.count()
+        reqs_relacionados = total_requerimientos - reqs_huerfanos_count
+        casos_relacionados = total_casos_de_uso - casos_huerfanos_count
 
         # Calcular métricas adicionales de requerimientos por estado
-        reqs_sin_validar = requerimientos.filter(estado='CREADO').count()
+        reqs_sin_validar = requerimientos.filter(estado='BORRADOR').count()
         reqs_completados = requerimientos.filter(estado__in=['TERMINADO', 'COMPLETADO']).count()
-        reqs_sin_completar = requerimientos.count() - reqs_completados
+        reqs_sin_completar = total_requerimientos - reqs_completados
 
         dashboard_data.append({
             "proyecto": proyecto,
@@ -234,10 +240,14 @@ def lider_dashboard(request):
             "clientes": clientes,
             "requerimientos": requerimientos,
             "casos_de_uso": casos_de_uso,
+            "total_requerimientos": total_requerimientos,
+            "total_casos_de_uso": total_casos_de_uso,
             "acciones": acciones,
             "reqs_huerfanos": reqs_huerfanos,
+            "reqs_huerfanos_count": reqs_huerfanos_count,
             "reqs_huerfanos_ids": reqs_huerfanos_ids,
             "casos_huerfanos": casos_huerfanos,
+            "casos_huerfanos_count": casos_huerfanos_count,
             "casos_huerfanos_ids": casos_huerfanos_ids,
             "total_huerfanos": total_huerfanos,
             "reqs_relacionados": reqs_relacionados,
@@ -428,7 +438,7 @@ def stakeholder_dashboard(request):
         casos_relacionados = casos_de_uso.count() - casos_huerfanos.count()
         
         # Métricas por estado
-        reqs_pendientes = requerimientos.filter(estado='CREADO').count()
+        reqs_pendientes = requerimientos.filter(estado='BORRADOR').count()
         reqs_validados = requerimientos.filter(estado='VALIDADO').count()
         reqs_completados = requerimientos.filter(estado__in=['TERMINADO', 'COMPLETADO']).count()
         

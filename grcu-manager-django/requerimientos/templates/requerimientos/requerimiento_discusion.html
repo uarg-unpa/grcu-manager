@@ -74,7 +74,7 @@
                                                 <div class="form-check">
                                                     <input class="form-check-input" type="radio" 
                                                            name="tipo_comentario" id="tipo_interna" 
-                                                           value="DISCUSION_INTERNA" required>
+                                                           value="DISCUSION_INTERNA">
                                                     <label class="form-check-label fw-bold" for="tipo_interna">
                                                         <i class="bi bi-people me-1 text-primary"></i>
                                                         Discusión Interna
@@ -96,7 +96,7 @@
                                                 <div class="form-check">
                                                     <input class="form-check-input" type="radio" 
                                                            name="tipo_comentario" id="tipo_cliente" 
-                                                           value="VALIDACION_CLIENTE" required>
+                                                           value="VALIDACION_CLIENTE">
                                                     <label class="form-check-label fw-bold" for="tipo_cliente">
                                                         <i class="bi bi-chat-square-quote me-1 text-success"></i>
                                                         Validación con Cliente
@@ -329,19 +329,24 @@ document.querySelectorAll('input[name="tipo_comentario"]:checked').forEach(radio
     }
 });
 
-// Validar que se seleccione tipo antes de enviar
-document.querySelectorAll('form').forEach(form => {
-    form.addEventListener('submit', function(e) {
-        const tipoRadio = this.querySelector('input[name="tipo_comentario"]');
-        if (tipoRadio) {
-            const tipoSeleccionado = this.querySelector('input[name="tipo_comentario"]:checked');
-            if (!tipoSeleccionado) {
-                e.preventDefault();
-                alert('Por favor, selecciona el tipo de discusión antes de enviar tu comentario.');
-                return false;
-            }
+// Validar que se seleccione tipo antes de enviar (solo formulario principal)
+document.querySelector('#nuevoComentario form')?.addEventListener('submit', function(e) {
+    const tipoSeleccionado = this.querySelector('input[name="tipo_comentario"]:checked');
+    if (!tipoSeleccionado) {
+        e.preventDefault();
+        alert('Por favor, selecciona el tipo de discusión antes de enviar tu comentario.');
+        // Expandir el panel si está colapsado
+        const collapse = document.querySelector('#nuevoComentario');
+        if (collapse && !collapse.classList.contains('show')) {
+            new bootstrap.Collapse(collapse).show();
         }
-    });
+        // Resaltar la sección de tipo
+        document.querySelector('.row.g-3')?.classList.add('border', 'border-danger', 'rounded', 'p-2');
+        setTimeout(() => {
+            document.querySelector('.row.g-3')?.classList.remove('border', 'border-danger', 'rounded', 'p-2');
+        }, 3000);
+        return false;
+    }
 });
 </script>
 {% endblock %}

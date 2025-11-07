@@ -94,6 +94,24 @@
       100% { opacity: 1; transform: scale(1); }
     }
 
+    /* Estilos para badges de dependencias */
+    .badge.bg-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+      padding: 5px 10px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    .badge.bg-primary:hover {
+      transform: translateX(-3px);
+      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+    }
+
+    .badge.bg-primary i {
+      font-size: 0.9em;
+    }
+
     /* Botones de validación más prominentes */
     .btn-validar-lider {
       background: linear-gradient(45deg, #007bff, #0056b3);
@@ -310,6 +328,7 @@
             <th><i class="bi bi-tag me-1"></i> Tipo</th>
             <th><i class="bi bi-flag me-1"></i> Estado</th>
             <th><i class="bi bi-arrow-up me-1"></i> Prioridad</th>
+            <th><i class="bi bi-diagram-2 me-1"></i> Dependencias</th>
             <th><i class="bi bi-chat-dots me-1"></i> Comentarios</th>
             <th><i class="bi bi-card-text me-1"></i> Descripción</th>
             <th><i class="bi bi-calendar me-1"></i> Fecha</th>
@@ -371,6 +390,27 @@
                 {% else %}
                   -
                 {% endif %}
+              </td>
+              <td>
+                {% with deps=req.dependencias.all %}
+                  {% if deps|length == 0 %}
+                    <span class="text-muted small">
+                      <i class="bi bi-dash-circle"></i> Sin dependencias
+                    </span>
+                  {% else %}
+                    <div class="d-flex flex-column gap-1">
+                      {% for dep in deps %}
+                        <a href="{% url 'requerimientos:requerimiento_detail' dep.pk %}" 
+                           class="badge bg-primary text-decoration-none"
+                           data-bs-toggle="tooltip" 
+                           data-bs-placement="left"
+                           title="Este requerimiento depende de: {{ dep.nombre }}">
+                          <i class="bi bi-arrow-left-circle me-1"></i>{{ dep.nombre|truncatechars:25 }}
+                        </a>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                {% endwith %}
               </td>
               <td class="text-center">
                 {% if req.num_comentarios > 0 %}

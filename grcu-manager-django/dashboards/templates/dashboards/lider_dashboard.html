@@ -14,9 +14,9 @@
         <script id="dashboard-data" type="application/json">[
             {% for data in dashboard_data %}
                 {
-                    "reqs_huerfanos_count": {{ data.reqs_huerfanos|length }},
+                    "reqs_huerfanos_count": {{ data.reqs_huerfanos_count }},
                     "reqs_relacionados_count": {{ data.reqs_relacionados }},
-                    "casos_huerfanos_count": {{ data.casos_huerfanos|length }},
+                    "casos_huerfanos_count": {{ data.casos_huerfanos_count }},
                     "casos_relacionados_count": {{ data.casos_relacionados }}
                 }{% if not forloop.last %},{% endif %}
             {% endfor %}
@@ -180,7 +180,7 @@
                                     <i class="bi bi-list-check" style="font-size: 3rem; color: #667eea;"></i>
                                 </div>
                                 <h5 class="card-title mb-2 text-muted">Requerimientos</h5>
-                                <p class="display-4 fw-bold mb-0" style="color: #667eea;">{{ data.requerimientos|length }}</p>
+                                <p class="display-4 fw-bold mb-0" style="color: #667eea;">{{ data.total_requerimientos }}</p>
                             </div>
                         </div>
                     </div>
@@ -191,7 +191,7 @@
                                     <i class="bi bi-diagram-3" style="font-size: 3rem; color: #764ba2;"></i>
                                 </div>
                                 <h5 class="card-title mb-2 text-muted">Casos de Uso</h5>
-                                <p class="display-4 fw-bold mb-0" style="color: #764ba2;">{{ data.casos_de_uso|length }}</p>
+                                <p class="display-4 fw-bold mb-0" style="color: #764ba2;">{{ data.total_casos_de_uso }}</p>
                             </div>
                         </div>
                     </div>
@@ -203,7 +203,7 @@
                                 </div>
                                 <h5 class="card-title mb-2 text-muted">Huérfanos</h5>
                                 <p class="display-4 fw-bold mb-2" style="color: #dc3545;">{{ data.total_huerfanos }}</p>
-                                <small class="text-muted">Reqs: {{ data.reqs_huerfanos|length }} | CUs: {{ data.casos_huerfanos|length }}</small>
+                                <small class="text-muted">Reqs: {{ data.reqs_huerfanos_count }} | CUs: {{ data.casos_huerfanos_count }}</small>
                             </div>
                         </div>
                     </div>

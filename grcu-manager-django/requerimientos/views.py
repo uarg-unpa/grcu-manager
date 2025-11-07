@@ -62,14 +62,14 @@ def requerimiento_list(request, proyecto_id=None):
             requerimientos = Requerimiento.objects.filter(
                 proyecto=proyecto,
                 estado='BORRADOR'
-            ).select_related('proyecto').annotate(
+            ).select_related('proyecto').prefetch_related('dependencias').annotate(
                 num_comentarios=Count('comentarios_validacion', distinct=True)
             )
         else:
             # Líderes y desarrolladores ven todos los requerimientos
             requerimientos = Requerimiento.objects.filter(proyecto=proyecto).select_related(
                 'proyecto', 'detalle_tradicional', 'detalle_agil'
-            ).annotate(
+            ).prefetch_related('dependencias').annotate(
                 num_comentarios=Count('comentarios_validacion', distinct=True)
             )
         
@@ -100,7 +100,7 @@ def requerimiento_list(request, proyecto_id=None):
     else:
         requerimientos = Requerimiento.objects.all().select_related(
             'proyecto', 'detalle_tradicional', 'detalle_agil'
-        ).annotate(
+        ).prefetch_related('dependencias').annotate(
             num_comentarios=Count('comentarios_validacion', distinct=True)
         )
         proyecto = None
@@ -1038,7 +1038,7 @@ def requerimiento_delete(request, pk):
 def requerimiento_validar_cliente(request, proyecto_id=None):
     """
     Vista para que clientes/stakeholders validen requerimientos.
-    Solo muestra requerimientos en estado 'CREADO' que necesitan validación.
+    Solo muestra requerimientos en estado 'BORRADOR' que necesitan validación.
     """
     # Determinar el proyecto
     if proyecto_id:
@@ -1087,11 +1087,23 @@ def requerimiento_validar_cliente(request, proyecto_id=None):
                 req.save()
                 messages.success(request, f'✅ Requerimiento "{req.nombre}" validado exitosamente.')
             elif accion == 'rechazar':
-                # Rechazar el requerimiento (volver a estado CREADO o marcar para revisión)
-                # Por ahora, solo cambiamos el estado a CREADO para que se pueda editar
-                req.estado = 'CREADO'
+                # Rechazar el requerimiento (volver a estado BORRADOR para revisión)
+                req.estado = 'BORRADOR'
+                req.requiere_discusion = True
+                req.motivo_rechazo = comentario if comentario else 'Rechazado sin comentario específico'
+                req.ultimo_rechazado_por = request.user
+                req.fecha_ultimo_rechazo = timezone.now()
                 req.save()
-                messages.info(request, f'ℹ️ Requerimiento "{req.nombre}" marcado para revisión.')
+                
+                # Crear comentario de rechazo
+                ComentarioValidacion.objects.create(
+                    requerimiento=req,
+                    autor=request.user,
+                    comentario=comentario if comentario else 'Requerimiento rechazado para revisión',
+                    tipo_accion='RECHAZAR'
+                )
+                
+                messages.info(request, f'ℹ️ Requerimiento "{req.nombre}" rechazado para revisión.')
 
         return redirect(f"{reverse('requerimientos:requerimiento_validar_cliente_proyecto', args=[proyecto.pk])}")
 
@@ -1107,7 +1119,7 @@ def requerimiento_validar_cliente(request, proyecto_id=None):
 def requerimiento_validar_lider(request, proyecto_id=None):
     """
     Vista para que líderes validen requerimientos.
-    Solo muestra requerimientos en estado 'CREADO' que necesitan validación.
+    Solo muestra requerimientos en estado 'BORRADOR' que necesitan validación.
     """
     # Determinar el proyecto
     if proyecto_id:
@@ -1161,8 +1173,8 @@ def requerimiento_validar_lider(request, proyecto_id=None):
                 messages.success(request, f'✅ Requerimiento "{req.nombre}" validado exitosamente.')
                 
             elif accion == 'rechazar':
-                # Rechazar el requerimiento (volver a estado CREADO para edición)
-                req.estado = 'CREADO'
+                # Rechazar el requerimiento (volver a estado BORRADOR para edición)
+                req.estado = 'BORRADOR'
                 req.requiere_discusion = True
                 req.motivo_rechazo = comentario if comentario else 'Rechazado sin comentario específico'
                 req.ultimo_rechazado_por = request.user
@@ -1198,174 +1210,13 @@ def requerimiento_discusion(request, pk):
     """
     Vista para ver y participar en la discusión de validación de un requerimiento.
     Permite ver todos los comentarios y agregar respuestas.
+    
+    ⚠️ FUNCIONALIDAD EN DESARROLLO - No disponible en esta versión de demostración
     """
-    requerimiento = get_object_or_404(Requerimiento, pk=pk)
-    proyecto = requerimiento.proyecto
-
-    # Verificar permisos: solo participantes del proyecto
-    es_lider = request.user == proyecto.lider
-    es_participante = proyecto.participantes.filter(id=request.user.id).exists()
-    es_stakeholder = False
-    
-    # Verificar si es stakeholder
-    try:
-        from roles.models import Rol
-        from proyectos.models import ParticipacionProyecto
-        stakeholder_rol = Rol.objects.get(nombre='Stakeholder')
-        es_stakeholder = ParticipacionProyecto.objects.filter(
-            usuario=request.user,
-            proyecto=proyecto,
-            rol=stakeholder_rol
-        ).exists()
-    except:
-        pass
-    
-    if not (es_lider or es_participante or es_stakeholder):
-        messages.error(request, 'No tienes permiso para ver la discusión de este requerimiento.')
-        return redirect('requerimientos:requerimiento_detail', pk=pk)
-
-    # Obtener comentarios ordenados por fecha con información completa del autor
-    # Filtrar según permisos de visualización
-    comentarios_query = ComentarioValidacion.objects.filter(
-        requerimiento=requerimiento
-    ).select_related('autor', 'comentario_padre').prefetch_related('autor__roles').order_by('fecha_creacion')
-    
-    # Aplicar filtro de visibilidad según rol del usuario
-    comentarios_visibles = []
-    for comentario in comentarios_query:
-        puede_ver = False
-        
-        if comentario.tipo_comentario == 'DISCUSION_INTERNA':
-            # Solo líder y desarrolladores
-            puede_ver = es_lider or es_participante
-            
-        elif comentario.tipo_comentario == 'VALIDACION_CLIENTE':
-            # Todos pueden ver (líder, cliente, desarrolladores)
-            puede_ver = True
-            
-        elif comentario.tipo_comentario == 'IMPLEMENTACION':
-            # Solo líder y desarrolladores
-            puede_ver = es_lider or es_participante
-        
-        if puede_ver:
-            comentarios_visibles.append(comentario)
-    
-    # Convertir de nuevo a lista para mantener compatibilidad con el código existente
-    comentarios = comentarios_visibles
-
-    if request.method == 'POST':
-        comentario_texto = request.POST.get('comentario', '').strip()
-        comentario_padre_id = request.POST.get('comentario_padre')
-        tipo_comentario_seleccionado = request.POST.get('tipo_comentario', 'DISCUSION_INTERNA')
-        
-        if comentario_texto:
-            # Validar permisos según tipo de comentario
-            puede_comentar = False
-            
-            if tipo_comentario_seleccionado == 'DISCUSION_INTERNA':
-                # Solo líder y desarrolladores
-                puede_comentar = es_lider or es_participante
-                
-            elif tipo_comentario_seleccionado == 'VALIDACION_CLIENTE':
-                # Solo líder y cliente (stakeholder)
-                puede_comentar = es_lider or es_stakeholder
-                
-            elif tipo_comentario_seleccionado == 'IMPLEMENTACION':
-                # Solo líder y desarrolladores
-                puede_comentar = es_lider or es_participante
-            
-            if not puede_comentar:
-                messages.error(request, 'No tienes permiso para comentar en este contexto.')
-                return redirect('requerimientos:requerimiento_discusion', pk=pk)
-            
-            # Determinar el tipo de acción basado en el contexto
-            tipo_accion = 'RESPUESTA'
-            if not comentario_padre_id and requerimiento.estado == 'BORRADOR':
-                tipo_accion = 'ACLARACION'
-            
-            comentario_padre = None
-            if comentario_padre_id:
-                try:
-                    comentario_padre = ComentarioValidacion.objects.get(
-                        pk=comentario_padre_id,
-                        requerimiento=requerimiento
-                    )
-                    # Heredar el tipo de comentario del padre
-                    tipo_comentario_seleccionado = comentario_padre.tipo_comentario
-                except ComentarioValidacion.DoesNotExist:
-                    pass
-            
-            # Crear el comentario
-            ComentarioValidacion.objects.create(
-                requerimiento=requerimiento,
-                autor=request.user,
-                comentario=comentario_texto,
-                tipo_accion=tipo_accion,
-                tipo_comentario=tipo_comentario_seleccionado,
-                comentario_padre=comentario_padre
-            )
-            
-            messages.success(request, '✅ Comentario agregado exitosamente.')
-            return redirect('requerimientos:requerimiento_discusion', pk=pk)
-        else:
-            messages.error(request, 'El comentario no puede estar vacío.')
-
-    # Organizar comentarios en hilos con información completa del autor
-    comentarios_hilo = []
-    comentarios_raiz = [c for c in comentarios if c.comentario_padre is None]
-    
-    for comentario in comentarios_raiz:
-        # Obtener roles del autor como lista de nombres
-        roles_autor = list(comentario.autor.roles.values_list('nombre', flat=True))
-        rol_principal = roles_autor[0] if roles_autor else 'Sin rol'
-        
-        hilo = {
-            'comentario': comentario,
-            'autor_info': {
-                'nombre': comentario.autor.nombre,
-                'email': comentario.autor.email,
-                'avatar': comentario.autor.avatar,
-                'roles': roles_autor,
-                'rol_principal': rol_principal,
-            },
-            'respuestas': [],
-            'tipo_comentario': comentario.tipo_comentario,
-            'tipo_comentario_display': comentario.get_tipo_comentario_display(),
-        }
-        
-        # Agregar información del autor a cada respuesta
-        respuestas_del_comentario = [r for r in comentarios if r.comentario_padre and r.comentario_padre.pk == comentario.pk]
-        for respuesta in respuestas_del_comentario:
-            roles_respuesta = list(respuesta.autor.roles.values_list('nombre', flat=True))
-            rol_respuesta = roles_respuesta[0] if roles_respuesta else 'Sin rol'
-            
-            hilo['respuestas'].append({
-                'comentario': respuesta,
-                'autor_info': {
-                    'nombre': respuesta.autor.nombre,
-                    'email': respuesta.autor.email,
-                    'avatar': respuesta.autor.avatar,
-                    'roles': roles_respuesta,
-                    'rol_principal': rol_respuesta,
-                }
-            })
-        
-        comentarios_hilo.append(hilo)
-
-    context = {
-        'requerimiento': requerimiento,
-        'proyecto': proyecto,
-        'comentarios_hilo': comentarios_hilo,
-        'total_comentarios': len(comentarios),
-        'page_title': f'{proyecto.nombre} - Discusión: {requerimiento.nombre}',
-        'es_lider': es_lider,
-        'es_participante': es_participante,
-        'es_stakeholder': es_stakeholder,
-        'puede_comentar_interno': es_lider or es_participante,
-        'puede_comentar_cliente': es_lider or es_stakeholder,
-    }
-    
-    return render(request, 'requerimientos/requerimiento_discusion.html', context)
+    # Mostrar template de "en desarrollo"
+    return render(request, 'core/under_development.html', {
+        'page_title': 'Discusión de Requerimientos - En Desarrollo',
+    })
 
 
 # ============================================================================
