@@ -1,0 +1,78 @@
+@startuml
+
+
+actor "Usuario (miembro del proyecto)" as Usuario #purple
+boundary InterfazUsuario
+boundary PReportes
+boundary PConfigReporte
+boundary PDescargaArchivo
+boundary MensajeSistema
+control ValidadorPermisos
+control ManejadorReportes
+control GeneradorInforme
+control ServicioExportacion
+database BD
+
+== Flujo principal ==
+Usuario -> InterfazUsuario: 1) Click sección "Reportes"
+InterfazUsuario -> PReportes: 2) Mostrar página de reportes
+PReportes -> ManejadorReportes: 3) Listar tipos de informe
+ManejadorReportes -> BD: SELECT tipos_disponibles
+BD --> ManejadorReportes: Tipos
+ManejadorReportes --> PReportes: Render lista
+
+Usuario -> PReportes: 4) Selecciona tipo de informe
+PReportes -> PConfigReporte: 5) Mostrar opciones (Formato/Filtros/Orden)
+
+Usuario -> PConfigReporte: 6) Configura opciones
+Usuario -> PConfigReporte: 7) Click "Generar informe"
+
+PConfigReporte -> ValidadorPermisos: Verificar acceso lectura
+ValidadorPermisos -> BD: SELECT participación_usuario_proyecto
+BD --> ValidadorPermisos: OK
+
+PConfigReporte -> ManejadorReportes: 8) Validar formato + dataset no vacío
+ManejadorReportes -> BD: SELECT datos según filtros
+BD --> ManejadorReportes: Dataset
+alt Dataset vacío
+  ManejadorReportes --> MensajeSistema: "No hay datos suficientes para generar este informe"
+  note right: Fin del CU
+end
+
+PConfigReporte --> MensajeSistema: 9) "Generando informe..."
+PConfigReporte -> ServicioExportacion: Estimar tamaño con filtros
+ServicioExportacion --> PConfigReporte: Tamaño estimado
+alt Archivo muy grande (>50MB)
+  PConfigReporte --> MensajeSistema: "Informe muy grande. Considera aplicar filtros" (Continuar/Cancelar)
+  Usuario -> PConfigReporte: Decide "Continuar"
+end
+
+PConfigReporte -> GeneradorInforme: 10) Generar (PDF/Excel/CSV) con dataset
+GeneradorInforme -> ServicioExportacion: Guardar archivo (UUID, ruta)
+ServicioExportacion -> BD: INSERT reporte + archivo_generado (metadatos)
+BD --> ServicioExportacion: OK
+ServicioExportacion --> GeneradorInforme: Ruta/Link de archivo
+GeneradorInforme --> PDescargaArchivo: 11) Iniciar descarga (link directo)
+PDescargaArchivo --> Usuario: Descarga iniciada
+PDescargaArchivo --> MensajeSistema: 12) "Informe generado exitosamente"
+
+== Alternativos ==
+alt 8b) Error al generar PDF
+  GeneradorInforme --> MensajeSistema: "Error al generar PDF. Intenta con Excel o CSV"
+  MensajeSistema -> PConfigReporte: Volver a opciones (paso 5)
+end
+
+alt 9a) Archivo muy grande (usuario cancela)
+  PConfigReporte --> MensajeSistema: "Operación cancelada por tamaño del archivo"
+  note right: Fin del CU
+end
+
+alt 11a) Navegador bloquea descarga
+  PDescargaArchivo --> MensajeSistema: "Permite descargas de este sitio"
+  PDescargaArchivo -> ServicioExportacion: Obtener link directo
+  ServicioExportacion --> PDescargaArchivo: URL del archivo
+  PDescargaArchivo --> Usuario: Mostrar enlace directo para descargar
+  note right: Fin del CU
+end
+
+@enduml
