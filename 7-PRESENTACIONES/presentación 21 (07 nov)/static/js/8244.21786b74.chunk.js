@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunk_genially_view_client=self.webpackChunk_genially_view_client||[]).push([[8244],{28244:(e,i,n)=>{n.r(i),n.d(i,{geniallyJuxtaposeConfigMigrationScript:()=>t});var a=n(96848);const t=e=>{let{config:i,version:n}=e;if((0,a.a)("1.0.1",n)){const e=i;e.variant=e.juxtaposeType}}},96848:(e,i,n)=>{n.d(i,{a:()=>l});var a=n(26388),t=n.n(a);const l=(e,i)=>t().lt(i,e)}}]);
+//# sourceMappingURL=https://s3-static-genially.genially.com/view/static/js/8244.21786b74.chunk.js.map
