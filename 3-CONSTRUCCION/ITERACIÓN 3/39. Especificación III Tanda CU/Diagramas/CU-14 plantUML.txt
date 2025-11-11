@@ -1,0 +1,75 @@
+@startuml
+
+
+actor "Usuario (miembro del proyecto)" as Usuario #purple
+boundary InterfazUsuario
+boundary PDetalleRequerimiento
+boundary PSeccionDiscusion
+boundary PAdjuntarArchivo
+boundary MensajeSistema
+control ValidadorPermisos
+control ManejadorComentarios
+control ValidadorArchivo
+control ManejadorAdjuntos
+control ServicioAlmacenamiento
+database BD
+
+== Flujo principal ==
+Usuario -> InterfazUsuario: 1) Ir a detalle del requerimiento
+InterfazUsuario -> PDetalleRequerimiento: Mostrar detalle
+PDetalleRequerimiento -> ManejadorComentarios: 2-3) Cargar hilo de "Discusión"
+ManejadorComentarios -> BD: SELECT comentarios ORDER BY fecha
+BD --> ManejadorComentarios: Lista comentarios
+ManejadorComentarios --> PSeccionDiscusion: Render sección
+
+Usuario -> PSeccionDiscusion: 4) Click "Agregar comentario"
+PSeccionDiscusion -> PSeccionDiscusion: 5) Mostrar editor
+Usuario -> PSeccionDiscusion: 6) Escribe comentario
+Usuario -> PSeccionDiscusion: 7) Click "Adjuntar"
+PSeccionDiscusion -> PAdjuntarArchivo: 8) Mostrar info (límite, tipos, lista)
+Usuario -> PAdjuntarArchivo: 9-10) Selecciona archivo(s) y "Subir"
+
+PAdjuntarArchivo -> ValidadorPermisos: Verificar participación/proyecto
+ValidadorPermisos -> BD: SELECT participación
+BD --> ValidadorPermisos: OK
+ValidadorPermisos --> PAdjuntarArchivo: OK
+
+PAdjuntarArchivo -> ValidadorArchivo: 12) Validar tipo/tamaño/nombre/espacio
+ValidadorArchivo -> ServicioAlmacenamiento: Consultar espacio disponible
+ServicioAlmacenamiento --> ValidadorArchivo: Espacio OK
+ValidadorArchivo --> PAdjuntarArchivo: Validación OK
+
+PAdjuntarArchivo -> ServicioAlmacenamiento: 13) Generar UUID + guardar archivo(s)
+ServicioAlmacenamiento --> PAdjuntarArchivo: Rutas destino (OK)
+PAdjuntarArchivo -> ManejadorAdjuntos: Asociar a comentario/requerimiento
+ManejadorAdjuntos -> BD: INSERT comentario (si es nuevo) + INSERT adjunto(s)
+BD --> ManejadorAdjuntos: OK
+ManejadorAdjuntos -> BD: (opcional) INSERT auditoria_registroactividad
+BD --> ManejadorAdjuntos: OK
+
+ManejadorAdjuntos --> MensajeSistema: 14) "Archivo(s) adjuntado(s) exitosamente"
+ManejadorAdjuntos --> PSeccionDiscusion: 15-16) Refrescar lista + acciones (Ver/Descargar, Eliminar)
+
+== Alternativos ==
+alt 12a) Tipo de archivo no permitido
+  ValidadorArchivo --> MensajeSistema: "El archivo [nombre] no es válido. Permitidos: PDF, PNG, JPG"
+  MensajeSistema -> PAdjuntarArchivo: Volver a selección (paso 8)
+end
+
+alt 12b) Archivo excede tamaño máximo
+  ValidadorArchivo --> MensajeSistema: "El archivo [nombre] es muy grande. Máx: 10MB"
+  MensajeSistema -> PAdjuntarArchivo: Volver a selección (paso 8)
+end
+
+alt 12c) Espacio insuficiente en servidor
+  ServicioAlmacenamiento --> MensajeSistema: "Espacio insuficiente en el servidor"
+  note right: El CU finaliza
+end
+
+alt 12d) Error durante la subida
+  ServicioAlmacenamiento --> ManejadorAdjuntos: Excepción (I/O, permisos, conexión)
+  ManejadorAdjuntos --> MensajeSistema: "Error al subir el archivo, intente nuevamente"
+  MensajeSistema -> PAdjuntarArchivo: Volver a selección (paso 8)
+end
+
+@enduml

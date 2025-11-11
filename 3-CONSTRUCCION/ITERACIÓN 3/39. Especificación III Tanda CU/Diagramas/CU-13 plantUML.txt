@@ -1,0 +1,81 @@
+@startuml
+
+
+actor "Usuario (miembro del proyecto)" as Usuario #purple
+boundary InterfazUsuario
+boundary PDetalleRequerimiento
+boundary PSeccionDiscusion
+boundary MensajeSistema
+control ValidadorPermisos
+control ManejadorRequerimientos
+control ManejadorComentarios
+database BD
+
+== Flujo principal ==
+Usuario -> InterfazUsuario: 1) Ir a detalle de requerimiento
+InterfazUsuario -> PDetalleRequerimiento: Mostrar detalle
+PDetalleRequerimiento -> ManejadorRequerimientos: Cargar requerimiento + comentarios
+ManejadorRequerimientos -> BD: SELECT req + comentarios ORDER BY fecha
+BD --> ManejadorRequerimientos: Datos
+ManejadorRequerimientos --> PSeccionDiscusion: 2-3) Render sección "Discusión"
+
+Usuario -> PSeccionDiscusion: 4) Click "Agregar comentario"
+PSeccionDiscusion -> PSeccionDiscusion: 5) Mostrar editor de texto
+Usuario -> PSeccionDiscusion: 6) Escribe comentario
+Usuario -> PSeccionDiscusion: 7) Click "Publicar comentario"
+
+PSeccionDiscusion -> ValidadorPermisos: 8) Verificar acceso al proyecto + autenticación
+ValidadorPermisos -> BD: SELECT participación_usuario_proyecto
+BD --> ValidadorPermisos: OK
+ValidadorPermisos --> PSeccionDiscusion: OK
+
+PSeccionDiscusion -> ManejadorComentarios: Validar contenido (>= 3 chars)
+ManejadorComentarios -> BD: 9) INSERT INTO comentario (req_id, autor, fecha, contenido)
+BD --> ManejadorComentarios: OK
+ManejadorComentarios -> BD: (opcional) INSERT auditoria_registroactividad
+BD --> ManejadorComentarios: OK
+
+ManejadorComentarios --> MensajeSistema: 10) "Comentario publicado exitosamente"
+ManejadorComentarios --> PSeccionDiscusion: 11) Refrescar lista con nuevo comentario
+
+== Alternativo 8a) Comentario vacío o muy corto ==
+alt Comentario < 3 caracteres
+  ManejadorComentarios --> MensajeSistema: "El comentario debe tener al menos 3 caracteres"
+  MensajeSistema -> PSeccionDiscusion: Mantener editor para corregir
+end
+
+== Extensión 12a) Editar comentario ==
+alt Editar
+  Usuario -> PSeccionDiscusion: Click ícono "Editar"
+  PSeccionDiscusion -> ValidadorPermisos: ¿Es autor o tiene permiso?
+  ValidadorPermisos -> BD: SELECT autor_comentario / rol
+  BD --> ValidadorPermisos: OK/NO
+  alt Autorizado
+    PSeccionDiscusion -> ManejadorComentarios: Validar contenido (>=3)
+    ManejadorComentarios -> BD: UPDATE comentario SET contenido=?, editado=true
+    BD --> ManejadorComentarios: OK
+    ManejadorComentarios --> MensajeSistema: "Comentario modificado exitosamente"
+    ManejadorComentarios --> PSeccionDiscusion: Refrescar lista (mostrar "(editado)")
+  else No autorizado
+    ValidadorPermisos --> MensajeSistema: "No tienes permisos para editar este comentario"
+  end
+end
+
+== Extensión 12b) Eliminar comentario ==
+alt Eliminar
+  Usuario -> PSeccionDiscusion: Click ícono "Eliminar"
+  PSeccionDiscusion -> ValidadorPermisos: ¿Es autor o tiene permiso?
+  ValidadorPermisos -> BD: SELECT autor_comentario / rol
+  BD --> ValidadorPermisos: OK/NO
+  alt Autorizado
+    PSeccionDiscusion -> ManejadorComentarios: Confirmación y eliminación
+    ManejadorComentarios -> BD: DELETE FROM comentario WHERE id=...
+    BD --> ManejadorComentarios: OK
+    ManejadorComentarios --> MensajeSistema: "Comentario eliminado exitosamente"
+    ManejadorComentarios --> PSeccionDiscusion: Refrescar lista
+  else No autorizado
+    ValidadorPermisos --> MensajeSistema: "No tienes permisos para eliminar este comentario"
+  end
+end
+
+@enduml
