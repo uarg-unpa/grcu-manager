@@ -811,49 +811,23 @@ def exportar_matriz(request, proyecto_id, formato):
                 spaceAfter=8
             )
             
-            # === PORTADA ===
-            # Crear fila superior con logos: GRCU izquierda, Grupo derecha
+            # === ENCABEZADO - LOGO DEL SISTEMA ===
             try:
                 from reportlab.platypus import Image, Table, TableStyle
                 import os
 
-                # Logo GRCU (izquierda)
-                logo_grcu = None
+                # Logo GRCU en el encabezado (centrado)
                 logo_path = os.path.join(settings.BASE_DIR, 'accounts', 'static', 'accounts', 'img', 'logo_grcu_manager.png')
                 if os.path.exists(logo_path):
                     # Logo GRCU: 1920x544px → relación de aspecto = 1920/544 ≈ 3.53
                     # Para height=2.5cm, width = 2.5cm * 3.53 ≈ 8.825cm
                     logo_grcu = Image(logo_path, width=8.825*cm, height=2.5*cm)
-                    logo_grcu.hAlign = 'LEFT'
-
-                # Logo del grupo (derecha)
-                logo_grupo = None
-                if proyecto.grupo:
-                    grupo_logo_path = os.path.join(settings.MEDIA_ROOT, 'grupos', 'logos', 'LOGO_EQUIPO.jpg')
-                    if os.path.exists(grupo_logo_path):
-                        # Logo 4Bytes: 784x184px → relación de aspecto = 784/184 ≈ 4.26
-                        # Para height=2cm, width = 2cm * 4.26 ≈ 8.52cm
-                        logo_grupo = Image(grupo_logo_path, width=8.52*cm, height=2*cm)
-                        logo_grupo.hAlign = 'RIGHT'
-
-                # Crear tabla con los dos logos
-                if logo_grcu or logo_grupo:
-                    # Crear celdas para la tabla
-                    left_cell = logo_grcu if logo_grcu else ""
-                    right_cell = logo_grupo if logo_grupo else ""
-
-                    # Tabla con dos columnas: logo GRCU | logo grupo
-                    logos_table = Table([[left_cell, right_cell]], colWidths=[9*cm, 9*cm])
-                    logos_table.setStyle(TableStyle([
-                        ('ALIGN', (0, 0), (0, 0), 'LEFT'),   # Logo GRCU alineado a la izquierda
-                        ('ALIGN', (1, 0), (1, 0), 'RIGHT'),  # Logo grupo alineado a la derecha
-                        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-                    ]))
-                    elements.append(logos_table)
+                    logo_grcu.hAlign = 'CENTER'
+                    elements.append(logo_grcu)
                     elements.append(Spacer(1, 0.5*cm))
 
             except Exception as e:
-                # Si hay error con los logos, continuar sin ellos
+                # Si hay error con el logo, continuar sin él
                 pass
 
             # Título principal centrado
@@ -874,6 +848,74 @@ def exportar_matriz(request, proyecto_id, formato):
             for element in project_info:
                 elements.append(element)
             
+            elements.append(Spacer(1, 0.5*cm))
+            
+            # === DESCRIPCIÓN Y PROPÓSITO ===
+            elements.append(Paragraph("<b>DESCRIPCIÓN Y PROPÓSITO</b>", subtitle_style))
+            
+            # Descripción del proyecto
+            if proyecto.descripcion and proyecto.descripcion.strip():
+                descripcion_texto = proyecto.descripcion
+            else:
+                descripcion_texto = "Este proyecto no tiene una descripción definida."
+            
+            elements.append(Paragraph(descripcion_texto, normal_style))
+            elements.append(Spacer(1, 0.5*cm))
+            
+            # === EQUIPO DEL PROYECTO ===
+            elements.append(Paragraph("<b>EQUIPO DEL PROYECTO</b>", subtitle_style))
+            
+            # Obtener participaciones del proyecto
+            participaciones = ParticipacionProyecto.objects.filter(proyecto=proyecto).select_related('usuario', 'rol').order_by('rol__nombre', 'usuario__nombre')
+            
+            if participaciones.exists():
+                team_data = []
+                for participacion in participaciones:
+                    usuario = participacion.usuario
+                    rol_nombre = participacion.rol.nombre if participacion.rol else "Sin rol"
+                    
+                    # Intentar cargar avatar desde URL (Google OAuth)
+                    avatar_cell = None
+                    if usuario.avatar:
+                        try:
+                            import requests
+                            from io import BytesIO
+                            
+                            # Descargar imagen desde URL
+                            response = requests.get(usuario.avatar, timeout=5)
+                            if response.status_code == 200:
+                                # Crear imagen desde bytes
+                                img_data = BytesIO(response.content)
+                                avatar_cell = Image(img_data, width=1.5*cm, height=1.5*cm)
+                        except Exception as e:
+                            # Si falla la descarga, continuar sin avatar
+                            pass
+                    
+                    # Si no hay avatar o falló la descarga, usar placeholder
+                    if not avatar_cell:
+                        avatar_cell = Paragraph("👤", ParagraphStyle('AvatarPlaceholder', fontSize=20, alignment=TA_CENTER))
+                    
+                    # Nombre y rol
+                    nombre_texto = Paragraph(f"<b>{usuario.nombre}</b><br/><i>{rol_nombre}</i>", 
+                                            ParagraphStyle('TeamMember', parent=styles['Normal'], fontSize=9, alignment=TA_LEFT))
+                    
+                    team_data.append([avatar_cell, nombre_texto])
+                
+                # Crear tabla de equipo (2 columnas: avatar, nombre+rol)
+                team_table = Table(team_data, colWidths=[2*cm, 14*cm])
+                team_table.setStyle(TableStyle([
+                    ('ALIGN', (0, 0), (0, -1), 'CENTER'),
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 5),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), 5),
+                    ('TOPPADDING', (0, 0), (-1, -1), 8),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+                ]))
+                elements.append(team_table)
+            else:
+                elements.append(Paragraph("<i>No hay participantes asignados a este proyecto.</i>", normal_style))
+            
             elements.append(Spacer(1, 1*cm))
             
             # === RESUMEN EJECUTIVO ===
@@ -893,7 +935,8 @@ def exportar_matriz(request, proyecto_id, formato):
                 ['Casos de Uso Huérfanos', str(casos_huerfanos), 'Sin requerimientos asociados']
             ]
             
-            summary_table = Table(summary_data, colWidths=[4*cm, 2*cm, 8*cm])
+            # Anchos ajustados: Métrica (5.5cm) + Valor (2cm) + Descripción (9cm) = 16.5cm total
+            summary_table = Table(summary_data, colWidths=[5.5*cm, 2*cm, 9*cm])
             summary_table.setStyle(TableStyle([
                 ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#34495e')),
                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
@@ -1036,7 +1079,85 @@ def exportar_matriz(request, proyecto_id, formato):
             
             elements.append(Spacer(1, 1*cm))
             
-            # === PIE DE PÁGINA ===
+            # === PIE DE PÁGINA CON LOGOS ===
+            try:
+                from PIL import Image as PILImage
+                
+                # Logo del proyecto (izquierda) - calcular proporción y escalar
+                logo_proyecto = None
+                if proyecto.logo:
+                    proyecto_logo_path = os.path.join(settings.MEDIA_ROOT, str(proyecto.logo))
+                    if os.path.exists(proyecto_logo_path):
+                        # Leer dimensiones originales
+                        with PILImage.open(proyecto_logo_path) as img:
+                            orig_width, orig_height = img.size
+                            aspect_ratio = orig_width / orig_height
+                            
+                            # Altura deseada 2.5cm, calcular ancho manteniendo proporción
+                            target_height = 2.5 * cm
+                            target_width = target_height * aspect_ratio
+                            
+                            logo_proyecto = Image(proyecto_logo_path, width=target_width, height=target_height)
+                            logo_proyecto.hAlign = 'LEFT'
+
+                # Logo del grupo (derecha) - calcular proporción y escalar
+                logo_grupo = None
+                if proyecto.grupo and proyecto.grupo.logo:
+                    grupo_logo_path = os.path.join(settings.MEDIA_ROOT, str(proyecto.grupo.logo))
+                    if os.path.exists(grupo_logo_path):
+                        # Leer dimensiones originales
+                        with PILImage.open(grupo_logo_path) as img:
+                            orig_width, orig_height = img.size
+                            aspect_ratio = orig_width / orig_height
+                            
+                            # Altura deseada 2.5cm, calcular ancho manteniendo proporción
+                            target_height = 2.5 * cm
+                            target_width = target_height * aspect_ratio
+                            
+                            logo_grupo = Image(grupo_logo_path, width=target_width, height=target_height)
+                            logo_grupo.hAlign = 'RIGHT'
+
+                # Crear tabla con logos y nombres en el pie
+                if logo_proyecto or logo_grupo:
+                    # Estilo para los nombres
+                    nombre_style = ParagraphStyle(
+                        'NombreLogo',
+                        parent=styles['Normal'],
+                        fontSize=8,
+                        textColor=colors.HexColor('#2c3e50'),
+                        alignment=TA_CENTER,
+                        spaceAfter=0
+                    )
+                    
+                    # Celda izquierda: logo y nombre del proyecto
+                    left_content = []
+                    if logo_proyecto:
+                        left_content.append(logo_proyecto)
+                        left_content.append(Spacer(1, 0.1*cm))
+                        left_content.append(Paragraph(f"<b>{proyecto.nombre}</b>", nombre_style))
+                    
+                    # Celda derecha: logo y nombre del grupo
+                    right_content = []
+                    if logo_grupo:
+                        right_content.append(logo_grupo)
+                        right_content.append(Spacer(1, 0.1*cm))
+                        right_content.append(Paragraph(f"<b>{proyecto.grupo.nombre}</b>", nombre_style))
+                    
+                    # Crear sub-tablas para cada celda (para apilar logo + nombre)
+                    left_cell = left_content if left_content else ""
+                    right_cell = right_content if right_content else ""
+                    
+                    logos_footer_table = Table([[left_cell, right_cell]], colWidths=[9*cm, 9*cm])
+                    logos_footer_table.setStyle(TableStyle([
+                        ('ALIGN', (0, 0), (0, 0), 'LEFT'),
+                        ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+                        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                    ]))
+                    elements.append(logos_footer_table)
+                    elements.append(Spacer(1, 0.3*cm))
+            except Exception as e:
+                pass
+
             footer_text = Paragraph("""
             <b>GRCU Manager</b> - Universidad Nacional de la Patagonia Austral<br/>
             <i>Reporte generado automáticamente • Sistema de Gestión de Requerimientos y Casos de Uso</i>

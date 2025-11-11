@@ -23,22 +23,9 @@
                 <a href="{% url 'proyectos:matriz_trazabilidad' proyecto.id %}" class="btn btn-outline-primary">
                     <i class="bi bi-diagram-3"></i> Ver Matriz
                 </a>
-                <div class="dropdown d-inline">
-                    <button class="btn btn-success dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                        <i class="bi bi-download"></i> Exportar
-                    </button>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="#" onclick="window.print(); return false;">
-                            <i class="bi bi-printer"></i> Imprimir
-                        </a></li>
-                        <li><a class="dropdown-item" href="{% url 'proyectos:exportar_matriz' proyecto.id 'excel' %}">
-                            <i class="bi bi-file-earmark-excel"></i> Exportar a Excel
-                        </a></li>
-                        <li><a class="dropdown-item" href="{% url 'proyectos:exportar_matriz' proyecto.id 'pdf' %}">
-                            <i class="bi bi-file-earmark-pdf"></i> Exportar a PDF
-                        </a></li>
-                    </ul>
-                </div>
+                <a href="{% url 'proyectos:exportar_matriz' proyecto.id 'pdf' %}" class="btn btn-success">
+                    <i class="bi bi-file-earmark-pdf"></i> Exportar a PDF
+                </a>
             </div>
         </div>
     </div>

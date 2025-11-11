@@ -12,28 +12,9 @@
     <!-- Header -->
     <div class="matriz-header">
         <div class="matriz-actions">
-            <div class="dropdown">
-                <button class="btn btn-success dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                    <i class="bi bi-download"></i> Exportar
-                </button>
-                <ul class="dropdown-menu">
-                    <li>
-                        <a class="dropdown-item" href="{% url 'proyectos:exportar_matriz' proyecto.id 'csv' %}">
-                            <i class="bi bi-filetype-csv"></i> Exportar a CSV
-                        </a>
-                    </li>
-                    <li>
-                        <a class="dropdown-item" href="{% url 'proyectos:exportar_matriz' proyecto.id 'excel' %}">
-                            <i class="bi bi-file-earmark-excel"></i> Exportar a Excel
-                        </a>
-                    </li>
-                    <li>
-                        <a class="dropdown-item" href="{% url 'proyectos:exportar_matriz' proyecto.id 'pdf' %}">
-                            <i class="bi bi-file-earmark-pdf"></i> Exportar a PDF
-                        </a>
-                    </li>
-                </ul>
-            </div>
+            <a href="{% url 'proyectos:exportar_matriz' proyecto.id 'pdf' %}" class="btn btn-success">
+                <i class="bi bi-file-earmark-pdf"></i> Exportar a PDF
+            </a>
             {% if es_lider %}
             <a href="{% url 'requerimientos:requerimiento_list' %}" class="btn btn-primary">
                 <i class="bi bi-list-ul"></i> Gestionar Requerimientos
