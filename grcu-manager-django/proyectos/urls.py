@@ -12,6 +12,8 @@ urlpatterns = [
     path("<int:proyecto_id>/matriz/", views.matriz_trazabilidad, name="matriz_trazabilidad"),
     path("<int:proyecto_id>/matriz/exportar/<str:formato>/", views.exportar_matriz, name="exportar_matriz"),
     path("<int:proyecto_id>/reportes/", views.proyecto_reportes, name="proyecto_reportes"),
+    path("<int:proyecto_id>/reportes/generar/", views.generar_reporte_personalizado, name="generar_reporte_personalizado"),
     path("<int:proyecto_id>/integrantes/", views.gestionar_integrantes, name="gestionar_integrantes"),
     path("<int:proyecto_id>/detail/", views.proyecto_detail_admin, name="proyecto_detail_admin"),
+    path("reportes/lider/", views.reportes_lider, name="reportes_lider"),
 ]

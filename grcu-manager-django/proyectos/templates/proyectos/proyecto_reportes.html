@@ -23,9 +23,9 @@
                 <a href="{% url 'proyectos:matriz_trazabilidad' proyecto.id %}" class="btn btn-outline-primary">
                     <i class="bi bi-diagram-3"></i> Ver Matriz
                 </a>
-                <a href="{% url 'proyectos:exportar_matriz' proyecto.id 'pdf' %}" class="btn btn-success">
-                    <i class="bi bi-file-earmark-pdf"></i> Exportar a PDF
-                </a>
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#generarReporteModal">
+                    <i class="bi bi-file-earmark-pdf"></i> Generar Reporte PDF
+                </button>
             </div>
         </div>
     </div>
@@ -239,82 +239,110 @@
         </div>
     </div>
 </div>
+
+<!-- Modal para Generar Reporte Personalizado -->
+<div class="modal fade" id="generarReporteModal" tabindex="-1" aria-labelledby="generarReporteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="generarReporteModalLabel">
+                    <i class="bi bi-file-earmark-pdf me-2"></i>Generar Reporte PDF Personalizado
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{% url 'proyectos:generar_reporte_personalizado' proyecto.id %}" method="POST" id="reporteForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p class="text-muted mb-4">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Selecciona las secciones que deseas incluir en tu reporte PDF
+                    </p>
+
+                    <!-- Secciones Básicas (siempre incluidas) -->
+                    <div class="alert alert-info mb-4">
+                        <strong><i class="bi bi-check-circle me-2"></i>Secciones incluidas automáticamente:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Información del Proyecto</li>
+                            <li>Descripción y Propósito</li>
+                        </ul>
+                    </div>
+
+                    <!-- Secciones Opcionales -->
+                    <h6 class="mb-3"><i class="bi bi-list-check me-2"></i>Secciones Opcionales:</h6>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="incluir_equipo" id="incluir_equipo" checked>
+                        <label class="form-check-label" for="incluir_equipo">
+                            <strong>👥 Equipo del Proyecto</strong>
+                            <br><small class="text-muted">Lista de participantes con roles y avatares</small>
+                        </label>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="incluir_resumen" id="incluir_resumen" checked>
+                        <label class="form-check-label" for="incluir_resumen">
+                            <strong>📊 Resumen Ejecutivo</strong>
+                            <br><small class="text-muted">Métricas, cobertura y estadísticas del proyecto</small>
+                        </label>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="incluir_matriz" id="incluir_matriz" checked>
+                        <label class="form-check-label" for="incluir_matriz">
+                            <strong>🔗 Matriz de Trazabilidad</strong>
+                            <br><small class="text-muted">Relación entre Requerimientos y Casos de Uso</small>
+                        </label>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="incluir_requerimientos" id="incluir_requerimientos">
+                        <label class="form-check-label" for="incluir_requerimientos">
+                            <strong>📋 Listado Detallado de Requerimientos</strong>
+                            <br><small class="text-muted">Descripción completa de cada requerimiento</small>
+                        </label>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="incluir_casos_uso" id="incluir_casos_uso">
+                        <label class="form-check-label" for="incluir_casos_uso">
+                            <strong>🎯 Listado Detallado de Casos de Uso</strong>
+                            <br><small class="text-muted">Descripción completa de cada caso de uso</small>
+                        </label>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="incluir_recomendaciones" id="incluir_recomendaciones" checked>
+                        <label class="form-check-label" for="incluir_recomendaciones">
+                            <strong>💡 Recomendaciones</strong>
+                            <br><small class="text-muted">Sugerencias de mejora basadas en el análisis</small>
+                        </label>
+                    </div>
+
+                    {% if proyecto.grupo %}
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="incluir_info_grupo" id="incluir_info_grupo">
+                        <label class="form-check-label" for="incluir_info_grupo">
+                            <strong>👨‍👩‍👧‍👦 Información del Grupo</strong>
+                            <br><small class="text-muted">Detalles del grupo asociado al proyecto</small>
+                        </label>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-1"></i>Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-file-earmark-pdf me-1"></i>Generar Reporte
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
-document.addEventListener('DOMContentLoaded', function() {
-    const chartOptions = {
-        responsive: true,
-        maintainAspectRatio: true,
-        plugins: {
-            legend: {
-                display: false
-            }
-        }
-    };
-
-    // Gráfico de Tipo
-    new Chart(document.getElementById('tipoChart'), {
-        type: 'doughnut',
-        data: {
-            labels: {{ tipo_labels_json|safe }},
-            datasets: [{
-                data: {{ tipo_values_json|safe }},
-                backgroundColor: {{ tipo_colors_json|safe }}
-            }]
-        },
-        options: chartOptions
-    });
-
-    // Gráfico de Estado
-    new Chart(document.getElementById('estadoChart'), {
-        type: 'bar',
-        data: {
-            labels: {{ estado_labels_json|safe }},
-            datasets: [{
-                data: {{ estado_values_json|safe }},
-                backgroundColor: {{ estado_colors_json|safe }}
-            }]
-        },
-        options: {
-            ...chartOptions,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        stepSize: 1
-                    }
-                }
-            }
-        }
-    });
-
-    // Gráfico de Trazabilidad Requerimientos
-    new Chart(document.getElementById('trazabilidadReqsChart'), {
-        type: 'doughnut',
-        data: {
-            labels: {{ trazabilidad_labels_json|safe }},
-            datasets: [{
-                data: {{ trazabilidad_reqs_values_json|safe }},
-                backgroundColor: ['#27ae60', '#e74c3c']
-            }]
-        },
-        options: chartOptions
-    });
-
-    // Gráfico de Trazabilidad Casos
-    new Chart(document.getElementById('trazabilidadCasosChart'), {
-        type: 'doughnut',
-        data: {
-            labels: {{ trazabilidad_labels_json|safe }},
-            datasets: [{
-                data: {{ trazabilidad_casos_values_json|safe }},
-                backgroundColor: ['#3498db', '#95a5a6']
-            }]
-        },
-        options: chartOptions
-    });
-});
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 window.tipoChartData = {

@@ -1456,3 +1456,510 @@ def proyecto_detail_admin(request, proyecto_id):
     }
     
     return render(request, 'proyectos/proyecto_detail_admin.html', context)
+
+
+@login_required
+def generar_reporte_personalizado(request, proyecto_id):
+    """
+    Genera un reporte PDF personalizado según las secciones seleccionadas por el usuario.
+    Accesible por líder, participantes y clientes del proyecto.
+    """
+    proyecto = get_object_or_404(Proyecto, pk=proyecto_id)
+    
+    # Verificar permisos (líder, participante o cliente)
+    es_lider = proyecto.lider == request.user
+    es_participante = proyecto.participantes.filter(id=request.user.id).exists()
+    es_cliente = proyecto.clientes.filter(id=request.user.id).exists()
+    
+    if not (es_lider or es_participante or es_cliente):
+        messages.error(request, "No tienes permisos para generar reportes de este proyecto.")
+        return redirect('proyectos:lista_proyectos')
+    
+    if request.method != 'POST':
+        return redirect('proyectos:proyecto_reportes', proyecto_id=proyecto_id)
+    
+    # Obtener secciones seleccionadas
+    incluir_equipo = request.POST.get('incluir_equipo') == 'on'
+    incluir_resumen = request.POST.get('incluir_resumen') == 'on'
+    incluir_matriz = request.POST.get('incluir_matriz') == 'on'
+    incluir_requerimientos = request.POST.get('incluir_requerimientos') == 'on'
+    incluir_casos_uso = request.POST.get('incluir_casos_uso') == 'on'
+    incluir_recomendaciones = request.POST.get('incluir_recomendaciones') == 'on'
+    incluir_info_grupo = request.POST.get('incluir_info_grupo') == 'on'
+    
+    try:
+        from reportlab.lib.pagesizes import A4
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.units import cm
+        from reportlab.lib import colors
+        from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
+        from io import BytesIO
+        from django.http import HttpResponse
+        from datetime import datetime
+        from django.db.models import Count, Q
+        import os
+        from django.conf import settings
+        
+        # Crear buffer para el PDF
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=2*cm, bottomMargin=2*cm)
+        elements = []
+        
+        # Estilos
+        styles = getSampleStyleSheet()
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=18,
+            textColor=colors.HexColor('#2c3e50'),
+            spaceAfter=20,
+            alignment=TA_CENTER
+        )
+        subtitle_style = ParagraphStyle(
+            'CustomSubtitle',
+            parent=styles['Heading2'],
+            fontSize=14,
+            spaceAfter=15,
+            textColor=colors.HexColor('#34495e')
+        )
+        normal_style = ParagraphStyle(
+            'CustomNormal',
+            parent=styles['Normal'],
+            fontSize=10,
+            spaceAfter=8
+        )
+        
+        # === ENCABEZADO - LOGO DEL SISTEMA ===
+        try:
+            from reportlab.platypus import Image
+            logo_path = os.path.join(settings.BASE_DIR, 'accounts', 'static', 'accounts', 'img', 'logo_grcu_manager.png')
+            if os.path.exists(logo_path):
+                logo_grcu = Image(logo_path, width=8.825*cm, height=2.5*cm)
+                logo_grcu.hAlign = 'CENTER'
+                elements.append(logo_grcu)
+                elements.append(Spacer(1, 0.5*cm))
+        except Exception:
+            pass
+        
+        # Título principal
+        main_title = Paragraph("<b>GRCU Manager</b><br/>Reporte Personalizado del Proyecto", title_style)
+        elements.append(main_title)
+        elements.append(Spacer(1, 0.5*cm))
+        
+        # === INFORMACIÓN DEL PROYECTO (siempre incluida) ===
+        project_info = Paragraph(f"""
+        <b>Proyecto:</b> {proyecto.nombre}<br/>
+        <b>Grupo:</b> {proyecto.grupo.nombre if proyecto.grupo else 'Sin grupo asignado'}<br/>
+        <b>Fecha de Generación:</b> {datetime.now().strftime('%d/%m/%Y %H:%M')}<br/>
+        <b>Metodología:</b> {proyecto.get_metodologia_display()}
+        """, normal_style)
+        elements.append(project_info)
+        elements.append(Spacer(1, 0.5*cm))
+        
+        # === DESCRIPCIÓN Y PROPÓSITO (siempre incluida) ===
+        elements.append(Paragraph("<b>DESCRIPCIÓN Y PROPÓSITO</b>", subtitle_style))
+        descripcion_texto = proyecto.descripcion if proyecto.descripcion and proyecto.descripcion.strip() else "Este proyecto no tiene una descripción definida."
+        elements.append(Paragraph(descripcion_texto, normal_style))
+        elements.append(Spacer(1, 0.5*cm))
+        
+        # === EQUIPO DEL PROYECTO (opcional) ===
+        if incluir_equipo:
+            elements.append(Paragraph("<b>EQUIPO DEL PROYECTO</b>", subtitle_style))
+            participaciones = ParticipacionProyecto.objects.filter(proyecto=proyecto).select_related('usuario', 'rol').order_by('rol__nombre', 'usuario__nombre')
+            
+            if participaciones.exists():
+                team_data = []
+                for participacion in participaciones:
+                    usuario = participacion.usuario
+                    rol_nombre = participacion.rol.nombre if participacion.rol else "Sin rol"
+                    
+                    # Intentar cargar avatar desde URL
+                    avatar_cell = None
+                    if usuario.avatar:
+                        try:
+                            import requests
+                            from io import BytesIO as ImgBytesIO
+                            response = requests.get(usuario.avatar, timeout=5)
+                            if response.status_code == 200:
+                                img_data = ImgBytesIO(response.content)
+                                avatar_cell = Image(img_data, width=1.5*cm, height=1.5*cm)
+                        except Exception:
+                            pass
+                    
+                    if not avatar_cell:
+                        avatar_cell = Paragraph("👤", ParagraphStyle('AvatarPlaceholder', fontSize=20, alignment=TA_CENTER))
+                    
+                    nombre_texto = Paragraph(f"<b>{usuario.nombre}</b><br/><i>{rol_nombre}</i>", 
+                                            ParagraphStyle('TeamMember', parent=styles['Normal'], fontSize=9, alignment=TA_LEFT))
+                    team_data.append([avatar_cell, nombre_texto])
+                
+                team_table = Table(team_data, colWidths=[2*cm, 14*cm])
+                team_table.setStyle(TableStyle([
+                    ('ALIGN', (0, 0), (0, -1), 'CENTER'),
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 5),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), 5),
+                    ('TOPPADDING', (0, 0), (-1, -1), 8),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+                ]))
+                elements.append(team_table)
+            else:
+                elements.append(Paragraph("<i>No hay participantes asignados a este proyecto.</i>", normal_style))
+            
+            elements.append(Spacer(1, 1*cm))
+        
+        # === RESUMEN EJECUTIVO (opcional) ===
+        if incluir_resumen:
+            from requerimientos.models import Requerimiento
+            from casos_de_uso.models import CasoDeUso
+            from django.db.models import Count
+            
+            requerimientos = Requerimiento.objects.filter(proyecto=proyecto)
+            casos = CasoDeUso.objects.filter(proyecto=proyecto)
+            
+            total_reqs = requerimientos.count()
+            total_casos = casos.count()
+            
+            # Estadísticas por estado
+            estado_counts = {}
+            for req in requerimientos:
+                estado = req.estado if hasattr(req, 'estado') else 'SIN_ESTADO'
+                estado_counts[estado] = estado_counts.get(estado, 0) + 1
+            
+            # Trazabilidad
+            reqs_con_casos = sum(1 for req in requerimientos if req.casos_relacionados.exists())
+            casos_con_reqs = sum(1 for caso in casos if caso.requerimientos_relacionados.exists())
+            reqs_huerfanos = total_reqs - reqs_con_casos
+            casos_huerfanos = total_casos - casos_con_reqs
+            
+            cobertura_reqs = round((reqs_con_casos / total_reqs * 100) if total_reqs > 0 else 0, 1)
+            cobertura_casos = round((casos_con_reqs / total_casos * 100) if total_casos > 0 else 0, 1)
+            
+            elements.append(Paragraph("<b>RESUMEN EJECUTIVO</b>", subtitle_style))
+            
+            summary_data = [
+                ['Métrica', 'Valor', 'Descripción'],
+                ['Total de Requerimientos', str(total_reqs), 'Requerimientos registrados en el proyecto'],
+                ['Total de Casos de Uso', str(total_casos), 'Casos de uso definidos'],
+                ['Requerimientos Borrador', str(estado_counts.get('BORRADOR', 0)), 'Pendientes de validación'],
+                ['Requerimientos en Progreso', str(estado_counts.get('EN_PROGRESO', 0)), 'En desarrollo activo'],
+                ['Requerimientos Validados', str(estado_counts.get('VALIDADO', 0)), 'Aprobados para implementación'],
+                ['Requerimientos Completados', str(estado_counts.get('COMPLETADO', 0)), 'Finalizados'],
+                ['Cobertura de Requerimientos', f'{cobertura_reqs}%', f'{reqs_con_casos}/{total_reqs} con casos de uso'],
+                ['Cobertura de Casos de Uso', f'{cobertura_casos}%', f'{casos_con_reqs}/{total_casos} con requerimientos'],
+                ['Requerimientos Huérfanos', str(reqs_huerfanos), 'Sin casos de uso asociados'],
+                ['Casos de Uso Huérfanos', str(casos_huerfanos), 'Sin requerimientos asociados']
+            ]
+            
+            summary_table = Table(summary_data, colWidths=[5.5*cm, 2*cm, 9*cm])
+            summary_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#34495e')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 10),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+                ('FONTSIZE', (0, 1), (-1, -1), 9),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ]))
+            
+            elements.append(summary_table)
+            elements.append(Spacer(1, 1*cm))
+        
+        # === MATRIZ DE TRAZABILIDAD (opcional) ===
+        if incluir_matriz:
+            from requerimientos.models import Requerimiento
+            from casos_de_uso.models import CasoDeUso
+            
+            requerimientos = list(Requerimiento.objects.filter(proyecto=proyecto))
+            casos = list(CasoDeUso.objects.filter(proyecto=proyecto))
+            
+            if requerimientos and casos:
+                elements.append(Paragraph("<b>MATRIZ DE TRAZABILIDAD</b>", subtitle_style))
+                elements.append(Paragraph("Relación entre Requerimientos y Casos de Uso", normal_style))
+                elements.append(Spacer(1, 0.5*cm))
+                
+                # Construir tabla de matriz
+                data = []
+                
+                # Encabezado
+                encabezado = ['Requerimiento', 'Estado']
+                for caso in casos:
+                    encabezado.append(f'CU-{caso.pk}')
+                data.append(encabezado)
+                
+                # Datos
+                for req in requerimientos:
+                    casos_relacionados_ids = set(req.relaciones_casos.values_list('caso_de_uso_id', flat=True))
+                    es_req_huerfano = len(casos_relacionados_ids) == 0
+                    
+                    fila = [
+                        f'REQ-{req.pk}\n{req.nombre}',
+                        req.get_estado_display() if hasattr(req, 'get_estado_display') else 'N/A'
+                    ]
+                    
+                    for caso in casos:
+                        casos_del_caso = caso.relaciones_requerimientos.values_list('requerimiento_id', flat=True)
+                        es_caso_huerfano = len(casos_del_caso) == 0
+                        
+                        if caso.pk in casos_relacionados_ids:
+                            fila.append('✓')
+                        elif es_req_huerfano or es_caso_huerfano:
+                            fila.append('⚠')
+                        else:
+                            fila.append('')
+                    
+                    data.append(fila)
+                
+                # Crear tabla con formato mejorado
+                col_widths = [3*cm, 2*cm] + [1.2*cm] * len(casos)
+                table = Table(data, colWidths=col_widths)
+                table.setStyle(TableStyle([
+                    # Header styling
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#4472C4')),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                    ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('FONTSIZE', (0, 0), (-1, 0), 9),
+                    ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
+                    
+                    # Data rows
+                    ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+                    ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+                    ('ALIGN', (0, 1), (-1, -1), 'CENTER'),
+                    ('FONTSIZE', (0, 1), (-1, -1), 8),
+                    ('VALIGN', (0, 1), (-1, -1), 'MIDDLE'),
+                    
+                    # Grid
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+                ]))
+                
+                # Aplicar estilos específicos para celdas con colores
+                for row_idx, req in enumerate(requerimientos, 1):
+                    casos_relacionados_ids = set(req.relaciones_casos.values_list('caso_de_uso_id', flat=True))
+                    es_req_huerfano = len(casos_relacionados_ids) == 0
+                    
+                    for col_idx, caso in enumerate(casos, 2):
+                        casos_del_caso = caso.relaciones_requerimientos.values_list('requerimiento_id', flat=True)
+                        es_caso_huerfano = len(casos_del_caso) == 0
+                        
+                        if caso.pk in casos_relacionados_ids:
+                            # Verde para relaciones existentes
+                            table.setStyle(TableStyle([
+                                ('BACKGROUND', (col_idx, row_idx), (col_idx, row_idx), colors.HexColor('#d5f4e6')),
+                                ('TEXTCOLOR', (col_idx, row_idx), (col_idx, row_idx), colors.HexColor('#27ae60')),
+                            ]))
+                        elif es_req_huerfano or es_caso_huerfano:
+                            # Rojo para huérfanos
+                            table.setStyle(TableStyle([
+                                ('BACKGROUND', (col_idx, row_idx), (col_idx, row_idx), colors.HexColor('#ffebee')),
+                                ('TEXTCOLOR', (col_idx, row_idx), (col_idx, row_idx), colors.HexColor('#e74c3c')),
+                            ]))
+                
+                elements.append(table)
+                elements.append(Spacer(1, 1*cm))
+        
+        # === LISTADO DE REQUERIMIENTOS (opcional) ===
+        if incluir_requerimientos:
+            from requerimientos.models import Requerimiento
+            
+            requerimientos = Requerimiento.objects.filter(proyecto=proyecto).order_by('id')
+            
+            if requerimientos.exists():
+                elements.append(Paragraph("<b>LISTADO DETALLADO DE REQUERIMIENTOS</b>", subtitle_style))
+                
+                for req in requerimientos:
+                    req_title = Paragraph(f"<b>REQ-{req.pk}: {req.nombre}</b>", 
+                                         ParagraphStyle('ReqTitle', parent=styles['Normal'], fontSize=11, textColor=colors.HexColor('#2c3e50'), spaceAfter=4))
+                    elements.append(req_title)
+                    
+                    req_info = f"<b>Tipo:</b> {req.get_tipo_display() if hasattr(req, 'get_tipo_display') else 'N/A'} | "
+                    req_info += f"<b>Estado:</b> {req.get_estado_display() if hasattr(req, 'get_estado_display') else 'N/A'} | "
+                    req_info += f"<b>Prioridad:</b> {req.get_prioridad_display() if hasattr(req, 'get_prioridad_display') else 'N/A'}"
+                    
+                    elements.append(Paragraph(req_info, ParagraphStyle('ReqInfo', parent=styles['Normal'], fontSize=9, textColor=colors.grey)))
+                    
+                    if req.descripcion:
+                        elements.append(Paragraph(f"<b>Descripción:</b> {req.descripcion}", normal_style))
+                    
+                    elements.append(Spacer(1, 0.5*cm))
+                
+                elements.append(Spacer(1, 0.5*cm))
+        
+        # === LISTADO DE CASOS DE USO (opcional) ===
+        if incluir_casos_uso:
+            from casos_de_uso.models import CasoDeUso
+            
+            casos = CasoDeUso.objects.filter(proyecto=proyecto).order_by('id')
+            
+            if casos.exists():
+                elements.append(Paragraph("<b>LISTADO DETALLADO DE CASOS DE USO</b>", subtitle_style))
+                
+                for caso in casos:
+                    caso_title = Paragraph(f"<b>CU-{caso.pk}: {caso.nombre}</b>", 
+                                          ParagraphStyle('CasoTitle', parent=styles['Normal'], fontSize=11, textColor=colors.HexColor('#2980b9'), spaceAfter=4))
+                    elements.append(caso_title)
+                    
+                    if caso.descripcion:
+                        elements.append(Paragraph(f"<b>Descripción:</b> {caso.descripcion}", normal_style))
+                    
+                    # Actores
+                    if hasattr(caso, 'detalle_tradicional') and caso.detalle_tradicional:
+                        detalle = caso.detalle_tradicional
+                        if detalle.actor_principal:
+                            elements.append(Paragraph(f"<b>Actor Principal:</b> {detalle.actor_principal}", normal_style))
+                    
+                    elements.append(Spacer(1, 0.5*cm))
+                
+                elements.append(Spacer(1, 0.5*cm))
+        
+        # === INFORMACIÓN DEL GRUPO (opcional) ===
+        if incluir_info_grupo and proyecto.grupo:
+            elements.append(Paragraph("<b>INFORMACIÓN DEL GRUPO</b>", subtitle_style))
+            
+            grupo_info = f"<b>Nombre:</b> {proyecto.grupo.nombre}<br/>"
+            
+            # Líder del grupo
+            if proyecto.grupo.lider:
+                grupo_info += f"<b>Líder del Grupo:</b> {proyecto.grupo.lider.nombre}<br/>"
+            
+            # Integrantes
+            integrantes = proyecto.grupo.integrantes.all()
+            grupo_info += f"<b>Cantidad de Integrantes:</b> {integrantes.count()}<br/>"
+            
+            # Estado
+            grupo_info += f"<b>Estado:</b> {'Activo' if proyecto.grupo.activo else 'Inactivo'}"
+            
+            elements.append(Paragraph(grupo_info, normal_style))
+            elements.append(Spacer(1, 1*cm))
+        
+        # === RECOMENDACIONES (opcional) ===
+        if incluir_recomendaciones:
+            from requerimientos.models import Requerimiento
+            from casos_de_uso.models import CasoDeUso
+            
+            requerimientos = Requerimiento.objects.filter(proyecto=proyecto)
+            casos = CasoDeUso.objects.filter(proyecto=proyecto)
+            
+            total_reqs = requerimientos.count()
+            total_casos = casos.count()
+            reqs_con_casos = sum(1 for req in requerimientos if req.casos_relacionados.exists())
+            casos_con_reqs = sum(1 for caso in casos if caso.requerimientos_relacionados.exists())
+            
+            recomendaciones = []
+            
+            if total_reqs - reqs_con_casos > 0:
+                recomendaciones.append(f"• Hay {total_reqs - reqs_con_casos} requerimiento(s) sin casos de uso asociados. Se recomienda vincularlos para mejorar la trazabilidad.")
+            
+            if total_casos - casos_con_reqs > 0:
+                recomendaciones.append(f"• Hay {total_casos - casos_con_reqs} caso(s) de uso sin requerimientos asociados. Verificar si son necesarios o vincularlos.")
+            
+            if reqs_con_casos == total_reqs and total_reqs > 0:
+                recomendaciones.append("• ✓ Excelente: Todos los requerimientos tienen casos de uso asociados.")
+            
+            if casos_con_reqs == total_casos and total_casos > 0:
+                recomendaciones.append("• ✓ Excelente: Todos los casos de uso están vinculados a requerimientos.")
+            
+            if recomendaciones:
+                elements.append(Paragraph("<b>RECOMENDACIONES</b>", subtitle_style))
+                for rec in recomendaciones:
+                    elements.append(Paragraph(rec, normal_style))
+                elements.append(Spacer(1, 1*cm))
+        
+        # === PIE DE PÁGINA CON LOGOS ===
+        try:
+            from PIL import Image as PILImage
+            
+            logo_proyecto = None
+            if proyecto.logo:
+                proyecto_logo_path = os.path.join(settings.MEDIA_ROOT, str(proyecto.logo))
+                if os.path.exists(proyecto_logo_path):
+                    with PILImage.open(proyecto_logo_path) as img:
+                        orig_width, orig_height = img.size
+                        aspect_ratio = orig_width / orig_height
+                        target_height = 2.5 * cm
+                        target_width = target_height * aspect_ratio
+                        logo_proyecto = Image(proyecto_logo_path, width=target_width, height=target_height)
+                        logo_proyecto.hAlign = 'LEFT'
+            
+            logo_grupo = None
+            if proyecto.grupo and proyecto.grupo.logo:
+                grupo_logo_path = os.path.join(settings.MEDIA_ROOT, str(proyecto.grupo.logo))
+                if os.path.exists(grupo_logo_path):
+                    with PILImage.open(grupo_logo_path) as img:
+                        orig_width, orig_height = img.size
+                        aspect_ratio = orig_width / orig_height
+                        target_height = 2.5 * cm
+                        target_width = target_height * aspect_ratio
+                        logo_grupo = Image(grupo_logo_path, width=target_width, height=target_height)
+                        logo_grupo.hAlign = 'RIGHT'
+            
+            if logo_proyecto or logo_grupo:
+                nombre_style = ParagraphStyle('NombreLogo', parent=styles['Normal'], fontSize=8,
+                                             textColor=colors.HexColor('#2c3e50'), alignment=TA_CENTER, spaceAfter=0)
+                
+                left_content = []
+                if logo_proyecto:
+                    left_content.append(logo_proyecto)
+                    left_content.append(Spacer(1, 0.1*cm))
+                    left_content.append(Paragraph(f"<b>{proyecto.nombre}</b>", nombre_style))
+                
+                right_content = []
+                if logo_grupo:
+                    right_content.append(logo_grupo)
+                    right_content.append(Spacer(1, 0.1*cm))
+                    right_content.append(Paragraph(f"<b>{proyecto.grupo.nombre}</b>", nombre_style))
+                
+                left_cell = left_content if left_content else ""
+                right_cell = right_content if right_content else ""
+                
+                logos_footer_table = Table([[left_cell, right_cell]], colWidths=[9*cm, 9*cm])
+                logos_footer_table.setStyle(TableStyle([
+                    ('ALIGN', (0, 0), (0, 0), 'LEFT'),
+                    ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+                    ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                ]))
+                elements.append(logos_footer_table)
+                elements.append(Spacer(1, 0.3*cm))
+        except Exception:
+            pass
+        
+        footer_text = Paragraph("""
+        <b>GRCU Manager</b> - Universidad Nacional de la Patagonia Austral<br/>
+        <i>Reporte generado automáticamente • Sistema de Gestión de Requerimientos y Casos de Uso</i>
+        """, ParagraphStyle('Footer', parent=styles['Normal'], fontSize=8, alignment=TA_CENTER, textColor=colors.grey))
+        elements.append(footer_text)
+        
+        # === CONSTRUIR PDF ===
+        doc.build(elements)
+        buffer.seek(0)
+        
+        response = HttpResponse(buffer.read(), content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="reporte_{proyecto.nombre}_{datetime.now().strftime("%Y%m%d_%H%M")}.pdf"'
+        
+        return response
+        
+    except ImportError:
+        messages.error(request, "Error al generar el reporte. Contacte al administrador.")
+        return redirect('proyectos:proyecto_reportes', proyecto_id=proyecto_id)
+
+
+@login_required
+def reportes_lider(request):
+    """
+    Redirige al líder a la página de reportes de su proyecto.
+    Si tiene múltiples proyectos, redirige al primero.
+    """
+    proyectos = Proyecto.objects.filter(lider=request.user)
+    
+    if not proyectos.exists():
+        messages.warning(request, "No tienes proyectos asignados como líder.")
+        return redirect('dashboards:lider_dashboard')
+    
+    # Redirigir al reporte del primer proyecto
+    proyecto = proyectos.first()
+    return redirect('proyectos:proyecto_reportes', proyecto_id=proyecto.id)
