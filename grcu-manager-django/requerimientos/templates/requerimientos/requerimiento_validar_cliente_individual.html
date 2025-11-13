@@ -1,0 +1,163 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .req-card {
+        border-left: 4px solid #198754;
+        transition: all 0.3s ease;
+    }
+    .req-card:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .validation-actions {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Encabezado -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>
+                <i class="bi bi-clipboard-check text-success"></i>
+                Validar Requerimiento (Cliente)
+            </h2>
+            <p class="text-muted mb-0">
+                <i class="bi bi-folder"></i> Proyecto: <strong>{{ proyecto.nombre }}</strong>
+            </p>
+        </div>
+        <a href="{% url 'requerimientos:requerimiento_detail' requerimiento.pk %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Volver al Detalle
+        </a>
+    </div>
+
+    <form method="post" id="validationForm">
+        {% csrf_token %}
+        
+        <!-- Card del Requerimiento -->
+        <div class="card req-card mb-4">
+            <div class="card-header bg-success text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-0">{{ requerimiento.nombre }}</h5>
+                        <small>
+                            <i class="bi bi-tag"></i> {{ requerimiento.get_tipo_display }} |
+                            <i class="bi bi-circle-fill" style="font-size: 0.5rem;"></i> {{ requerimiento.get_estado_display }}
+                        </small>
+                    </div>
+                    <span class="badge bg-light text-dark">ID: {{ requerimiento.pk }}</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    Este requerimiento ya fue validado por el líder. Como cliente, puedes aprobarlo o solicitar cambios.
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <h6><i class="bi bi-file-text"></i> Descripción:</h6>
+                        <p>{{ requerimiento.descripcion|default:"Sin descripción" }}</p>
+                    </div>
+                </div>
+
+                <!-- Detalles según metodología -->
+                {% if proyecto.metodologia == 'TRADICIONAL' and requerimiento.detalle_tradicional %}
+                <hr>
+                <h6 class="text-primary"><i class="bi bi-list-check"></i> Detalles Tradicionales</h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Fuente:</strong> {{ requerimiento.detalle_tradicional.fuente|default:"No especificada" }}</p>
+                        <p><strong>Categoría:</strong> {{ requerimiento.detalle_tradicional.categoria|default:"No especificada" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Fecha Compromiso:</strong> {{ requerimiento.detalle_tradicional.fecha_compromiso|date:"d/m/Y"|default:"No definida" }}</p>
+                        <p><strong>Observaciones:</strong> {{ requerimiento.detalle_tradicional.observaciones|default:"Sin observaciones" }}</p>
+                    </div>
+                </div>
+                {% elif proyecto.metodologia == 'AGIL' and requerimiento.detalle_agil %}
+                <hr>
+                <h6 class="text-warning"><i class="bi bi-lightning-charge"></i> Detalles Ágiles</h6>
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <p><strong>Historia de Usuario:</strong></p>
+                        <p class="bg-light p-2 rounded">{{ requerimiento.detalle_agil.historia_usuario }}</p>
+                    </div>
+                    <div class="col-md-12 mb-3">
+                        <p><strong>Criterios de Aceptación:</strong></p>
+                        <p class="bg-light p-2 rounded">{{ requerimiento.detalle_agil.criterio_aceptacion }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Story Points:</strong> {{ requerimiento.detalle_agil.puntos_estimados|default:"Sin estimar" }}</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                <hr>
+                <p class="text-muted mb-0">
+                    <i class="bi bi-person"></i> Creado por: <strong>{{ requerimiento.creado_por.get_full_name }}</strong> el {{ requerimiento.creado_en|date:"d/m/Y H:i" }}
+                </p>
+                <p class="text-muted mb-0">
+                    <i class="bi bi-shield-check"></i> Validado por: <strong>{{ requerimiento.validado_por.get_full_name }}</strong> el {{ requerimiento.fecha_validacion|date:"d/m/Y H:i" }}
+                </p>
+            </div>
+        </div>
+
+        <!-- Acciones de Validación -->
+        <div class="validation-actions">
+            <h5 class="mb-3"><i class="bi bi-chat-left-text"></i> Decisión del Cliente</h5>
+            
+            <div class="mb-3">
+                <label for="comentario" class="form-label">
+                    Comentario <span class="text-muted">(opcional para aprobar, obligatorio para rechazar)</span>
+                </label>
+                <textarea 
+                    class="form-control" 
+                    id="comentario" 
+                    name="comentario" 
+                    rows="4" 
+                    placeholder="Agrega observaciones, sugerencias o motivos de rechazo..."
+                ></textarea>
+            </div>
+
+            <div class="d-flex gap-2 justify-content-end">
+                <button type="submit" name="accion" value="rechazar" class="btn btn-danger">
+                    <i class="bi bi-x-circle"></i> Rechazar
+                </button>
+                <button type="submit" name="accion" value="validar" class="btn btn-success">
+                    <i class="bi bi-check-circle"></i> Aprobar
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+document.getElementById('validationForm').addEventListener('submit', function(e) {
+    const accion = e.submitter.value;
+    const comentario = document.getElementById('comentario').value.trim();
+    
+    if (accion === 'rechazar' && !comentario) {
+        e.preventDefault();
+        alert('Debes proporcionar un comentario al rechazar el requerimiento.');
+        return false;
+    }
+    
+    const mensaje = accion === 'validar' 
+        ? '¿Estás seguro de aprobar este requerimiento?' 
+        : '¿Estás seguro de rechazar este requerimiento?';
+    
+    if (!confirm(mensaje)) {
+        e.preventDefault();
+        return false;
+    }
+});
+</script>
+{% endblock %}

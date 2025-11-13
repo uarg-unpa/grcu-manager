@@ -129,6 +129,14 @@
                                 {% if form.fuente.help_text %}
                                     <div class="help-text">{{ form.fuente.help_text }}</div>
                                 {% endif %}
+                                
+                                <!-- Campo "Otro" para Fuente (oculto por defecto) -->
+                                <div id="fuente-otro-container" style="display: none; margin-top: 10px;">
+                                    <label for="{{ form.fuente_otro.id_for_label }}" class="form-label">
+                                        {{ form.fuente_otro.label }}
+                                    </label>
+                                    {{ form.fuente_otro }}
+                                </div>
                             </div>
                             
                             <!-- Categoría (Solo para NO_FUNCIONAL) -->
@@ -138,7 +146,15 @@
                                 </label>
                                 {{ form.categoria }}
                                 <div class="form-text">
-                                    <i class="bi bi-info-circle"></i> Ej: Rendimiento, Seguridad, Usabilidad, Disponibilidad
+                                    <i class="bi bi-info-circle"></i> Para requerimientos No Funcionales
+                                </div>
+                                
+                                <!-- Campo "Otro" para Categoría (oculto por defecto) -->
+                                <div id="categoria-otro-container" style="display: none; margin-top: 10px;">
+                                    <label for="{{ form.categoria_otro.id_for_label }}" class="form-label">
+                                        {{ form.categoria_otro.label }}
+                                    </label>
+                                    {{ form.categoria_otro }}
                                 </div>
                             </div>
                         </div>
@@ -170,6 +186,12 @@
                                 {{ form.observaciones.label }}
                             </label>
                             {{ form.observaciones }}
+                            <div class="form-text d-flex justify-content-between align-items-center">
+                                <span>
+                                    <i class="bi bi-info-circle"></i> Notas u observaciones adicionales
+                                </span>
+                                <span id="observaciones-tradicional-contador" class="badge bg-secondary">0 / 5000</span>
+                            </div>
                         </div>
                     </div>
                 
@@ -254,6 +276,12 @@
                                         {{ form.observaciones.label }}
                                     </label>
                                     {{ form.observaciones }}
+                                    <div class="form-text d-flex justify-content-between align-items-center">
+                                        <span>
+                                            <i class="bi bi-info-circle"></i> Notas u observaciones adicionales
+                                        </span>
+                                        <span id="observaciones-agil-contador" class="badge bg-secondary">0 / 5000</span>
+                                    </div>
                                 </div>
                             </div>
                         {% endif %}
@@ -435,9 +463,64 @@ document.addEventListener('DOMContentLoaded', function() {
         actualizarContador();
     }
     
+    // ===== Control de límite de caracteres en Observaciones =====
+    const observacionesTextarea = document.querySelector('textarea[name="observaciones"]');
+    const observacionesContadorTradicional = document.getElementById('observaciones-tradicional-contador');
+    const observacionesContadorAgil = document.getElementById('observaciones-agil-contador');
+    const observacionesContador = observacionesContadorTradicional || observacionesContadorAgil;
+    const maxCaracteresObservaciones = 5000;
+    
+    if (observacionesTextarea && observacionesContador) {
+        // Función para actualizar el contador
+        function actualizarContadorObservaciones() {
+            const longitudActual = observacionesTextarea.value.length;
+            observacionesContador.textContent = `${longitudActual} / ${maxCaracteresObservaciones}`;
+            
+            // Cambiar color según el progreso
+            if (longitudActual >= maxCaracteresObservaciones) {
+                observacionesContador.classList.remove('bg-secondary', 'bg-warning');
+                observacionesContador.classList.add('bg-danger');
+            } else if (longitudActual >= maxCaracteresObservaciones * 0.9) {
+                observacionesContador.classList.remove('bg-secondary', 'bg-danger');
+                observacionesContador.classList.add('bg-warning');
+            } else {
+                observacionesContador.classList.remove('bg-warning', 'bg-danger');
+                observacionesContador.classList.add('bg-secondary');
+            }
+        }
+        
+        // Función para prevenir exceder el límite al escribir
+        function controlarLimiteObservaciones(e) {
+            const longitudActual = observacionesTextarea.value.length;
+            const teclasPermitidas = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'Tab'];
+            
+            if (longitudActual >= maxCaracteresObservaciones && !teclasPermitidas.includes(e.key) && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+                return false;
+            }
+        }
+        
+        // Función para truncar si se pega texto que excede el límite
+        function controlarPegadoObservaciones(e) {
+            setTimeout(() => {
+                if (observacionesTextarea.value.length > maxCaracteresObservaciones) {
+                    observacionesTextarea.value = observacionesTextarea.value.substring(0, maxCaracteresObservaciones);
+                    actualizarContadorObservaciones();
+                }
+            }, 10);
+        }
+        
+        // Agregar event listeners
+        observacionesTextarea.addEventListener('input', actualizarContadorObservaciones);
+        observacionesTextarea.addEventListener('keydown', controlarLimiteObservaciones);
+        observacionesTextarea.addEventListener('paste', controlarPegadoObservaciones);
+        
+        // Actualizar contador al cargar
+        actualizarContadorObservaciones();
+    }
+    
     // ===== Control de visibilidad del campo Categoría (solo para NO_FUNCIONAL) =====
     const categoriaContainer = document.getElementById('categoria-container');
-    const tipoRadios = document.querySelectorAll('input[name="tipo"]');
     
     if (categoriaContainer && tipoRadios.length > 0) {
         function actualizarVisibilidadCategoria() {
@@ -465,6 +548,61 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Ejecutar al cargar para establecer estado inicial
         actualizarVisibilidadCategoria();
+    }
+    
+    // ===== Validación de fecha de compromiso (no permite fechas pasadas) =====
+    const fechaCompromisoInput = document.querySelector('input[name="fecha_compromiso"]');
+    if (fechaCompromisoInput) {
+        // Establecer fecha mínima como hoy
+        const hoy = new Date().toISOString().split('T')[0];
+        fechaCompromisoInput.setAttribute('min', hoy);
+    }
+    
+    // ===== Control de campos "Otro" para Fuente y Categoría =====
+    const fuenteSelect = document.getElementById('id_fuente_select');
+    const fuenteOtroContainer = document.getElementById('fuente-otro-container');
+    const fuenteOtroInput = document.getElementById('id_fuente_otro');
+    
+    const categoriaSelect = document.getElementById('id_categoria_select');
+    const categoriaOtroContainer = document.getElementById('categoria-otro-container');
+    const categoriaOtroInput = document.getElementById('id_categoria_otro');
+    
+    if (fuenteSelect && fuenteOtroContainer) {
+        fuenteSelect.addEventListener('change', function() {
+            if (this.value === 'OTRO') {
+                fuenteOtroContainer.style.display = 'block';
+                fuenteOtroInput.required = true;
+            } else {
+                fuenteOtroContainer.style.display = 'none';
+                fuenteOtroInput.required = false;
+                fuenteOtroInput.value = '';
+            }
+        });
+        
+        // Ejecutar al cargar si ya tiene valor "OTRO"
+        if (fuenteSelect.value === 'OTRO') {
+            fuenteOtroContainer.style.display = 'block';
+            fuenteOtroInput.required = true;
+        }
+    }
+    
+    if (categoriaSelect && categoriaOtroContainer) {
+        categoriaSelect.addEventListener('change', function() {
+            if (this.value === 'OTRO') {
+                categoriaOtroContainer.style.display = 'block';
+                categoriaOtroInput.required = true;
+            } else {
+                categoriaOtroContainer.style.display = 'none';
+                categoriaOtroInput.required = false;
+                categoriaOtroInput.value = '';
+            }
+        });
+        
+        // Ejecutar al cargar si ya tiene valor "OTRO"
+        if (categoriaSelect.value === 'OTRO') {
+            categoriaOtroContainer.style.display = 'block';
+            categoriaOtroInput.required = true;
+        }
     }
 });
 </script>

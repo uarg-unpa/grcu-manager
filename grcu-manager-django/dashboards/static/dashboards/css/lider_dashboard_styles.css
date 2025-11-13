@@ -91,6 +91,57 @@
     }
 }
 
+/* Contenedores de avatares con scroll horizontal */
+.integrantes-avatars-container,
+.clientes-avatars-container {
+    width: 100%;
+    max-width: 280px; /* Espacio para 4 avatares + gaps */
+    overflow: hidden;
+    position: relative;
+}
+
+.integrantes-avatars-scroll,
+.clientes-avatars-scroll {
+    display: flex;
+    flex-direction: row;
+    gap: 0.75rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    padding-bottom: 8px; /* Espacio para la scrollbar */
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling en iOS */
+}
+
+/* Scrollbar personalizada para navegadores webkit */
+.integrantes-avatars-scroll::-webkit-scrollbar,
+.clientes-avatars-scroll::-webkit-scrollbar {
+    height: 6px;
+}
+
+.integrantes-avatars-scroll::-webkit-scrollbar-track,
+.clientes-avatars-scroll::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.integrantes-avatars-scroll::-webkit-scrollbar-thumb,
+.clientes-avatars-scroll::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+
+.integrantes-avatars-scroll::-webkit-scrollbar-thumb:hover,
+.clientes-avatars-scroll::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Firefox scrollbar */
+.integrantes-avatars-scroll,
+.clientes-avatars-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: #888 #f1f1f1;
+}
+
 .integrantes-avatars {
     display: flex;
     flex-direction: row;
@@ -104,7 +155,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: 70px;
+    min-width: 60px;
+    flex-shrink: 0; /* Evita que se compriman */
     margin-bottom: 0.5rem;
 }
 
@@ -144,7 +196,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: 70px;
+    min-width: 60px;
+    flex-shrink: 0; /* Evita que se compriman */
     margin-bottom: 0.5rem;
 }
 

@@ -565,7 +565,7 @@
                   {# Botones de validación para requerimientos BORRADOR #}
                   {% if req.estado == 'BORRADOR' %}
                     {% if user == req.proyecto.lider %}
-                      <a href="{% url 'requerimientos:requerimiento_validar_lider_proyecto' req.proyecto.id %}" 
+                      <a href="{% url 'requerimientos:requerimiento_validar_lider_individual' req.pk %}" 
                          class="btn btn-validar-lider btn-sm btn-action-req" 
                          title="Validar como líder">
                         <i class="bi bi-check-circle-fill"></i> Validar
@@ -575,10 +575,22 @@
                     {# Verificar si el usuario es stakeholder del proyecto #}
                     {% load roles_tags %}
                     {% if user|es_stakeholder:req.proyecto %}
-                      <a href="{% url 'requerimientos:requerimiento_validar_cliente_proyecto' req.proyecto.id %}" 
+                      <a href="{% url 'requerimientos:requerimiento_validar_cliente_individual' req.pk %}" 
                          class="btn btn-validar-stakeholder btn-sm btn-action-req" 
                          title="Validar como stakeholder">
                         <i class="bi bi-person-check-fill"></i> Validar
+                      </a>
+                    {% endif %}
+                  {% endif %}
+                  
+                  {# Botones de aprobación para clientes cuando el requerimiento está VALIDADO #}
+                  {% if req.estado == 'VALIDADO' %}
+                    {% load roles_tags %}
+                    {% if user|es_stakeholder:req.proyecto %}
+                      <a href="{% url 'requerimientos:requerimiento_validar_cliente_individual' req.pk %}" 
+                         class="btn btn-success btn-sm btn-action-req" 
+                         title="Aprobar como cliente">
+                        <i class="bi bi-clipboard-check-fill"></i> Aprobar
                       </a>
                     {% endif %}
                   {% endif %}

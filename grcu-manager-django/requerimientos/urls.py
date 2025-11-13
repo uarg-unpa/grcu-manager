@@ -16,6 +16,9 @@ urlpatterns = [
     path('validar/cliente/<int:proyecto_id>/', views.requerimiento_validar_cliente, name='requerimiento_validar_cliente_proyecto'),
     path('validar/lider/', views.requerimiento_validar_lider, name='requerimiento_validar_lider'),
     path('validar/lider/<int:proyecto_id>/', views.requerimiento_validar_lider, name='requerimiento_validar_lider_proyecto'),
+    # Validación individual de requerimientos
+    path('<int:pk>/validar/lider/', views.requerimiento_validar_lider_individual, name='requerimiento_validar_lider_individual'),
+    path('<int:pk>/validar/cliente/', views.requerimiento_validar_cliente_individual, name='requerimiento_validar_cliente_individual'),
     path('<int:pk>/discusion/', views.requerimiento_discusion, name='requerimiento_discusion'),
     path('buscar/', views.buscar_requerimientos_ajax, name='buscar_requerimientos_ajax'),
     path('siguiente-numero/', views.obtener_siguiente_numero_requerimiento, name='obtener_siguiente_numero'),

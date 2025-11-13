@@ -32,6 +32,19 @@
                         <p class="mt-2">{{ requerimiento.descripcion|linebreaks }}</p>
                     </div>
                     {% endif %}
+                    
+                    {% if requerimiento.detalle_tradicional.observaciones or requerimiento.detalle_agil.observaciones %}
+                    <div class="mb-3">
+                        <strong><i class="bi bi-sticky"></i> Observaciones:</strong>
+                        <div class="mt-2 p-3 bg-light rounded">
+                            {% if requerimiento.detalle_tradicional.observaciones %}
+                                {{ requerimiento.detalle_tradicional.observaciones|linebreaks }}
+                            {% elif requerimiento.detalle_agil.observaciones %}
+                                {{ requerimiento.detalle_agil.observaciones|linebreaks }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
             
@@ -285,11 +298,23 @@
                     <i class="bi bi-arrow-left"></i> Volver a la lista
                 </a>
                 <div>
-                    {% if requerimiento.estado == 'VALIDADO' %}
-                    <a href="{% url 'casos_de_uso:caso_de_uso_create_con_requerimiento' requerimiento.proyecto.id requerimiento.pk %}" 
-                       class="btn btn-success me-2">
-                        <i class="bi bi-plus-circle"></i> Crear Caso de Uso
+                    {% if requerimiento.estado == 'BORRADOR' and user == requerimiento.proyecto.lider %}
+                    <a href="{% url 'requerimientos:requerimiento_validar_lider_individual' requerimiento.pk %}" 
+                       class="btn btn-primary me-2">
+                        <i class="bi bi-shield-check"></i> Validar Requerimiento
                     </a>
+                    {% endif %}
+                    {% if requerimiento.estado == 'VALIDADO' %}
+                        {% if user in requerimiento.proyecto.clientes.all %}
+                        <a href="{% url 'requerimientos:requerimiento_validar_cliente_individual' requerimiento.pk %}" 
+                           class="btn btn-success me-2">
+                            <i class="bi bi-clipboard-check"></i> Aprobar como Cliente
+                        </a>
+                        {% endif %}
+                        <a href="{% url 'casos_de_uso:caso_de_uso_create_con_requerimiento' requerimiento.proyecto.id requerimiento.pk %}" 
+                           class="btn btn-success me-2">
+                            <i class="bi bi-plus-circle"></i> Crear Caso de Uso
+                        </a>
                     {% endif %}
                     {% comment %} Solo historial bloqueado {% endcomment %}
                     {% if user == requerimiento.proyecto.lider or user == requerimiento.creado_por %}

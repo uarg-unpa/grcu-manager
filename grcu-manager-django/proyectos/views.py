@@ -1458,6 +1458,226 @@ def proyecto_detail_admin(request, proyecto_id):
     return render(request, 'proyectos/proyecto_detail_admin.html', context)
 
 
+def crear_header_footer(canvas, doc, proyecto, logo_proyecto_path, logo_grupo_path, total_pages=0):
+    """
+    Función para agregar encabezado y pie de página en todas las páginas del reporte.
+    
+    Args:
+        canvas: Canvas de ReportLab
+        doc: Documento de ReportLab
+        proyecto: Instancia del proyecto
+        logo_proyecto_path: Ruta al logo del proyecto
+        logo_grupo_path: Ruta al logo del grupo
+        total_pages: Total de páginas del documento (0 si no se conoce)
+    """
+    from reportlab.lib.units import cm
+    from reportlab.lib import colors
+    from datetime import datetime
+    import os
+    
+    canvas.saveState()
+    width, height = doc.pagesize
+    
+    # === MARCA DE AGUA (si el proyecto está en estado BORRADOR) ===
+    if hasattr(proyecto, 'estado') and proyecto.estado == 'BORRADOR':
+        canvas.setFont('Helvetica-Bold', 60)
+        canvas.setFillColor(colors.Color(0.9, 0.9, 0.9, alpha=0.3))
+        canvas.saveState()
+        canvas.translate(width/2, height/2)
+        canvas.rotate(45)
+        canvas.drawCentredString(0, 0, "BORRADOR")
+        canvas.restoreState()
+    
+    # === ENCABEZADO ===
+    # Línea superior
+    canvas.setStrokeColor(colors.HexColor('#2c3e50'))
+    canvas.setLineWidth(2)
+    canvas.line(2*cm, height - 2*cm, width - 2*cm, height - 2*cm)
+    
+    # Nombre del proyecto (izquierda, línea 1)
+    canvas.setFont('Helvetica-Bold', 9)
+    canvas.setFillColor(colors.HexColor('#2c3e50'))
+    canvas.drawString(2*cm, height - 1.7*cm, f"Proyecto: {proyecto.nombre[:35]}")
+    
+    # Fecha de generación (centro, línea 1) - Más pequeña
+    canvas.setFont('Helvetica', 7)
+    canvas.setFillColor(colors.grey)
+    fecha_texto = f"Generado: {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+    fecha_width = canvas.stringWidth(fecha_texto, 'Helvetica', 7)
+    canvas.drawString((width - fecha_width) / 2, height - 1.7*cm, fecha_texto)
+    
+    # Número de página (derecha, línea 1)
+    canvas.setFont('Helvetica-Bold', 9)
+    canvas.setFillColor(colors.HexColor('#34495e'))
+    if total_pages > 0:
+        page_text = f"Pág {doc.page}/{total_pages}"
+    else:
+        page_text = f"Pág {doc.page}"
+    page_width = canvas.stringWidth(page_text, 'Helvetica-Bold', 9)
+    canvas.drawString(width - 2*cm - page_width, height - 1.7*cm, page_text)
+    
+    # Estado del proyecto como badge (línea 2 izquierda)
+    if hasattr(proyecto, 'estado'):
+        estado_map = {
+            'PLANIFICACION': ('#3498db', 'Planificación'),
+            'EN_PROGRESO': ('#f39c12', 'En Progreso'),
+            'COMPLETADO': ('#27ae60', 'Completado'),
+            'BORRADOR': ('#95a5a6', 'Borrador'),
+        }
+        color_hex, texto_estado = estado_map.get(proyecto.estado, ('#95a5a6', proyecto.estado))
+        
+        # Badge de estado
+        badge_x = 2*cm
+        badge_y = height - 2.25*cm
+        badge_width = 2.2*cm
+        badge_height = 0.35*cm
+        
+        canvas.setFillColor(colors.HexColor(color_hex))
+        canvas.roundRect(badge_x, badge_y, badge_width, badge_height, 0.08*cm, fill=1, stroke=0)
+        
+        canvas.setFont('Helvetica-Bold', 6)
+        canvas.setFillColor(colors.white)
+        canvas.drawCentredString(badge_x + badge_width/2, badge_y + 0.08*cm, texto_estado)
+        
+        # Mini barra de progreso (junto al badge)
+        try:
+            from requerimientos.models import Requerimiento
+            reqs = Requerimiento.objects.filter(proyecto=proyecto)
+            total_reqs = reqs.count()
+            
+            if total_reqs > 0:
+                terminados = reqs.filter(estado='TERMINADO').count()
+                porcentaje = (terminados / total_reqs) * 100
+                
+                # Barra de progreso
+                progress_x = badge_x + badge_width + 0.2*cm
+                progress_y = badge_y
+                progress_width = 2.5*cm
+                progress_height = 0.35*cm
+                
+                # Fondo de la barra
+                canvas.setFillColor(colors.HexColor('#ecf0f1'))
+                canvas.roundRect(progress_x, progress_y, progress_width, progress_height, 0.08*cm, fill=1, stroke=0)
+                
+                # Barra de progreso
+                if porcentaje > 0:
+                    progreso_color = colors.HexColor('#27ae60') if porcentaje >= 80 else colors.HexColor('#f39c12') if porcentaje >= 50 else colors.HexColor('#e74c3c')
+                    canvas.setFillColor(progreso_color)
+                    canvas.roundRect(progress_x, progress_y, (progress_width * porcentaje / 100), progress_height, 0.08*cm, fill=1, stroke=0)
+                
+                # Texto de porcentaje
+                canvas.setFont('Helvetica-Bold', 6)
+                canvas.setFillColor(colors.HexColor('#2c3e50'))
+                canvas.drawCentredString(progress_x + progress_width/2, progress_y + 0.08*cm, f"{porcentaje:.0f}%")
+        except:
+            pass
+    
+    # === PIE DE PÁGINA ===
+    # Línea inferior
+    canvas.setStrokeColor(colors.HexColor('#2c3e50'))
+    canvas.setLineWidth(1)
+    canvas.line(2*cm, 2*cm, width - 2*cm, 2*cm)
+    
+    # Logos (izquierda)
+    y_logo = 0.7*cm
+    x_logo = 2*cm
+    logo_height = 1*cm
+    
+    try:
+        if logo_proyecto_path and os.path.exists(logo_proyecto_path):
+            canvas.drawImage(logo_proyecto_path, x_logo, y_logo, 
+                           width=1.5*cm, height=logo_height, 
+                           preserveAspectRatio=True, mask='auto')
+            x_logo += 1.7*cm
+    except:
+        pass
+    
+    try:
+        if logo_grupo_path and os.path.exists(logo_grupo_path):
+            canvas.drawImage(logo_grupo_path, x_logo, y_logo, 
+                           width=1.5*cm, height=logo_height, 
+                           preserveAspectRatio=True, mask='auto')
+    except:
+        pass
+    
+    # Información del sistema (centro) - 3 líneas
+    canvas.setFont('Helvetica', 6)
+    canvas.setFillColor(colors.grey)
+    sistema_texto = "GRCU Manager - Sistema de Gestión de Requerimientos y Casos de Uso"
+    sistema_width = canvas.stringWidth(sistema_texto, 'Helvetica', 6)
+    canvas.drawString((width - sistema_width) / 2, 1.5*cm, sistema_texto)
+    
+    # Grupo y versión (centro, segunda línea)
+    if proyecto.grupo:
+        grupo_texto = f"Grupo: {proyecto.grupo.nombre} | Versión: 1.0"
+    else:
+        grupo_texto = "Versión: 1.0"
+    grupo_width = canvas.stringWidth(grupo_texto, 'Helvetica', 6)
+    canvas.drawString((width - grupo_width) / 2, 1.1*cm, grupo_texto)
+    
+    # Universidad (centro, tercera línea)
+    canvas.setFont('Helvetica-Oblique', 5)
+    univ_texto = "Universidad Nacional de la Patagonia Austral"
+    univ_width = canvas.stringWidth(univ_texto, 'Helvetica-Oblique', 5)
+    canvas.drawString((width - univ_width) / 2, 0.7*cm, univ_texto)
+    
+    # Código QR (derecha, arriba) - Reposicionado para no superponerse
+    qr_size = 1.2*cm
+    qr_x = width - 2*cm - qr_size
+    qr_y = 0.7*cm
+    
+    try:
+        import qrcode
+        from io import BytesIO
+        from reportlab.lib.utils import ImageReader
+        
+        # Crear URL del proyecto (ajusta según tu dominio)
+        qr_url = f"http://localhost:8000/proyectos/{proyecto.pk}/"
+        
+        # Generar QR
+        qr = qrcode.QRCode(version=1, box_size=10, border=1)
+        qr.add_data(qr_url)
+        qr.make(fit=True)
+        
+        img = qr.make_image(fill_color="black", back_color="white")
+        
+        # Convertir a bytes
+        buffer_qr = BytesIO()
+        img.save(buffer_qr, format='PNG')
+        buffer_qr.seek(0)
+        
+        # Dibujar QR en el PDF
+        canvas.drawImage(ImageReader(buffer_qr), qr_x, qr_y, 
+                        width=qr_size, height=qr_size)
+        
+        # Texto "Escanear" debajo del QR
+        canvas.setFont('Helvetica', 5)
+        canvas.setFillColor(colors.grey)
+        qr_texto = "Escanear"
+        qr_texto_width = canvas.stringWidth(qr_texto, 'Helvetica', 5)
+        canvas.drawString(qr_x + (qr_size - qr_texto_width)/2, 0.4*cm, qr_texto)
+    except:
+        # Si falla el QR, mostrar texto en su lugar
+        pass
+    
+    # Información de confidencialidad (derecha, pero con espacio para el QR)
+    text_right_x = qr_x - 0.3*cm  # Espacio antes del QR
+    
+    canvas.setFont('Helvetica-BoldOblique', 6)
+    canvas.setFillColor(colors.HexColor('#e74c3c'))
+    confidencial_texto = "CONFIDENCIAL"
+    conf_width = canvas.stringWidth(confidencial_texto, 'Helvetica-BoldOblique', 6)
+    canvas.drawRightString(text_right_x, 1.5*cm, confidencial_texto)
+    
+    # ID del proyecto (derecha, segunda línea)
+    canvas.setFont('Helvetica', 6)
+    canvas.setFillColor(colors.grey)
+    id_texto = f"ID: PRY-{proyecto.pk:04d}"
+    canvas.drawRightString(text_right_x, 1.1*cm, id_texto)
+    
+    canvas.restoreState()
+
+
 @login_required
 def generar_reporte_personalizado(request, proyecto_id):
     """
@@ -1503,8 +1723,27 @@ def generar_reporte_personalizado(request, proyecto_id):
         
         # Crear buffer para el PDF
         buffer = BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=2*cm, bottomMargin=2*cm)
+        
+        # Configurar márgenes aumentados para header y footer
+        doc = SimpleDocTemplate(
+            buffer, 
+            pagesize=A4, 
+            topMargin=3*cm,      # Aumentado para el header con badge y progreso
+            bottomMargin=2.8*cm, # Aumentado para el footer con QR
+            leftMargin=2*cm,
+            rightMargin=2*cm
+        )
         elements = []
+        
+        # Obtener rutas de logos para el header/footer
+        logo_proyecto_path = None
+        logo_grupo_path = None
+        
+        if proyecto.logo:
+            logo_proyecto_path = os.path.join(settings.MEDIA_ROOT, str(proyecto.logo))
+        
+        if proyecto.grupo and proyecto.grupo.logo:
+            logo_grupo_path = os.path.join(settings.MEDIA_ROOT, str(proyecto.grupo.logo))
         
         # Estilos
         styles = getSampleStyleSheet()
@@ -1555,7 +1794,61 @@ def generar_reporte_personalizado(request, proyecto_id):
         <b>Metodología:</b> {proyecto.get_metodologia_display()}
         """, normal_style)
         elements.append(project_info)
-        elements.append(Spacer(1, 0.5*cm))
+        elements.append(Spacer(1, 1*cm))
+        
+        # === TABLA DE CONTENIDOS ===
+        elements.append(Paragraph("<b>ÍNDICE DE CONTENIDOS</b>", subtitle_style))
+        
+        toc_style = ParagraphStyle(
+            'TOC',
+            parent=styles['Normal'],
+            fontSize=10,
+            leftIndent=0.5*cm,
+            spaceAfter=6,
+            textColor=colors.HexColor('#2c3e50')
+        )
+        
+        toc_items = [
+            ("1.", "Descripción y Propósito", True),
+        ]
+        
+        section_num = 2
+        if incluir_equipo:
+            toc_items.append((f"{section_num}.", "Equipo del Proyecto", True))
+            section_num += 1
+        
+        if incluir_resumen:
+            toc_items.append((f"{section_num}.", "Resumen Ejecutivo", True))
+            section_num += 1
+        
+        if incluir_matriz:
+            toc_items.append((f"{section_num}.", "Matriz de Trazabilidad", True))
+            section_num += 1
+        
+        if incluir_requerimientos:
+            toc_items.append((f"{section_num}.", "Listado Detallado de Requerimientos", True))
+            section_num += 1
+        
+        if incluir_casos_uso:
+            toc_items.append((f"{section_num}.", "Listado Detallado de Casos de Uso", True))
+            section_num += 1
+        
+        if incluir_info_grupo:
+            toc_items.append((f"{section_num}.", "Información del Grupo", True))
+            section_num += 1
+        
+        if incluir_recomendaciones:
+            toc_items.append((f"{section_num}.", "Recomendaciones y Análisis", True))
+            section_num += 1
+        
+        # Renderizar tabla de contenidos
+        for num, titulo, incluido in toc_items:
+            if incluido:
+                toc_line = f"<b>{num}</b> {titulo} {'.' * 80}"
+                elements.append(Paragraph(toc_line, toc_style))
+        
+        elements.append(Spacer(1, 1*cm))
+        elements.append(PageBreak())
         
         # === DESCRIPCIÓN Y PROPÓSITO (siempre incluida) ===
         elements.append(Paragraph("<b>DESCRIPCIÓN Y PROPÓSITO</b>", subtitle_style))
@@ -1797,25 +2090,197 @@ def generar_reporte_personalizado(request, proyecto_id):
             casos = CasoDeUso.objects.filter(proyecto=proyecto).order_by('id')
             
             if casos.exists():
+                elements.append(PageBreak())
                 elements.append(Paragraph("<b>LISTADO DETALLADO DE CASOS DE USO</b>", subtitle_style))
+                elements.append(Spacer(1, 0.3*cm))
                 
                 for caso in casos:
-                    caso_title = Paragraph(f"<b>CU-{caso.pk}: {caso.nombre}</b>", 
-                                          ParagraphStyle('CasoTitle', parent=styles['Normal'], fontSize=11, textColor=colors.HexColor('#2980b9'), spaceAfter=4))
+                    # Título del caso de uso
+                    caso_title = Paragraph(
+                        f"<b>CU-{caso.pk}: {caso.nombre}</b>", 
+                        ParagraphStyle('CasoTitle', parent=styles['Normal'], fontSize=11, 
+                                     textColor=colors.HexColor('#2980b9'), spaceAfter=6)
+                    )
                     elements.append(caso_title)
                     
+                    # Información básica
                     if caso.descripcion:
                         elements.append(Paragraph(f"<b>Descripción:</b> {caso.descripcion}", normal_style))
+                        elements.append(Spacer(1, 0.2*cm))
                     
-                    # Actores
+                    # Requerimientos relacionados
+                    reqs_relacionados = caso.requerimientos_relacionados.all()
+                    if reqs_relacionados.exists():
+                        reqs_texto = ", ".join([f"REQ-{req.pk}" for req in reqs_relacionados])
+                        elements.append(Paragraph(
+                            f"<b>Requerimientos Relacionados:</b> {reqs_texto}", 
+                            normal_style
+                        ))
+                        elements.append(Spacer(1, 0.2*cm))
+                    
+                    # Usuario creador y fechas
+                    info_metadata = f"<b>Creado por:</b> {caso.creado_por.nombre if caso.creado_por else 'N/A'} | "
+                    info_metadata += f"<b>Fecha creación:</b> {caso.fecha_creacion.strftime('%d/%m/%Y')}"
+                    elements.append(Paragraph(
+                        info_metadata, 
+                        ParagraphStyle('Metadata', parent=styles['Normal'], fontSize=8, 
+                                     textColor=colors.grey, spaceAfter=6)
+                    ))
+                    
+                    # DETALLE TRADICIONAL
                     if hasattr(caso, 'detalle_tradicional') and caso.detalle_tradicional:
                         detalle = caso.detalle_tradicional
+                        
+                        elements.append(Paragraph(
+                            "<b><i>Detalle Metodología Tradicional:</i></b>", 
+                            ParagraphStyle('SubHeader', parent=styles['Normal'], fontSize=10, 
+                                         textColor=colors.HexColor('#34495e'), spaceAfter=4)
+                        ))
+                        
                         if detalle.actor_principal:
-                            elements.append(Paragraph(f"<b>Actor Principal:</b> {detalle.actor_principal}", normal_style))
+                            elements.append(Paragraph(
+                                f"<b>Actor Principal:</b> {detalle.actor_principal}", 
+                                normal_style
+                            ))
+                            elements.append(Spacer(1, 0.1*cm))
+                        
+                        if detalle.precondiciones:
+                            elements.append(Paragraph(
+                                f"<b>Precondiciones:</b>", 
+                                normal_style
+                            ))
+                            elements.append(Paragraph(
+                                detalle.precondiciones, 
+                                ParagraphStyle('Detail', parent=styles['Normal'], fontSize=9, 
+                                             leftIndent=20, spaceAfter=4)
+                            ))
+                        
+                        if detalle.flujo_principal:
+                            elements.append(Paragraph(
+                                f"<b>Flujo Principal:</b>", 
+                                normal_style
+                            ))
+                            elements.append(Paragraph(
+                                detalle.flujo_principal, 
+                                ParagraphStyle('Detail', parent=styles['Normal'], fontSize=9, 
+                                             leftIndent=20, spaceAfter=4)
+                            ))
+                        
+                        if detalle.flujo_alternativo:
+                            elements.append(Paragraph(
+                                f"<b>Flujo Alternativo:</b>", 
+                                normal_style
+                            ))
+                            elements.append(Paragraph(
+                                detalle.flujo_alternativo, 
+                                ParagraphStyle('Detail', parent=styles['Normal'], fontSize=9, 
+                                             leftIndent=20, spaceAfter=4)
+                            ))
+                        
+                        if detalle.postcondiciones:
+                            elements.append(Paragraph(
+                                f"<b>Postcondiciones:</b>", 
+                                normal_style
+                            ))
+                            elements.append(Paragraph(
+                                detalle.postcondiciones, 
+                                ParagraphStyle('Detail', parent=styles['Normal'], fontSize=9, 
+                                             leftIndent=20, spaceAfter=4)
+                            ))
+                        
+                        if detalle.observaciones:
+                            elements.append(Paragraph(
+                                f"<b>Observaciones:</b>", 
+                                normal_style
+                            ))
+                            elements.append(Paragraph(
+                                detalle.observaciones, 
+                                ParagraphStyle('Detail', parent=styles['Normal'], fontSize=9, 
+                                             leftIndent=20, spaceAfter=4)
+                            ))
                     
+                    # DETALLE ÁGIL
+                    elif hasattr(caso, 'detalle_agil') and caso.detalle_agil:
+                        detalle = caso.detalle_agil
+                        
+                        elements.append(Paragraph(
+                            "<b><i>Detalle Metodología Ágil:</i></b>", 
+                            ParagraphStyle('SubHeader', parent=styles['Normal'], fontSize=10, 
+                                         textColor=colors.HexColor('#27ae60'), spaceAfter=4)
+                        ))
+                        
+                        if detalle.historia_usuario:
+                            elements.append(Paragraph(
+                                f"<b>Historia de Usuario:</b>", 
+                                normal_style
+                            ))
+                            elements.append(Paragraph(
+                                detalle.historia_usuario, 
+                                ParagraphStyle('Detail', parent=styles['Normal'], fontSize=9, 
+                                             leftIndent=20, spaceAfter=4)
+                            ))
+                        
+                        if detalle.criterio_aceptacion:
+                            elements.append(Paragraph(
+                                f"<b>Criterios de Aceptación:</b>", 
+                                normal_style
+                            ))
+                            elements.append(Paragraph(
+                                detalle.criterio_aceptacion, 
+                                ParagraphStyle('Detail', parent=styles['Normal'], fontSize=9, 
+                                             leftIndent=20, spaceAfter=4)
+                            ))
+                        
+                        if detalle.responsable:
+                            elements.append(Paragraph(
+                                f"<b>Responsable:</b> {detalle.responsable}", 
+                                normal_style
+                            ))
+                            elements.append(Spacer(1, 0.1*cm))
+                        
+                        if detalle.estado_scrum:
+                            elements.append(Paragraph(
+                                f"<b>Estado Scrum:</b> {detalle.estado_scrum}", 
+                                normal_style
+                            ))
+                            elements.append(Spacer(1, 0.1*cm))
+                        
+                        if detalle.observaciones:
+                            elements.append(Paragraph(
+                                f"<b>Observaciones:</b>", 
+                                normal_style
+                            ))
+                            elements.append(Paragraph(
+                                detalle.observaciones, 
+                                ParagraphStyle('Detail', parent=styles['Normal'], fontSize=9, 
+                                             leftIndent=20, spaceAfter=4)
+                            ))
+                    
+                    else:
+                        elements.append(Paragraph(
+                            "<i>Este caso de uso no tiene detalle metodológico asignado.</i>", 
+                            ParagraphStyle('Note', parent=styles['Normal'], fontSize=9, 
+                                         textColor=colors.grey, italic=True, spaceAfter=4)
+                        ))
+                    
+                    # Link externo si existe
+                    if caso.link_externo:
+                        elements.append(Paragraph(
+                            f"<b>Recurso Externo:</b> <link href='{caso.link_externo}'>{caso.link_externo}</link>", 
+                            normal_style
+                        ))
+                        elements.append(Spacer(1, 0.1*cm))
+                    
+                    # Separador entre casos de uso
+                    elements.append(Spacer(1, 0.5*cm))
+                    elements.append(Paragraph(
+                        "─" * 100, 
+                        ParagraphStyle('Separator', parent=styles['Normal'], fontSize=8, 
+                                     textColor=colors.lightgrey)
+                    ))
                     elements.append(Spacer(1, 0.5*cm))
                 
-                elements.append(Spacer(1, 0.5*cm))
+                elements.append(Spacer(1, 0.3*cm))
         
         # === INFORMACIÓN DEL GRUPO (opcional) ===
         if incluir_info_grupo and proyecto.grupo:
@@ -1852,90 +2317,165 @@ def generar_reporte_personalizado(request, proyecto_id):
             
             recomendaciones = []
             
+            # === ANÁLISIS DE TRAZABILIDAD ===
             if total_reqs - reqs_con_casos > 0:
-                recomendaciones.append(f"• Hay {total_reqs - reqs_con_casos} requerimiento(s) sin casos de uso asociados. Se recomienda vincularlos para mejorar la trazabilidad.")
+                recomendaciones.append(
+                    f"• <b>Trazabilidad:</b> Hay {total_reqs - reqs_con_casos} "
+                    f"requerimiento(s) sin casos de uso asociados. Se recomienda "
+                    f"vincularlos para mejorar la trazabilidad."
+                )
             
             if total_casos - casos_con_reqs > 0:
-                recomendaciones.append(f"• Hay {total_casos - casos_con_reqs} caso(s) de uso sin requerimientos asociados. Verificar si son necesarios o vincularlos.")
+                recomendaciones.append(
+                    f"• <b>Trazabilidad:</b> Hay {total_casos - casos_con_reqs} "
+                    f"caso(s) de uso sin requerimientos asociados. Verificar si son "
+                    f"necesarios o vincularlos."
+                )
             
             if reqs_con_casos == total_reqs and total_reqs > 0:
-                recomendaciones.append("• ✓ Excelente: Todos los requerimientos tienen casos de uso asociados.")
+                recomendaciones.append(
+                    "• ✓ <b>Excelente:</b> Todos los requerimientos tienen casos "
+                    "de uso asociados."
+                )
             
             if casos_con_reqs == total_casos and total_casos > 0:
-                recomendaciones.append("• ✓ Excelente: Todos los casos de uso están vinculados a requerimientos.")
+                recomendaciones.append(
+                    "• ✓ <b>Excelente:</b> Todos los casos de uso están vinculados "
+                    "a requerimientos."
+                )
+            
+            # === ANÁLISIS DE ESTADOS ===
+            borrador_count = requerimientos.filter(estado='BORRADOR').count()
+            validado_count = requerimientos.filter(estado='VALIDADO').count()
+            en_proceso_count = requerimientos.filter(estado='EN_PROCESO').count()
+            terminado_count = requerimientos.filter(estado='TERMINADO').count()
+            
+            # Detectar muchos requerimientos en BORRADOR
+            if total_reqs > 0 and borrador_count > total_reqs * 0.5:
+                porcentaje_borrador = round((borrador_count / total_reqs) * 100, 1)
+                recomendaciones.append(
+                    f"⚠ <b>Advertencia:</b> {borrador_count} requerimientos "
+                    f"({porcentaje_borrador}%) están en estado BORRADOR. "
+                    f"Considere validarlos para avanzar en el proyecto."
+                )
+            
+            # Detectar pocos requerimientos terminados
+            if total_reqs > 0 and terminado_count < total_reqs * 0.2 and en_proceso_count > 0:
+                porcentaje_terminado = round((terminado_count / total_reqs) * 100, 1)
+                recomendaciones.append(
+                    f"• <b>Progreso:</b> Solo {terminado_count} requerimientos "
+                    f"({porcentaje_terminado}%) están terminados. Considere revisar "
+                    f"los {en_proceso_count} en proceso para completarlos."
+                )
+            
+            # Felicitar por buen progreso
+            if total_reqs > 0 and terminado_count >= total_reqs * 0.8:
+                porcentaje_terminado = round((terminado_count / total_reqs) * 100, 1)
+                recomendaciones.append(
+                    f"• ✓ <b>Excelente progreso:</b> {terminado_count} requerimientos "
+                    f"({porcentaje_terminado}%) completados. ¡El proyecto avanza bien!"
+                )
+            
+            # === ANÁLISIS DE BALANCE RF vs RNF ===
+            rf_count = requerimientos.filter(tipo='FUNCIONAL').count()
+            rnf_count = requerimientos.filter(tipo='NO_FUNCIONAL').count()
+            rs_count = requerimientos.filter(tipo='SISTEMA').count()
+            
+            if rnf_count == 0 and rf_count > 5:
+                recomendaciones.append(
+                    "⚠ <b>Requerimientos No Funcionales:</b> No se han definido "
+                    "RNF. Considere agregar requisitos de rendimiento, seguridad, "
+                    "usabilidad, etc."
+                )
+            
+            if rnf_count > 0 and rf_count > 0:
+                ratio = rf_count / rnf_count if rnf_count > 0 else 0
+                if ratio > 10:  # Más de 10 RF por cada RNF
+                    recomendaciones.append(
+                        f"• <b>Balance RF/RNF:</b> Hay {rf_count} RF y solo {rnf_count} RNF "
+                        f"(ratio {ratio:.1f}:1). Considere revisar si faltan requisitos "
+                        f"no funcionales importantes."
+                    )
+            
+            # === ANÁLISIS DE PRIORIZACIÓN ===
+            sin_prioridad_count = 0
+            for req in requerimientos:
+                if hasattr(req, 'detalle_tradicional') and req.detalle_tradicional:
+                    if not req.detalle_tradicional.prioridad:
+                        sin_prioridad_count += 1
+                elif hasattr(req, 'detalle_agil') and req.detalle_agil:
+                    if not req.detalle_agil.prioridad:
+                        sin_prioridad_count += 1
+            
+            if sin_prioridad_count > 0:
+                porcentaje_sin_prioridad = round((sin_prioridad_count / total_reqs) * 100, 1) if total_reqs > 0 else 0
+                recomendaciones.append(
+                    f"• <b>Priorización:</b> {sin_prioridad_count} requerimientos "
+                    f"({porcentaje_sin_prioridad}%) no tienen prioridad asignada. "
+                    f"Se recomienda priorizarlos usando MoSCoW (Must/Should/Could/Won't)."
+                )
+            
+            # === ANÁLISIS DE FECHAS DE COMPROMISO ===
+            from django.utils import timezone
+            sin_fecha_count = 0
+            fechas_vencidas = 0
+            
+            for req in requerimientos:
+                if hasattr(req, 'detalle_tradicional') and req.detalle_tradicional:
+                    if not req.detalle_tradicional.fecha_compromiso:
+                        sin_fecha_count += 1
+                    elif req.detalle_tradicional.fecha_compromiso < timezone.now().date() and req.estado != 'TERMINADO':
+                        fechas_vencidas += 1
+            
+            if sin_fecha_count > total_reqs * 0.3 and total_reqs > 0:
+                porcentaje_sin_fecha = round((sin_fecha_count / total_reqs) * 100, 1)
+                recomendaciones.append(
+                    f"• <b>Planificación:</b> {sin_fecha_count} requerimientos "
+                    f"({porcentaje_sin_fecha}%) no tienen fecha de compromiso. "
+                    f"Asignar fechas ayuda a gestionar expectativas."
+                )
+            
+            if fechas_vencidas > 0:
+                recomendaciones.append(
+                    f"⚠ <b>Atención:</b> {fechas_vencidas} requerimiento(s) tienen "
+                    f"fecha de compromiso vencida y no están terminados. "
+                    f"Considere revisar el cronograma."
+                )
+            
+            # === ANÁLISIS DE DEPENDENCIAS ===
+            reqs_con_dependencias = sum(1 for req in requerimientos if req.dependencias.exists())
+            if reqs_con_dependencias > 0:
+                recomendaciones.append(
+                    f"• <b>Dependencias:</b> {reqs_con_dependencias} requerimientos "
+                    f"tienen dependencias. Asegúrese de implementarlos en el orden correcto."
+                )
+            
+            # === RECOMENDACIÓN GENERAL SI NO HAY DATOS ===
+            if total_reqs == 0:
+                recomendaciones.append(
+                    "• <b>Inicio del proyecto:</b> No hay requerimientos registrados. "
+                    "Comience definiendo los requerimientos funcionales y no funcionales."
+                )
+            
+            if total_casos == 0 and total_reqs > 0:
+                recomendaciones.append(
+                    "• <b>Casos de Uso:</b> No hay casos de uso definidos. Considere "
+                    "crear casos de uso para detallar cómo los usuarios interactuarán "
+                    "con el sistema."
+                )
             
             if recomendaciones:
-                elements.append(Paragraph("<b>RECOMENDACIONES</b>", subtitle_style))
+                elements.append(Paragraph("<b>RECOMENDACIONES Y ANÁLISIS</b>", subtitle_style))
                 for rec in recomendaciones:
                     elements.append(Paragraph(rec, normal_style))
                 elements.append(Spacer(1, 1*cm))
         
-        # === PIE DE PÁGINA CON LOGOS ===
-        try:
-            from PIL import Image as PILImage
-            
-            logo_proyecto = None
-            if proyecto.logo:
-                proyecto_logo_path = os.path.join(settings.MEDIA_ROOT, str(proyecto.logo))
-                if os.path.exists(proyecto_logo_path):
-                    with PILImage.open(proyecto_logo_path) as img:
-                        orig_width, orig_height = img.size
-                        aspect_ratio = orig_width / orig_height
-                        target_height = 2.5 * cm
-                        target_width = target_height * aspect_ratio
-                        logo_proyecto = Image(proyecto_logo_path, width=target_width, height=target_height)
-                        logo_proyecto.hAlign = 'LEFT'
-            
-            logo_grupo = None
-            if proyecto.grupo and proyecto.grupo.logo:
-                grupo_logo_path = os.path.join(settings.MEDIA_ROOT, str(proyecto.grupo.logo))
-                if os.path.exists(grupo_logo_path):
-                    with PILImage.open(grupo_logo_path) as img:
-                        orig_width, orig_height = img.size
-                        aspect_ratio = orig_width / orig_height
-                        target_height = 2.5 * cm
-                        target_width = target_height * aspect_ratio
-                        logo_grupo = Image(grupo_logo_path, width=target_width, height=target_height)
-                        logo_grupo.hAlign = 'RIGHT'
-            
-            if logo_proyecto or logo_grupo:
-                nombre_style = ParagraphStyle('NombreLogo', parent=styles['Normal'], fontSize=8,
-                                             textColor=colors.HexColor('#2c3e50'), alignment=TA_CENTER, spaceAfter=0)
-                
-                left_content = []
-                if logo_proyecto:
-                    left_content.append(logo_proyecto)
-                    left_content.append(Spacer(1, 0.1*cm))
-                    left_content.append(Paragraph(f"<b>{proyecto.nombre}</b>", nombre_style))
-                
-                right_content = []
-                if logo_grupo:
-                    right_content.append(logo_grupo)
-                    right_content.append(Spacer(1, 0.1*cm))
-                    right_content.append(Paragraph(f"<b>{proyecto.grupo.nombre}</b>", nombre_style))
-                
-                left_cell = left_content if left_content else ""
-                right_cell = right_content if right_content else ""
-                
-                logos_footer_table = Table([[left_cell, right_cell]], colWidths=[9*cm, 9*cm])
-                logos_footer_table.setStyle(TableStyle([
-                    ('ALIGN', (0, 0), (0, 0), 'LEFT'),
-                    ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
-                    ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                ]))
-                elements.append(logos_footer_table)
-                elements.append(Spacer(1, 0.3*cm))
-        except Exception:
-            pass
+        # === CONSTRUIR PDF CON HEADER Y FOOTER ===
+        # Usar onPage callback para agregar header/footer en cada página
+        def add_page_decorations(canvas, doc):
+            crear_header_footer(canvas, doc, proyecto, logo_proyecto_path, logo_grupo_path)
         
-        footer_text = Paragraph("""
-        <b>GRCU Manager</b> - Universidad Nacional de la Patagonia Austral<br/>
-        <i>Reporte generado automáticamente • Sistema de Gestión de Requerimientos y Casos de Uso</i>
-        """, ParagraphStyle('Footer', parent=styles['Normal'], fontSize=8, alignment=TA_CENTER, textColor=colors.grey))
-        elements.append(footer_text)
-        
-        # === CONSTRUIR PDF ===
-        doc.build(elements)
+        doc.build(elements, onFirstPage=add_page_decorations, onLaterPages=add_page_decorations)
         buffer.seek(0)
         
         response = HttpResponse(buffer.read(), content_type='application/pdf')
@@ -1943,8 +2483,14 @@ def generar_reporte_personalizado(request, proyecto_id):
         
         return response
         
-    except ImportError:
-        messages.error(request, "Error al generar el reporte. Contacte al administrador.")
+    except ImportError as e:
+        messages.error(request, f"Error de importación al generar el reporte: {str(e)}")
+        return redirect('proyectos:proyecto_reportes', proyecto_id=proyecto_id)
+    except Exception as e:
+        import traceback
+        error_detail = traceback.format_exc()
+        print(f"ERROR AL GENERAR REPORTE: {error_detail}")
+        messages.error(request, f"Error al generar el reporte: {str(e)}")
         return redirect('proyectos:proyecto_reportes', proyecto_id=proyecto_id)
 
 

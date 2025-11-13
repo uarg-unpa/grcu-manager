@@ -3,7 +3,30 @@
 {% load static %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'dashboards/css/lider_dashboard_styles.css' %}?v=2.1">
+    <link rel="stylesheet" href="{% static 'dashboards/css/lider_dashboard_styles.css' %}?v=3.2">
+    <style>
+        /* Estilos inline para asegurar visibilidad de números */
+        .display-4 {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            font-size: 3rem !important;
+            font-weight: 700 !important;
+            line-height: 1.2 !important;
+            color: inherit !important;
+        }
+        canvas {
+            display: block !important;
+            visibility: visible !important;
+        }
+        /* Asegurar que las tarjetas tengan fondo blanco */
+        .metric-card {
+            background-color: white !important;
+        }
+        .metric-card .card-body {
+            background-color: white !important;
+        }
+    </style>
 {% endblock %}
 
 {% block extra_head %}
@@ -11,6 +34,7 @@
 {% endblock %}
 {% block extra_js %}
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
         <script id="dashboard-data" type="application/json">[
             {% for data in dashboard_data %}
                 {
@@ -21,14 +45,10 @@
                 }{% if not forloop.last %},{% endif %}
             {% endfor %}
         ]</script>
-        <script src="{% static 'dashboards/js/lider_dashboard.js' %}?v=2.0"></script>
+        <script src="{% static 'dashboards/js/lider_dashboard.js' %}?v=4.0"></script>
 {% endblock %}
 {% block content %}
 <div class="mt-4 px-4">
-    {% comment %} <div class="lider-dashboard-header mb-4">
-        <i class="bi bi-speedometer2"></i>
-        <span class="fs-4 fw-bold">Dashboard del Líder</span>
-    </div> {% endcomment %}
     {% if dashboard_data %}
         {% for data in dashboard_data %}
         <div class="card mb-4 shadow-sm lider-dashboard-card">
@@ -95,31 +115,35 @@
                         {# Equipo de Desarrollo #}
                         <div class="integrantes-list-header mb-3">
                             <small class="text-muted d-block mb-2">
-                                <i class="bi bi-people-fill me-1"></i>Equipo de Desarrollo:
+                                <i class="bi bi-people-fill me-1"></i>Equipo de Desarrollo ({{ data.integrantes|length }}):
                             </small>
-                            <div class="integrantes-avatars" style="display: flex; flex-direction: row; flex-wrap: wrap; gap: 1rem; align-items: flex-start;">
-                                {% for integrante in data.integrantes %}
-                                    <div class="integrante-avatar-item" style="display: flex; flex-direction: column; align-items: center; width: 60px;">
-                                        <div class="avatar-container">
-                                            {% if integrante.avatar %}
-                                                <img src="{{ integrante.avatar }}"
-                                                     alt="{{ integrante.nombre }}"
-                                                     class="integrante-avatar rounded-circle border border-primary"
-                                                     style="width: 40px; height: 40px; object-fit: cover;">
-                                            {% else %}
-                                                <div class="integrante-avatar-placeholder rounded-circle border border-primary d-flex align-items-center justify-content-center bg-primary text-white"
-                                                     style="width: 40px; height: 40px; font-size: 16px; font-weight: bold;">
-                                                    {{ integrante.nombre|first|upper }}
-                                                </div>
-                                            {% endif %}
+                            <div class="integrantes-avatars-container">
+                                <div class="integrantes-avatars-scroll">
+                                    {% for integrante in data.integrantes %}
+                                        <div class="integrante-avatar-item">
+                                            <div class="avatar-container">
+                                                {% if integrante.avatar %}
+                                                    <img src="{{ integrante.avatar }}"
+                                                         alt="{{ integrante.nombre }}"
+                                                         class="integrante-avatar rounded-circle border border-primary"
+                                                         style="width: 40px; height: 40px; object-fit: cover;"
+                                                         title="{{ integrante.nombre }}">
+                                                {% else %}
+                                                    <div class="integrante-avatar-placeholder rounded-circle border border-primary d-flex align-items-center justify-content-center bg-primary text-white"
+                                                         style="width: 40px; height: 40px; font-size: 16px; font-weight: bold;"
+                                                         title="{{ integrante.nombre }}">
+                                                        {{ integrante.nombre|first|upper }}
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                            <div class="integrante-info" style="margin-top: 0.25rem; text-align: center;">
+                                                <small class="integrante-nombre text-muted fw-semibold" style="font-size: 0.65rem; line-height: 1.1; display: block; max-width: 60px; word-wrap: break-word; hyphens: auto; white-space: normal; overflow-wrap: break-word;">{{ integrante.nombre|truncatechars:10 }}</small>
+                                            </div>
                                         </div>
-                                        <div class="integrante-info" style="margin-top: 0.25rem; text-align: center;">
-                                            <small class="integrante-nombre text-muted fw-semibold" style="font-size: 0.7rem; line-height: 1.1; display: block; max-width: 60px; word-wrap: break-word; hyphens: auto; white-space: normal; overflow-wrap: break-word;">{{ integrante.nombre|truncatechars:12 }}</small>
-                                        </div>
-                                    </div>
-                                {% empty %}
-                                    <small class="text-muted">Sin integrantes</small>
-                                {% endfor %}
+                                    {% empty %}
+                                        <small class="text-muted">Sin integrantes</small>
+                                    {% endfor %}
+                                </div>
                             </div>
                         </div>
                         
@@ -127,29 +151,33 @@
                         {% if data.clientes %}
                         <div class="clientes-list-header">
                             <small class="text-info d-block mb-2">
-                                <i class="bi bi-person-badge me-1"></i>Clientes:
+                                <i class="bi bi-person-badge me-1"></i>Clientes ({{ data.clientes|length }}):
                             </small>
-                            <div class="clientes-avatars" style="display: flex; flex-direction: row; flex-wrap: wrap; gap: 1rem; align-items: flex-start;">
-                                {% for cliente in data.clientes %}
-                                    <div class="cliente-avatar-item" style="display: flex; flex-direction: column; align-items: center; width: 60px;">
-                                        <div class="avatar-container">
-                                            {% if cliente.avatar %}
-                                                <img src="{{ cliente.avatar }}"
-                                                     alt="{{ cliente.nombre }}"
-                                                     class="cliente-avatar rounded-circle border border-info"
-                                                     style="width: 40px; height: 40px; object-fit: cover;">
-                                            {% else %}
-                                                <div class="cliente-avatar-placeholder rounded-circle border border-info d-flex align-items-center justify-content-center bg-info text-white"
-                                                     style="width: 40px; height: 40px; font-size: 16px; font-weight: bold;">
-                                                    {{ cliente.nombre|first|upper }}
-                                                </div>
-                                            {% endif %}
+                            <div class="clientes-avatars-container">
+                                <div class="clientes-avatars-scroll">
+                                    {% for cliente in data.clientes %}
+                                        <div class="cliente-avatar-item">
+                                            <div class="avatar-container">
+                                                {% if cliente.avatar %}
+                                                    <img src="{{ cliente.avatar }}"
+                                                         alt="{{ cliente.nombre }}"
+                                                         class="cliente-avatar rounded-circle border border-info"
+                                                         style="width: 40px; height: 40px; object-fit: cover;"
+                                                         title="{{ cliente.nombre }}">
+                                                {% else %}
+                                                    <div class="cliente-avatar-placeholder rounded-circle border border-info d-flex align-items-center justify-content-center bg-info text-white"
+                                                         style="width: 40px; height: 40px; font-size: 16px; font-weight: bold;"
+                                                         title="{{ cliente.nombre }}">
+                                                        {{ cliente.nombre|first|upper }}
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                            <div class="cliente-info" style="margin-top: 0.25rem; text-align: center;">
+                                                <small class="cliente-nombre text-info fw-semibold" style="font-size: 0.65rem; line-height: 1.1; display: block; max-width: 60px; word-wrap: break-word; hyphens: auto; white-space: normal; overflow-wrap: break-word;">{{ cliente.nombre|truncatechars:10 }}</small>
+                                            </div>
                                         </div>
-                                        <div class="cliente-info" style="margin-top: 0.25rem; text-align: center;">
-                                            <small class="cliente-nombre text-info fw-semibold" style="font-size: 0.7rem; line-height: 1.1; display: block; max-width: 60px; word-wrap: break-word; hyphens: auto; white-space: normal; overflow-wrap: break-word;">{{ cliente.nombre|truncatechars:12 }}</small>
-                                        </div>
-                                    </div>
-                                {% endfor %}
+                                    {% endfor %}
+                                </div>
                             </div>
                         </div>
                         {% endif %}
@@ -174,36 +202,36 @@
                 {# Métricas principales - 3 columnas #}
                 <div class="row g-3 mb-4">
                     <div class="col-md-4">
-                        <div class="metric-card card shadow hover-shadow" style="border: 3px solid #667eea; background: white;">
-                            <div class="card-body text-center">
+                        <div class="card shadow hover-shadow" style="border: 3px solid #667eea; background: white; min-height: 200px; overflow: visible !important;">
+                            <div class="card-body text-center" style="display: block !important;">
                                 <div class="mb-3">
                                     <i class="bi bi-list-check" style="font-size: 3rem; color: #667eea;"></i>
                                 </div>
                                 <h5 class="card-title mb-2 text-muted">Requerimientos</h5>
-                                <p class="display-4 fw-bold mb-0" style="color: #667eea;">{{ data.total_requerimientos }}</p>
+                                <p class="display-4 fw-bold mb-0" style="color: #667eea !important; font-size: 3rem !important;">{{ data.total_requerimientos|default:"0" }}</p>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="metric-card card shadow hover-shadow" style="border: 3px solid #764ba2; background: white;">
-                            <div class="card-body text-center">
+                        <div class="card shadow hover-shadow" style="border: 3px solid #764ba2; background: white; min-height: 200px; overflow: visible !important;">
+                            <div class="card-body text-center" style="display: block !important;">
                                 <div class="mb-3">
                                     <i class="bi bi-diagram-3" style="font-size: 3rem; color: #764ba2;"></i>
                                 </div>
                                 <h5 class="card-title mb-2 text-muted">Casos de Uso</h5>
-                                <p class="display-4 fw-bold mb-0" style="color: #764ba2;">{{ data.total_casos_de_uso }}</p>
+                                <p class="display-4 fw-bold mb-0" style="color: #764ba2 !important; font-size: 3rem !important;">{{ data.total_casos_de_uso|default:"0" }}</p>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="metric-card card shadow hover-shadow" style="border: 3px solid #dc3545; background: white;">
-                            <div class="card-body text-center">
+                        <div class="card shadow hover-shadow" style="border: 3px solid #dc3545; background: white; min-height: 200px; overflow: visible !important;">
+                            <div class="card-body text-center" style="display: block !important;">
                                 <div class="mb-3">
                                     <i class="bi bi-exclamation-triangle-fill" style="font-size: 3rem; color: #dc3545;"></i>
                                 </div>
                                 <h5 class="card-title mb-2 text-muted">Huérfanos</h5>
-                                <p class="display-4 fw-bold mb-2" style="color: #dc3545;">{{ data.total_huerfanos }}</p>
-                                <small class="text-muted">Reqs: {{ data.reqs_huerfanos_count }} | CUs: {{ data.casos_huerfanos_count }}</small>
+                                <p class="display-4 fw-bold mb-2" style="color: #dc3545 !important; font-size: 3rem !important;">{{ data.total_huerfanos|default:"0" }}</p>
+                                <small class="text-muted">Reqs: {{ data.reqs_huerfanos_count|default:"0" }} | CUs: {{ data.casos_huerfanos_count|default:"0" }}</small>
                             </div>
                         </div>
                     </div>
@@ -212,35 +240,38 @@
                 {# Estados de requerimientos - 3 columnas #}
                 <div class="row g-3 mb-4">
                     <div class="col-md-4">
-                        <div class="metric-card card shadow hover-shadow" style="border: 3px solid #ffc107; background: white;">
-                            <div class="card-body text-center">
+                        <div class="card shadow hover-shadow" style="border: 3px solid #ffc107; background: white; min-height: 200px; overflow: visible !important;">
+                            <div class="card-body text-center" style="display: block !important;">
                                 <div class="mb-3">
                                     <i class="bi bi-clock-history" style="font-size: 3rem; color: #ffc107;"></i>
                                 </div>
-                                <h5 class="card-title mb-2 text-muted">Sin Validar</h5>
-                                <p class="display-4 fw-bold mb-0" style="color: #ffc107;">{{ data.reqs_sin_validar }}</p>
+                                <h5 class="card-title mb-2 text-muted">Requerimientos Sin Validar</h5>
+                                <p class="display-4 fw-bold mb-0" style="color: #ffc107 !important; font-size: 3rem !important;">{{ data.reqs_sin_validar|default:"0" }}</p>
+                                <small class="text-muted d-block mt-2">Estado: Borrador</small>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="metric-card card shadow hover-shadow" style="border: 3px solid #28a745; background: white;">
-                            <div class="card-body text-center">
+                        <div class="card shadow hover-shadow" style="border: 3px solid #28a745; background: white; min-height: 200px; overflow: visible !important;">
+                            <div class="card-body text-center" style="display: block !important;">
                                 <div class="mb-3">
                                     <i class="bi bi-check-circle-fill" style="font-size: 3rem; color: #28a745;"></i>
                                 </div>
-                                <h5 class="card-title mb-2 text-muted">Completados</h5>
-                                <p class="display-4 fw-bold mb-0" style="color: #28a745;">{{ data.reqs_completados }}</p>
+                                <h5 class="card-title mb-2 text-muted">Requerimientos Completados</h5>
+                                <p class="display-4 fw-bold mb-0" style="color: #28a745 !important; font-size: 3rem !important;">{{ data.reqs_completados|default:"0" }}</p>
+                                <small class="text-muted d-block mt-2">Estado: Terminado/Completado</small>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="metric-card card shadow hover-shadow" style="border: 3px solid #17a2b8; background: white;">
-                            <div class="card-body text-center">
+                        <div class="card shadow hover-shadow" style="border: 3px solid #17a2b8; background: white; min-height: 200px; overflow: visible !important;">
+                            <div class="card-body text-center" style="display: block !important;">
                                 <div class="mb-3">
                                     <i class="bi bi-hourglass-split" style="font-size: 3rem; color: #17a2b8;"></i>
                                 </div>
-                                <h5 class="card-title mb-2 text-muted">Sin Completar</h5>
-                                <p class="display-4 fw-bold mb-0" style="color: #17a2b8;">{{ data.reqs_sin_completar }}</p>
+                                <h5 class="card-title mb-2 text-muted">Requerimientos Sin Completar</h5>
+                                <p class="display-4 fw-bold mb-0" style="color: #17a2b8 !important; font-size: 3rem !important;">{{ data.reqs_sin_completar|default:"0" }}</p>
+                                <small class="text-muted d-block mt-2">En progreso o pendientes</small>
                             </div>
                         </div>
                     </div>
@@ -249,30 +280,30 @@
                 {# Gráficos y estado - 3 columnas #}
                 <div class="row g-3 mb-4">
                     <div class="col-md-4">
-                        <div class="metric-card card shadow hover-shadow" style="border: 3px solid #6f42c1; background: white; height: 280px;">
-                            <div class="card-body">
+                        <div class="card shadow hover-shadow" style="border: 3px solid #6f42c1; background: white; min-height: 350px; overflow: visible !important;">
+                            <div class="card-body" style="display: block !important;">
                                 <div class="d-flex align-items-center mb-3">
                                     <i class="bi bi-pie-chart-fill me-2" style="font-size: 1.5rem; color: #6f42c1;"></i>
                                     <h6 class="card-title mb-0 text-muted">Distribución de Requerimientos</h6>
                                 </div>
-                                <canvas id="grafico-req-{{ forloop.counter0 }}" width="120" height="120" style="max-width: 120px; max-height: 120px; margin: 0 auto; display: block;"></canvas>
+                                <canvas id="grafico-req-{{ forloop.counter0 }}" width="280" height="280" style="max-width: 280px; max-height: 280px; margin: 0 auto; display: block;"></canvas>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="metric-card card shadow hover-shadow" style="border: 3px solid #e83e8c; background: white; height: 280px;">
-                            <div class="card-body">
+                        <div class="card shadow hover-shadow" style="border: 3px solid #e83e8c; background: white; min-height: 350px; overflow: visible !important;">
+                            <div class="card-body" style="display: block !important;">
                                 <div class="d-flex align-items-center mb-3">
                                     <i class="bi bi-pie-chart-fill me-2" style="font-size: 1.5rem; color: #e83e8c;"></i>
                                     <h6 class="card-title mb-0 text-muted">Distribución Casos de Uso</h6>
                                 </div>
-                                <canvas id="grafico-cu-{{ forloop.counter0 }}" width="120" height="120" style="max-width: 120px; max-height: 120px; margin: 0 auto; display: block;"></canvas>
+                                <canvas id="grafico-cu-{{ forloop.counter0 }}" width="280" height="280" style="max-width: 280px; max-height: 280px; margin: 0 auto; display: block;"></canvas>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="metric-card card shadow hover-shadow" style="border: 3px solid #20c997; background: white; height: 280px;">
-                            <div class="card-body text-center">
+                        <div class="card shadow hover-shadow" style="border: 3px solid #20c997; background: white; min-height: 350px; overflow: visible !important;">
+                            <div class="card-body text-center" style="display: block !important;">
                                 <div class="mb-3">
                                     <i class="bi bi-bar-chart-line-fill" style="font-size: 3rem; color: #20c997;"></i>
                                 </div>

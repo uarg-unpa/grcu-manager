@@ -10,6 +10,12 @@ document.addEventListener('DOMContentLoaded', function () {
     // Inicializar tooltips de Bootstrap
     initializeDashboardTooltips();
     
+    // Verificar que Chart.js esté disponible
+    if (typeof Chart === 'undefined') {
+        console.error('Chart.js no está cargado');
+        return;
+    }
+    
     // Obtener datos de los proyectos desde el data attribute
     const dashboardDataElement = document.getElementById('dashboard-data');
     if (!dashboardDataElement) {
@@ -63,6 +69,8 @@ function renderGraficoRequerimientos(proyecto, index) {
         return;
     }
     
+    const total = proyecto.reqs_huerfanos_count + proyecto.reqs_relacionados_count;
+    
     new Chart(ctx, {
         type: 'doughnut',
         data: {
@@ -73,10 +81,14 @@ function renderGraficoRequerimientos(proyecto, index) {
                     proyecto.reqs_relacionados_count
                 ],
                 backgroundColor: [
-                    '#EF4444',  // Rojo para huérfanos
-                    '#3B82F6'   // Azul para relacionados
+                    '#DC2626',  // Rojo más vibrante para huérfanos
+                    '#2563EB'   // Azul más vibrante para relacionados
                 ],
-                borderWidth: 1
+                borderColor: [
+                    '#FFFFFF',
+                    '#FFFFFF'
+                ],
+                borderWidth: 3
             }]
         },
         options: {
@@ -87,19 +99,22 @@ function renderGraficoRequerimientos(proyecto, index) {
                     display: true, 
                     position: 'bottom',
                     labels: {
-                        boxWidth: 12,
-                        padding: 8,
+                        boxWidth: 15,
+                        padding: 12,
                         font: {
-                            size: 11
+                            size: 13,
+                            weight: 'bold'
                         },
                         generateLabels: function(chart) {
                             const data = chart.data;
                             if (data.labels.length && data.datasets.length) {
                                 return data.labels.map((label, i) => {
+                                    const value = data.datasets[0].data[i];
+                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
                                     const meta = chart.getDatasetMeta(0);
                                     const style = meta.controller.getStyle(i);
                                     return {
-                                        text: label,
+                                        text: `${label}: ${value} (${percentage}%)`,
                                         fillStyle: style.backgroundColor,
                                         strokeStyle: style.borderColor,
                                         lineWidth: style.borderWidth,
@@ -113,17 +128,40 @@ function renderGraficoRequerimientos(proyecto, index) {
                     }
                 },
                 tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
+                    padding: 12,
                     callbacks: {
                         label: function(context) {
                             const label = context.label || '';
                             const value = context.parsed || 0;
-                            return `${label}: ${value}`;
+                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                            return `${label}: ${value} (${percentage}%)`;
                         }
+                    }
+                },
+                datalabels: {
+                    color: '#FFFFFF',
+                    font: {
+                        size: 16,
+                        weight: 'bold'
+                    },
+                    formatter: function(value, context) {
+                        if (total === 0) return '';
+                        const percentage = ((value / total) * 100).toFixed(1);
+                        return percentage > 5 ? `${percentage}%` : ''; // Solo mostrar si es > 5%
                     }
                 }
             },
-            cutout: '65%'
-        }
+            cutout: '60%'
+        },
+        plugins: [ChartDataLabels]
     });
 }
 
@@ -143,6 +181,8 @@ function renderGraficoCasosUso(proyecto, index) {
         return;
     }
     
+    const total = proyecto.casos_huerfanos_count + proyecto.casos_relacionados_count;
+    
     new Chart(ctx, {
         type: 'doughnut',
         data: {
@@ -153,10 +193,14 @@ function renderGraficoCasosUso(proyecto, index) {
                     proyecto.casos_relacionados_count
                 ],
                 backgroundColor: [
-                    '#EF4444',  // Rojo para huérfanos
-                    '#10B981'   // Verde para relacionados
+                    '#DC2626',  // Rojo más vibrante para huérfanos
+                    '#059669'   // Verde más vibrante para relacionados
                 ],
-                borderWidth: 1
+                borderColor: [
+                    '#FFFFFF',
+                    '#FFFFFF'
+                ],
+                borderWidth: 3
             }]
         },
         options: {
@@ -167,19 +211,22 @@ function renderGraficoCasosUso(proyecto, index) {
                     display: true, 
                     position: 'bottom',
                     labels: {
-                        boxWidth: 12,
-                        padding: 8,
+                        boxWidth: 15,
+                        padding: 12,
                         font: {
-                            size: 11
+                            size: 13,
+                            weight: 'bold'
                         },
                         generateLabels: function(chart) {
                             const data = chart.data;
                             if (data.labels.length && data.datasets.length) {
                                 return data.labels.map((label, i) => {
+                                    const value = data.datasets[0].data[i];
+                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
                                     const meta = chart.getDatasetMeta(0);
                                     const style = meta.controller.getStyle(i);
                                     return {
-                                        text: label,
+                                        text: `${label}: ${value} (${percentage}%)`,
                                         fillStyle: style.backgroundColor,
                                         strokeStyle: style.borderColor,
                                         lineWidth: style.borderWidth,
@@ -193,16 +240,39 @@ function renderGraficoCasosUso(proyecto, index) {
                     }
                 },
                 tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
+                    padding: 12,
                     callbacks: {
                         label: function(context) {
                             const label = context.label || '';
                             const value = context.parsed || 0;
-                            return `${label}: ${value}`;
+                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                            return `${label}: ${value} (${percentage}%)`;
                         }
+                    }
+                },
+                datalabels: {
+                    color: '#FFFFFF',
+                    font: {
+                        size: 16,
+                        weight: 'bold'
+                    },
+                    formatter: function(value, context) {
+                        if (total === 0) return '';
+                        const percentage = ((value / total) * 100).toFixed(1);
+                        return percentage > 5 ? `${percentage}%` : ''; // Solo mostrar si es > 5%
                     }
                 }
             },
-            cutout: '65%'
-        }
+            cutout: '60%'
+        },
+        plugins: [ChartDataLabels]
     });
 }

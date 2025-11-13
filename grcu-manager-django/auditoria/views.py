@@ -1,3 +1,17 @@
+"""
+Vistas del sistema de auditoría para administradores.
+
+Este módulo proporciona vistas para el dashboard de auditoría, permitiendo
+a los administradores visualizar, filtrar y analizar todas las actividades
+del sistema. Incluye métricas, gráficos y vistas detalladas de actividades.
+
+Funciones:
+    is_admin: Verifica si un usuario es administrador.
+    admin_auditoria_dashboard: Dashboard principal de auditoría.
+    auditoria_resumen: Resumen de actividades recientes.
+    admin_auditoria_detalle: Vista detallada de una actividad específica.
+"""
+
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db.models import Count, Q, F
@@ -11,9 +25,20 @@ from grupos.models import Grupo
 from proyectos.models import Proyecto
 
 
-def is_admin(user):
-    """Verifica si el usuario es administrador"""
-    return user.is_authenticated and user.roles.filter(nombre__iexact="Admin").exists()
+def is_admin(user) -> bool:
+    """
+    Verifica si el usuario es administrador.
+
+    Args:
+        user (Usuario): Instancia del usuario a verificar.
+
+    Returns:
+        bool: True si el usuario es admin, False en caso contrario.
+    """
+    return (
+        user.is_authenticated and
+        user.roles.filter(nombre__iexact="Admin").exists()
+    )
 
 
 @login_required
@@ -21,7 +46,28 @@ def is_admin(user):
 def admin_auditoria_dashboard(request):
     """
     Dashboard de auditoría para administradores.
-    Muestra métricas generales, filtros y lista de actividades.
+
+    Proporciona una vista completa del sistema de auditoría con:
+    - Métricas generales (total de actividades, actividades 24h, etc.)
+    - Filtros por acción, usuario, fecha, grupo y proyecto
+    - Búsqueda por texto en descripción y usuarios
+    - Gráficos de actividad por día
+    - Rankings de usuarios, grupos y proyectos más activos
+    - Paginación de resultados
+
+    Args:
+        request (HttpRequest): Request de Django con parámetros GET opcionales:
+            - accion: Filtrar por tipo de acción
+            - usuario: Filtrar por ID de usuario
+            - fecha_desde: Filtrar desde fecha
+            - fecha_hasta: Filtrar hasta fecha
+            - grupo: Filtrar por ID de grupo
+            - proyecto: Filtrar por ID de proyecto
+            - q: Búsqueda de texto
+            - page: Número de página para paginación
+
+    Returns:
+        HttpResponse: Renderiza auditoria_dashboard.html con contexto completo.
     """
 
     # === PARÁMETROS DE FILTRO ===
@@ -218,8 +264,17 @@ def admin_auditoria_dashboard(request):
 @user_passes_test(is_admin)
 def auditoria_resumen(request):
     """
-    Vista que devuelve las últimas 10 actividades para mostrar en el dashboard del admin.
-    Esta es una vista liviana para inclusión en otros dashboards.
+    Vista que devuelve las últimas 10 actividades para dashboards.
+
+    Proporciona un resumen ligero de actividades recientes que puede ser
+    incluido en otros dashboards del sistema. Optimizada para carga rápida
+    con select_related.
+
+    Args:
+        request (HttpRequest): Request de Django.
+
+    Returns:
+        HttpResponse: Renderiza auditoria_resumen.html con actividades recientes.
     """
     actividades_recientes = (
         RegistroActividad.objects
@@ -239,6 +294,20 @@ def auditoria_resumen(request):
 def admin_auditoria_detalle(request, actividad_id):
     """
     Vista detallada de una actividad específica.
+
+    Muestra toda la información disponible de una actividad particular,
+    incluyendo detalles JSON, metadatos (IP, user agent), y actividades
+    relacionadas del mismo usuario.
+
+    Args:
+        request (HttpRequest): Request de Django.
+        actividad_id (int): ID del registro de actividad a mostrar.
+
+    Returns:
+        HttpResponse: Renderiza auditoria_detalle.html con información completa.
+
+    Raises:
+        Http404: Si no existe una actividad con el ID especificado.
     """
     actividad = get_object_or_404(RegistroActividad, id=actividad_id)
 

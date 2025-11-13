@@ -153,6 +153,12 @@
                                         {{ form.observaciones.label }}
                                     </label>
                                     {{ form.observaciones }}
+                                    <div class="form-text d-flex justify-content-between align-items-center">
+                                        <span>
+                                            <i class="bi bi-info-circle"></i> Notas u observaciones adicionales
+                                        </span>
+                                        <span id="observaciones-tradicional-contador" class="badge bg-secondary">0 / 5000</span>
+                                    </div>
                                 </div>
                             </div>
 
@@ -218,6 +224,12 @@
                                         {{ form.observaciones.label }}
                                     </label>
                                     {{ form.observaciones }}
+                                    <div class="form-text d-flex justify-content-between align-items-center">
+                                        <span>
+                                            <i class="bi bi-info-circle"></i> Notas u observaciones adicionales
+                                        </span>
+                                        <span id="observaciones-agil-contador" class="badge bg-secondary">0 / 5000</span>
+                                    </div>
                                 </div>
                             </div>
                         {% endif %}
@@ -313,7 +325,69 @@
                     </div>
                 </div>
             </form>
-        </div>
+                </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // ===== Control de límite de caracteres en Observaciones =====
+    const observacionesTextarea = document.querySelector('textarea[name="observaciones"]');
+    const observacionesContadorTradicional = document.getElementById('observaciones-tradicional-contador');
+    const observacionesContadorAgil = document.getElementById('observaciones-agil-contador');
+    const observacionesContador = observacionesContadorTradicional || observacionesContadorAgil;
+    const maxCaracteresObservaciones = 5000;
+    
+    if (observacionesTextarea && observacionesContador) {
+        // Función para actualizar el contador
+        function actualizarContadorObservaciones() {
+            const longitudActual = observacionesTextarea.value.length;
+            observacionesContador.textContent = `${longitudActual} / ${maxCaracteresObservaciones}`;
+            
+            // Cambiar color según el progreso
+            if (longitudActual >= maxCaracteresObservaciones) {
+                observacionesContador.classList.remove('bg-secondary', 'bg-warning');
+                observacionesContador.classList.add('bg-danger');
+            } else if (longitudActual >= maxCaracteresObservaciones * 0.9) {
+                observacionesContador.classList.remove('bg-secondary', 'bg-danger');
+                observacionesContador.classList.add('bg-warning');
+            } else {
+                observacionesContador.classList.remove('bg-warning', 'bg-danger');
+                observacionesContador.classList.add('bg-secondary');
+            }
+        }
+        
+        // Función para prevenir exceder el límite al escribir
+        function controlarLimiteObservaciones(e) {
+            const longitudActual = observacionesTextarea.value.length;
+            const teclasPermitidas = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'Tab'];
+            
+            if (longitudActual >= maxCaracteresObservaciones && !teclasPermitidas.includes(e.key) && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+                return false;
+            }
+        }
+        
+        // Función para truncar si se pega texto que excede el límite
+        function controlarPegadoObservaciones(e) {
+            setTimeout(() => {
+                if (observacionesTextarea.value.length > maxCaracteresObservaciones) {
+                    observacionesTextarea.value = observacionesTextarea.value.substring(0, maxCaracteresObservaciones);
+                    actualizarContadorObservaciones();
+                }
+            }, 10);
+        }
+        
+        // Agregar event listeners
+        observacionesTextarea.addEventListener('input', actualizarContadorObservaciones);
+        observacionesTextarea.addEventListener('keydown', controlarLimiteObservaciones);
+        observacionesTextarea.addEventListener('paste', controlarPegadoObservaciones);
+        
+        // Actualizar contador al cargar
+        actualizarContadorObservaciones();
+    }
+});
+</script>
 {% endblock %}

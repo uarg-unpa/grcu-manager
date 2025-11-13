@@ -241,12 +241,21 @@ def requerimiento_create(request, proyecto_id=None):
             
             # Crear el detalle específico según la metodología
             if es_tradicional:
+                # Manejar campos "Otro" para fuente y categoría
+                fuente_valor = form.cleaned_data.get('fuente', '')
+                if fuente_valor == 'OTRO':
+                    fuente_valor = form.cleaned_data.get('fuente_otro', 'Otro')
+                
+                categoria_valor = form.cleaned_data.get('categoria', '')
+                if categoria_valor == 'OTRO':
+                    categoria_valor = form.cleaned_data.get('categoria_otro', 'Otro')
+                
                 # Crear detalle tradicional (la relación se establece automáticamente vía requerimiento_padre)
                 DetalleRequerimientoTradicional.objects.create(
                     requerimiento_padre=requerimiento,
                     prioridad=form.cleaned_data.get('prioridad', ''),
-                    fuente=form.cleaned_data.get('fuente', ''),
-                    categoria=form.cleaned_data.get('categoria', ''),
+                    fuente=fuente_valor,
+                    categoria=categoria_valor,
                     fecha_compromiso=form.cleaned_data.get('fecha_compromiso'),
                     estado_validacion=form.cleaned_data.get('estado_validacion', ''),
                     observaciones=form.cleaned_data.get('observaciones', '')
@@ -926,12 +935,21 @@ def requerimiento_update(request, pk):
             
             # Actualizar el detalle específico según la metodología
             if es_tradicional:
+                # Manejar campos "Otro" para fuente y categoría
+                fuente_valor = form.cleaned_data.get('fuente', '')
+                if fuente_valor == 'OTRO':
+                    fuente_valor = form.cleaned_data.get('fuente_otro', 'Otro')
+                
+                categoria_valor = form.cleaned_data.get('categoria', '')
+                if categoria_valor == 'OTRO':
+                    categoria_valor = form.cleaned_data.get('categoria_otro', 'Otro')
+                
                 detalle, created = DetalleRequerimientoTradicional.objects.get_or_create(
                     requerimiento_padre=requerimiento
                 )
                 # NO actualizar prioridad ni estado_validacion - se manejan en vistas específicas
-                detalle.fuente = form.cleaned_data.get('fuente', '')
-                detalle.categoria = form.cleaned_data.get('categoria', '')
+                detalle.fuente = fuente_valor
+                detalle.categoria = categoria_valor
                 detalle.fecha_compromiso = form.cleaned_data.get('fecha_compromiso')
                 detalle.observaciones = form.cleaned_data.get('observaciones', '')
                 detalle.save()
@@ -968,10 +986,26 @@ def requerimiento_update(request, pk):
             try:
                 detalle = requerimiento.detalle_tradicional
                 if detalle:
+                    # Definir opciones válidas para fuente y categoría
+                    fuentes_validas = ['ENTREVISTA_STAKEHOLDER', 'DOCUMENTO_REQUERIMIENTOS', 'OBSERVACION_USUARIO',
+                                      'ENCUESTA_CUESTIONARIO', 'ANALISIS_SISTEMA', 'SOLICITUD_CLIENTE']
+                    categorias_validas = ['SEGURIDAD', 'RENDIMIENTO', 'USABILIDAD', 'MANTENIBILIDAD',
+                                         'COMPATIBILIDAD', 'DISPONIBILIDAD', 'ESCALABILIDAD', 'CONFIABILIDAD']
+                    
+                    # Manejar fuente
+                    fuente_valor = detalle.fuente if detalle.fuente in fuentes_validas else 'OTRO'
+                    fuente_otro_valor = '' if detalle.fuente in fuentes_validas else detalle.fuente
+                    
+                    # Manejar categoría
+                    categoria_valor = detalle.categoria if detalle.categoria in categorias_validas else 'OTRO'
+                    categoria_otro_valor = '' if detalle.categoria in categorias_validas else detalle.categoria
+                    
                     initial_data.update({
                         # NO incluir prioridad ni estado_validacion
-                        'fuente': detalle.fuente,
-                        'categoria': detalle.categoria,
+                        'fuente': fuente_valor,
+                        'fuente_otro': fuente_otro_valor,
+                        'categoria': categoria_valor,
+                        'categoria_otro': categoria_otro_valor,
                         'fecha_compromiso': detalle.fecha_compromiso,
                         'observaciones': detalle.observaciones,
                     })
@@ -1206,6 +1240,155 @@ def requerimiento_validar_lider(request, proyecto_id=None):
         'page_title': f'{proyecto.nombre} - Validación de Requerimientos',
     }
     return render(request, 'requerimientos/requerimiento_validar_lider.html', context)
+
+
+@login_required
+def requerimiento_validar_lider_individual(request, pk):
+    """
+    Vista para que el líder valide un requerimiento específico.
+    Muestra solo el requerimiento solicitado.
+    """
+    requerimiento = get_object_or_404(Requerimiento, pk=pk)
+    proyecto = requerimiento.proyecto
+    
+    # Verificar que el usuario sea líder del proyecto
+    if request.user != proyecto.lider:
+        messages.error(request, 'Solo el líder del proyecto puede validar requerimientos.')
+        return redirect('requerimientos:requerimiento_detail', pk=pk)
+    
+    # Verificar que el requerimiento esté en estado BORRADOR
+    if requerimiento.estado != 'BORRADOR':
+        messages.info(request, f'Este requerimiento ya fue {requerimiento.get_estado_display().lower()}.')
+        return redirect('requerimientos:requerimiento_detail', pk=pk)
+    
+    if request.method == 'POST':
+        accion = request.POST.get('accion')
+        comentario = request.POST.get('comentario', '').strip()
+        
+        if accion == 'validar':
+            # Validar el requerimiento
+            requerimiento.estado = 'VALIDADO'
+            requerimiento.validado_por = request.user
+            requerimiento.fecha_validacion = timezone.now()
+            requerimiento.tipo_validador = 'LIDER'
+            requerimiento.requiere_discusion = False
+            requerimiento.save()
+            
+            # Crear comentario si se proporcionó
+            if comentario:
+                ComentarioValidacion.objects.create(
+                    requerimiento=requerimiento,
+                    autor=request.user,
+                    comentario=comentario,
+                    tipo_accion='VALIDAR'
+                )
+            
+            messages.success(request, f'✅ Requerimiento "{requerimiento.nombre}" validado exitosamente.')
+            return redirect('requerimientos:requerimiento_detail', pk=pk)
+            
+        elif accion == 'rechazar':
+            if not comentario:
+                messages.error(request, 'Debes proporcionar un comentario al rechazar un requerimiento.')
+            else:
+                # Rechazar el requerimiento
+                requerimiento.estado = 'BORRADOR'
+                requerimiento.requiere_discusion = True
+                requerimiento.motivo_rechazo = comentario
+                requerimiento.ultimo_rechazado_por = request.user
+                requerimiento.fecha_ultimo_rechazo = timezone.now()
+                requerimiento.save()
+                
+                # Crear comentario de rechazo
+                ComentarioValidacion.objects.create(
+                    requerimiento=requerimiento,
+                    autor=request.user,
+                    comentario=comentario,
+                    tipo_accion='RECHAZAR'
+                )
+                
+                messages.info(request, f'ℹ️ Requerimiento "{requerimiento.nombre}" rechazado para revisión.')
+                return redirect('requerimientos:requerimiento_detail', pk=pk)
+    
+    context = {
+        'proyecto': proyecto,
+        'requerimiento': requerimiento,
+        'page_title': f'Validar: {requerimiento.nombre}',
+    }
+    return render(request, 'requerimientos/requerimiento_validar_lider_individual.html', context)
+
+
+@login_required
+def requerimiento_validar_cliente_individual(request, pk):
+    """
+    Vista para que el cliente valide un requerimiento específico.
+    Muestra solo el requerimiento solicitado.
+    """
+    requerimiento = get_object_or_404(Requerimiento, pk=pk)
+    proyecto = requerimiento.proyecto
+    
+    # Verificar que el usuario sea cliente del proyecto
+    es_cliente = proyecto.clientes.filter(id=request.user.id).exists()
+    if not es_cliente:
+        messages.error(request, 'Solo los clientes del proyecto pueden validar requerimientos.')
+        return redirect('requerimientos:requerimiento_detail', pk=pk)
+    
+    # Verificar que el requerimiento esté en estado VALIDADO (validado por líder)
+    if requerimiento.estado != 'VALIDADO':
+        messages.info(request, 'Este requerimiento aún no ha sido validado por el líder.')
+        return redirect('requerimientos:requerimiento_detail', pk=pk)
+    
+    if request.method == 'POST':
+        accion = request.POST.get('accion')
+        comentario = request.POST.get('comentario', '').strip()
+        
+        if accion == 'validar':
+            # Aprobar el requerimiento
+            requerimiento.estado = 'APROBADO'
+            requerimiento.validado_cliente = True
+            requerimiento.fecha_validacion_cliente = timezone.now()
+            requerimiento.save()
+            
+            # Crear comentario si se proporcionó
+            if comentario:
+                ComentarioValidacion.objects.create(
+                    requerimiento=requerimiento,
+                    autor=request.user,
+                    comentario=comentario,
+                    tipo_accion='VALIDAR'
+                )
+            
+            messages.success(request, f'✅ Requerimiento "{requerimiento.nombre}" aprobado exitosamente.')
+            return redirect('requerimientos:requerimiento_detail', pk=pk)
+            
+        elif accion == 'rechazar':
+            if not comentario:
+                messages.error(request, 'Debes proporcionar un comentario al rechazar un requerimiento.')
+            else:
+                # Rechazar el requerimiento (vuelve a BORRADOR)
+                requerimiento.estado = 'BORRADOR'
+                requerimiento.requiere_discusion = True
+                requerimiento.motivo_rechazo_cliente = comentario
+                requerimiento.ultimo_rechazado_por_cliente = request.user
+                requerimiento.fecha_ultimo_rechazo_cliente = timezone.now()
+                requerimiento.save()
+                
+                # Crear comentario de rechazo
+                ComentarioValidacion.objects.create(
+                    requerimiento=requerimiento,
+                    autor=request.user,
+                    comentario=comentario,
+                    tipo_accion='RECHAZAR'
+                )
+                
+                messages.info(request, f'ℹ️ Requerimiento "{requerimiento.nombre}" rechazado para revisión.')
+                return redirect('requerimientos:requerimiento_detail', pk=pk)
+    
+    context = {
+        'proyecto': proyecto,
+        'requerimiento': requerimiento,
+        'page_title': f'Validar: {requerimiento.nombre}',
+    }
+    return render(request, 'requerimientos/requerimiento_validar_cliente_individual.html', context)
 
 
 # ============================================================================

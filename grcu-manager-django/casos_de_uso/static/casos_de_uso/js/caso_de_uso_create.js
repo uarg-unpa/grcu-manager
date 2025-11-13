@@ -47,4 +47,58 @@ document.addEventListener('DOMContentLoaded', function() {
         // Actualizar contador al cargar
         actualizarContador();
     }
+    
+    // ===== Control de límite de caracteres en Observaciones =====
+    const observacionesTextarea = document.querySelector('textarea[name="observaciones"]');
+    const observacionesContador = document.getElementById('observaciones-contador');
+    const maxCaracteresObservaciones = 5000;
+    
+    if (observacionesTextarea && observacionesContador) {
+        // Función para actualizar el contador
+        function actualizarContadorObservaciones() {
+            const longitudActual = observacionesTextarea.value.length;
+            observacionesContador.textContent = `${longitudActual} / ${maxCaracteresObservaciones}`;
+            
+            // Cambiar color según el progreso
+            if (longitudActual >= maxCaracteresObservaciones) {
+                observacionesContador.classList.remove('bg-secondary', 'bg-warning');
+                observacionesContador.classList.add('bg-danger');
+            } else if (longitudActual >= maxCaracteresObservaciones * 0.9) {
+                observacionesContador.classList.remove('bg-secondary', 'bg-danger');
+                observacionesContador.classList.add('bg-warning');
+            } else {
+                observacionesContador.classList.remove('bg-warning', 'bg-danger');
+                observacionesContador.classList.add('bg-secondary');
+            }
+        }
+        
+        // Función para prevenir exceder el límite al escribir
+        function controlarLimiteObservaciones(e) {
+            const longitudActual = observacionesTextarea.value.length;
+            const teclasPermitidas = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'Tab'];
+            
+            if (longitudActual >= maxCaracteresObservaciones && !teclasPermitidas.includes(e.key) && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+                return false;
+            }
+        }
+        
+        // Función para truncar si se pega texto que excede el límite
+        function controlarPegadoObservaciones(e) {
+            setTimeout(() => {
+                if (observacionesTextarea.value.length > maxCaracteresObservaciones) {
+                    observacionesTextarea.value = observacionesTextarea.value.substring(0, maxCaracteresObservaciones);
+                    actualizarContadorObservaciones();
+                }
+            }, 10);
+        }
+        
+        // Agregar event listeners
+        observacionesTextarea.addEventListener('input', actualizarContadorObservaciones);
+        observacionesTextarea.addEventListener('keydown', controlarLimiteObservaciones);
+        observacionesTextarea.addEventListener('paste', controlarPegadoObservaciones);
+        
+        // Actualizar contador al cargar
+        actualizarContadorObservaciones();
+    }
 });

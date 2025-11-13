@@ -1,4 +1,6 @@
 from django import forms
+from django.core.exceptions import ValidationError
+from datetime import date
 from .models import Requerimiento, DetalleRequerimientoTradicional, DetalleRequerimientoAgil
 
 class RequerimientoForm(forms.ModelForm):
@@ -46,36 +48,90 @@ class RequerimientoTradicionalForm(forms.Form):
     )
     
     # Campos específicos del DetalleRequerimientoTradicional
-    fuente = forms.CharField(
-        max_length=255,
+    FUENTE_CHOICES = [
+        ('', '-- Seleccionar fuente --'),
+        ('ENTREVISTA_STAKEHOLDER', 'Entrevista con stakeholder/Cliente'),
+        ('DOCUMENTO_REQUERIMIENTOS', 'Documento de requerimientos'),
+        ('OBSERVACION_USUARIO', 'Observación de usuario'),
+        ('ENCUESTA_CUESTIONARIO', 'Encuesta / Cuestionario'),
+        ('ANALISIS_SISTEMA', 'Análisis de sistema existente'),
+        ('SOLICITUD_CLIENTE', 'Solicitud del cliente'),
+        ('OTRO', 'Otro (especificar)'),
+    ]
+    
+    fuente = forms.ChoiceField(
+        choices=FUENTE_CHOICES,
         required=False,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Ej: Entrevista con stakeholder, Documento de requisitos'
+        widget=forms.Select(attrs={
+            'class': 'form-select',
+            'id': 'id_fuente_select'
         }),
         label='Fuente',
         help_text='Origen del requerimiento'
     )
     
-    categoria = forms.CharField(
+    fuente_otro = forms.CharField(
+        max_length=255,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Especifique la fuente',
+            'id': 'id_fuente_otro'
+        }),
+        label='Especificar fuente'
+    )
+    
+    CATEGORIA_CHOICES = [
+        ('', '-- Seleccionar categoría --'),
+        ('SEGURIDAD', 'Seguridad'),
+        ('RENDIMIENTO', 'Rendimiento'),
+        ('USABILIDAD', 'Usabilidad'),
+        ('MANTENIBILIDAD', 'Mantenibilidad'),
+        ('COMPATIBILIDAD', 'Compatibilidad'),
+        ('DISPONIBILIDAD', 'Disponibilidad'),
+        ('ESCALABILIDAD', 'Escalabilidad'),
+        ('CONFIABILIDAD', 'Confiabilidad'),
+        ('OTRO', 'Otro (especificar)'),
+    ]
+    
+    categoria = forms.ChoiceField(
+        choices=CATEGORIA_CHOICES,
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'form-select',
+            'id': 'id_categoria_select'
+        }),
+        label='Categoría'
+    )
+    
+    categoria_otro = forms.CharField(
         max_length=100,
         required=False,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Ej: Seguridad, Rendimiento, Usabilidad'
+            'placeholder': 'Especifique la categoría',
+            'id': 'id_categoria_otro'
         }),
-        label='Categoría'
+        label='Especificar categoría'
     )
     
     fecha_compromiso = forms.DateField(
         required=False,
         widget=forms.DateInput(attrs={
             'class': 'form-control',
-            'type': 'date'
+            'type': 'date',
+            'min': date.today().isoformat()  # No permite fechas pasadas
         }),
         label='Fecha de Compromiso',
-        help_text='Fecha estimada de entrega'
+        help_text='Fecha estimada de entrega (no puede ser en el pasado)'
     )
+    
+    def clean_fecha_compromiso(self):
+        """Validar que la fecha de compromiso no sea en el pasado"""
+        fecha = self.cleaned_data.get('fecha_compromiso')
+        if fecha and fecha < date.today():
+            raise ValidationError('La fecha de compromiso no puede ser anterior a hoy.')
+        return fecha
     
     observaciones = forms.CharField(
         required=False,
