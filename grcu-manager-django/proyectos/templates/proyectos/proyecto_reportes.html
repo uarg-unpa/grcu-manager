@@ -373,6 +373,51 @@ window.trazabilidadCasosChartData = {
         backgroundColor: ['#3498db', '#95a5a6']
     }]
 };
+
+// Manejar el envío del formulario de reporte
+document.addEventListener('DOMContentLoaded', function() {
+    const reporteForm = document.getElementById('reporteForm');
+    const generarReporteModal = document.getElementById('generarReporteModal');
+    const modal = bootstrap.Modal.getInstance(generarReporteModal) || new bootstrap.Modal(generarReporteModal);
+    
+    if (reporteForm) {
+        reporteForm.addEventListener('submit', function(e) {
+            // Cerrar el modal inmediatamente
+            modal.hide();
+            
+            // Mostrar mensaje de carga
+            const loadingToast = document.createElement('div');
+            loadingToast.className = 'toast align-items-center text-white bg-info border-0';
+            loadingToast.setAttribute('role', 'alert');
+            loadingToast.setAttribute('aria-live', 'assertive');
+            loadingToast.setAttribute('aria-atomic', 'true');
+            loadingToast.style.position = 'fixed';
+            loadingToast.style.top = '20px';
+            loadingToast.style.right = '20px';
+            loadingToast.style.zIndex = '9999';
+            loadingToast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="bi bi-hourglass-split me-2"></i>
+                        Generando reporte PDF... Por favor espera.
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(loadingToast);
+            const toast = new bootstrap.Toast(loadingToast, { autohide: false });
+            toast.show();
+            
+            // El formulario se enviará normalmente y el navegador descargará el PDF
+            // Después de 3 segundos, ocultar el toast
+            setTimeout(function() {
+                toast.hide();
+                setTimeout(function() {
+                    loadingToast.remove();
+                }, 500);
+            }, 3000);
+        });
+    }
+});
 </script>
 <script src="{% static 'proyectos/js/proyecto_reportes.js' %}?v=1.0"></script>
 {% endblock %}
