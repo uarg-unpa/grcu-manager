@@ -111,6 +111,15 @@ document.addEventListener('DOMContentLoaded', function(){
                 searchUsuarios(this.value.trim());
             }
         });
+
+        // Click en el icono de búsqueda (input-group-text)
+        const usuarioSearchBtn = document.querySelector('.usuario-lista-search .input-group-text');
+        if (usuarioSearchBtn) {
+            usuarioSearchBtn.addEventListener('click', function() {
+                clearTimeout(searchTimeout);
+                searchUsuarios(searchInput.value.trim());
+            });
+        }
     }
 
     // Función para inicializar checkboxes

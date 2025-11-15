@@ -8,6 +8,7 @@ from accounts.models import Usuario
 from grupos.models import Grupo
 from django.core.paginator import Paginator
 from django.db.models import Q
+from django.http import JsonResponse
 
 
 # Helpers
@@ -79,11 +80,61 @@ def usuario_tiene_proyecto_activo(usuario, proyecto_actual=None):
 @login_required
 @user_passes_test(is_admin)
 def lista_proyectos(request):
-    proyectos = Proyecto.objects.select_related('lider', 'grupo', 'creado_por').prefetch_related('clientes').all()
+    proyectos_qs = Proyecto.objects.select_related('lider', 'grupo', 'creado_por').prefetch_related('clientes')
+    sort = request.GET.get('sort', '')
+    
+    # Orden por defecto: último creado primero (por ID descendente)
+    if not sort:
+        proyectos_qs = proyectos_qs.order_by('-id')
+    elif sort == 'nombre':
+        proyectos_qs = proyectos_qs.order_by('nombre')
+    elif sort == 'lider':
+        proyectos_qs = proyectos_qs.order_by('lider__nombre')
+    elif sort == 'creado_por':
+        proyectos_qs = proyectos_qs.order_by('creado_por__nombre')
+    elif sort == 'fecha_creacion':
+        proyectos_qs = proyectos_qs.order_by('-fecha_creacion')
+    
+    # Paginación
+    paginator = Paginator(proyectos_qs, 10)
+    page_number = request.GET.get('page')
+    proyectos = paginator.get_page(page_number)
+    
     return render(request, "proyectos/lista_proyectos.html", {
         "proyectos": proyectos,
+        "sort": sort,
         "page_title": "Lista de Proyectos"
     })
+
+
+@login_required
+@user_passes_test(is_admin)
+def buscar_proyectos_ajax(request):
+    """Endpoint AJAX para búsqueda de proyectos"""
+    q = request.GET.get('q', '').strip()
+    if not q:
+        return JsonResponse({'proyectos': [], 'count': 0})
+
+    # Buscar por nombre, líder o clientes
+    proyectos = Proyecto.objects.filter(
+        Q(nombre__icontains=q) |
+        Q(lider__nombre__icontains=q) |
+        Q(clientes__nombre__icontains=q)
+    ).select_related('lider', 'creado_por').prefetch_related('clientes').distinct()[:50]
+
+    proyectos_data = []
+    for p in proyectos:
+        proyectos_data.append({
+            'id': p.id,
+            'nombre': p.nombre,
+            'logo': p.logo.url if p.logo else None,
+            'lider': p.lider.nombre if p.lider else None,
+            'clientes': [c.nombre for c in p.clientes.all()],
+            'creado_por': p.creado_por.nombre if p.creado_por else None,
+            'fecha_creacion': p.fecha_creacion.strftime('%d/%m/%Y %H:%M') if hasattr(p, 'fecha_creacion') and p.fecha_creacion else ''
+        })
+
+    return JsonResponse({'proyectos': proyectos_data, 'count': len(proyectos_data)})
 
 
 @login_required
@@ -1385,6 +1436,7 @@ def proyecto_detail_admin(request, proyecto_id):
     from casos_de_uso.models import CasoDeUso
     from auditoria.models import RegistroActividad
     from django.db.models import Count
+    import json
     
     proyecto = get_object_or_404(Proyecto, id=proyecto_id)
     
@@ -1392,7 +1444,7 @@ def proyecto_detail_admin(request, proyecto_id):
     lider = proyecto.lider
     requerimientos = Requerimiento.objects.filter(proyecto=proyecto)
     casos = CasoDeUso.objects.filter(proyecto=proyecto)
-    acciones = RegistroActividad.objects.filter(usuario__in=integrantes).order_by('-fecha')[:20]
+    acciones = RegistroActividad.objects.filter(usuario__in=integrantes).order_by('-fecha')[:5]  # Solo 5 acciones más recientes
     
     # Huérfanos definidos como aquellos sin relación persistida en la tabla intermedia RequerimientoCaso
     reqs_huerfanos = requerimientos.annotate(rel_count=Count('relaciones_casos')).filter(rel_count=0)
@@ -1407,26 +1459,36 @@ def proyecto_detail_admin(request, proyecto_id):
         matriz.append({'req': req, 'casos': relacionados})
     
     # Agregaciones para gráficos
-    # Requerimientos por estado
+    # Requerimientos por estado - Usar los estados correctos del modelo
     req_estado_qs = requerimientos.values('estado').annotate(count=Count('id'))
     req_estado_map = {item['estado']: item['count'] for item in req_estado_qs}
-    req_estado_labels = ["PENDIENTE", "EN_DESARROLLO", "APROBADO"]
-    req_estado_values = [req_estado_map.get(k, 0) for k in req_estado_labels]
+    req_estado_labels = ["Borrador", "Validado", "Priorizado", "En Proceso", "Terminado"]
+    req_estado_values = [
+        req_estado_map.get('BORRADOR', 0),
+        req_estado_map.get('VALIDADO', 0),
+        req_estado_map.get('PRIORIZADO', 0),
+        req_estado_map.get('EN_PROCESO', 0),
+        req_estado_map.get('TERMINADO', 0)
+    ]
     
-    # Requerimientos por tipo
+    # Requerimientos por tipo - Usar los tipos correctos del modelo
     req_tipo_qs = requerimientos.values('tipo').annotate(count=Count('id'))
     req_tipo_map = {item['tipo']: item['count'] for item in req_tipo_qs}
-    req_tipo_labels = ["FUNCIONAL", "NO_FUNCIONAL"]
-    req_tipo_values = [req_tipo_map.get(k, 0) for k in req_tipo_labels]
+    req_tipo_labels = ["Funcional", "No Funcional", "Sistema"]
+    req_tipo_values = [
+        req_tipo_map.get('FUNCIONAL', 0),
+        req_tipo_map.get('NO_FUNCIONAL', 0),
+        req_tipo_map.get('SISTEMA', 0)
+    ]
     
     # Casos de uso: conteo por disponibilidad de detalle (Tradicional / Ágil / Sin detalle)
-    casos_trad = casos.filter(detalle_tradicional__isnull=False).count()
-    casos_agil = casos.filter(detalle_agil__isnull=False).count()
-    casos_sin = casos.filter(detalle_agil__isnull=True, detalle_tradicional__isnull=True).count()
+    casos_trad = casos.filter(detalle_tradicional_reverse__isnull=False).count()
+    casos_agil = casos.filter(detalle_agil_reverse__isnull=False).count()
+    casos_sin = casos.filter(detalle_agil_reverse__isnull=True, detalle_tradicional_reverse__isnull=True).count()
     casos_tipo_labels = ["Tradicional", "Ágil", "Sin detalle"]
     casos_tipo_values = [casos_trad, casos_agil, casos_sin]
     
-    # Acciones por usuario (top 5)
+    # Acciones por usuario (top 5) - Limitar a 5 acciones en el timeline también
     acciones_por_usuario_qs = RegistroActividad.objects.filter(usuario__in=integrantes).values('usuario__nombre').annotate(count=Count('id')).order_by('-count')[:5]
     acciones_labels = [a['usuario__nombre'] for a in acciones_por_usuario_qs]
     acciones_values = [a['count'] for a in acciones_por_usuario_qs]
@@ -1444,15 +1506,15 @@ def proyecto_detail_admin(request, proyecto_id):
         'casos_huerfanos': casos_huerfanos,
         'casos_huerfanos_ids': casos_huerfanos_ids,
         'matriz': matriz,
-        # Datos para gráficos
-        'req_estado_labels': req_estado_labels,
-        'req_estado_values': req_estado_values,
-        'req_tipo_labels': req_tipo_labels,
-        'req_tipo_values': req_tipo_values,
-        'casos_tipo_labels': casos_tipo_labels,
-        'casos_tipo_values': casos_tipo_values,
-        'acciones_labels': acciones_labels,
-        'acciones_values': acciones_values,
+        # Datos para gráficos (convertidos a JSON para Chart.js)
+        'req_estado_labels': json.dumps(req_estado_labels),
+        'req_estado_values': json.dumps(req_estado_values),
+        'req_tipo_labels': json.dumps(req_tipo_labels),
+        'req_tipo_values': json.dumps(req_tipo_values),
+        'casos_tipo_labels': json.dumps(casos_tipo_labels),
+        'casos_tipo_values': json.dumps(casos_tipo_values),
+        'acciones_labels': json.dumps(acciones_labels),
+        'acciones_values': json.dumps(acciones_values),
     }
     
     return render(request, 'proyectos/proyecto_detail_admin.html', context)

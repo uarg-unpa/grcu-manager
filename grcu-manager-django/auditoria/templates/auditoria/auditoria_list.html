@@ -1,16 +1,4 @@
-{% extends "core/base_minimal.html" %}
-
-{% load static %}
-
-{% block title %}Configurar Administrador{% endblock %}
-
-{% block content %}
-<div class="container mt-5">
-  <div class="card shadow-lg border-0 rounded-4 p-4 mx-auto" style="max-width: 500px;">
-    <h3 class="mb-4 text-center">Configurar Administrador</h3>
-    <p class="text-muted text-center">Hacé clic en el botón para autenticarte con Google y configurar el administrador inicial.</p>
-
-    {% if messages %}
+{% if messages %}
     <div class="container-fluid mt-3">
         {% for message in messages %}
             <div class="alert alert-{{ message.tags }} alert-dismissible fade show django-message" role="alert" data-message-key="{{ message|slugify }}">
@@ -35,13 +23,4 @@
         });
     });
     </script>
-    {% endif %}
-
-    <div class="d-grid">
-      <a href="{% url 'accounts:google_login_redirect' %}" class="btn btn-primary">
-        Autenticar con Google
-      </a>
-    </div>
-  </div>
-</div>
-{% endblock %}
+{% endif %}

@@ -1,58 +1,92 @@
 document.addEventListener('DOMContentLoaded', function() {
-    const setBadgeState = (badge, isChecked) => {
-        badge.classList.toggle('active', isChecked);
-        badge.classList.toggle('inactive', !isChecked);
-        badge.setAttribute('aria-checked', isChecked);
-    };
+    console.log('JavaScript de usuario_editar cargado correctamente');
 
-    document.querySelectorAll('.roles-badge').forEach(badge => {
-        const checkbox = badge.querySelector('input[type="checkbox"]');
-        badge.setAttribute('role', 'checkbox');
-        badge.setAttribute('tabindex', '0');
+    // Manejo de selección de roles con radio buttons
+    const rolesBadges = document.querySelectorAll('.roles-badge');
+    console.log('Encontrados', rolesBadges.length, 'badges de roles');
 
-        // Aplicar estado inicial basado en si el checkbox está marcado
-        setBadgeState(badge, checkbox.checked);
+    // Inicializar estilos para roles ya seleccionados
+    rolesBadges.forEach((badge, index) => {
+        const radio = badge.querySelector('input[type="radio"]');
+        const checkIcon = badge.querySelector('.rol-check-icon');
+        const rolColor = badge.dataset.rolColor;
 
-        badge.addEventListener('click', function(event) {
-            event.preventDefault();
-            checkbox.checked = !checkbox.checked;
-            setBadgeState(badge, checkbox.checked);
-        });
+        console.log(`Badge ${index}: color=${rolColor}, checked=${radio?.checked}`);
 
-        badge.addEventListener('keydown', function(event) {
-            if (event.key === ' ' || event.key === 'Enter') {
-                event.preventDefault();
-                checkbox.checked = !checkbox.checked;
-                setBadgeState(badge, checkbox.checked);
+        if (radio && radio.checked) {
+            badge.classList.add('selected');
+            if (rolColor) {
+                badge.style.backgroundColor = rolColor;
             }
+            if (checkIcon) {
+                checkIcon.style.display = 'flex';
+            }
+            console.log(`Badge ${index}: estado inicial aplicado`);
+        }
+    });
+
+    rolesBadges.forEach(badge => {
+        badge.addEventListener('click', function(e) {
+            console.log(`Click en badge ${Array.from(rolesBadges).indexOf(badge)}`);
+
+            // Evitar que el evento se propague si se hace click en el input
+            if (e.target.tagName === 'INPUT') return;
+
+            // Marcar este radio button y desmarcar los demás
+            rolesBadges.forEach(otherBadge => {
+                const otherRadio = otherBadge.querySelector('input[type="radio"]');
+                const otherCheckIcon = otherBadge.querySelector('.rol-check-icon');
+                const otherRolColor = otherBadge.dataset.rolColor;
+
+                if (otherBadge === badge) {
+                    // Este es el badge seleccionado
+                    otherRadio.checked = true;
+                    otherBadge.classList.add('selected');
+                    if (otherRolColor) {
+                        otherBadge.style.backgroundColor = otherRolColor;
+                    } else {
+                        // Para "sin rol asignado"
+                        otherBadge.style.backgroundColor = '';
+                    }
+                    if (otherCheckIcon) otherCheckIcon.style.display = 'flex';
+                } else {
+                    // Desmarcar los demás
+                    otherRadio.checked = false;
+                    otherBadge.classList.remove('selected');
+                    otherBadge.style.backgroundColor = '';
+                    if (otherCheckIcon) otherCheckIcon.style.display = 'none';
+                }
+            });
         });
     });
 
-    // Manejar el toggle del estado activo
+    // Manejar el toggle de estado activo
     const activeToggle = document.querySelector('.active-status-toggle');
     if (activeToggle) {
         const checkbox = activeToggle.querySelector('input[type="checkbox"]');
-        const textElement = activeToggle.querySelector('.active-status-text');
+        const statusText = activeToggle.querySelector('.active-status-text');
 
-        const updateToggleText = () => {
-            textElement.textContent = checkbox.checked ? 'Sí, activo' : 'No, inactivo';
-        };
-
-        // Aplicar estado inicial
-        updateToggleText();
-
-        activeToggle.addEventListener('click', function(event) {
-            event.preventDefault();
-            checkbox.checked = !checkbox.checked;
-            updateToggleText();
-        });
-
-        activeToggle.addEventListener('keydown', function(event) {
-            if (event.key === ' ' || event.key === 'Enter') {
-                event.preventDefault();
-                checkbox.checked = !checkbox.checked;
-                updateToggleText();
+        // Función para actualizar el estado visual
+        function updateActiveStatus() {
+            if (checkbox.checked) {
+                activeToggle.classList.add('active');
+                statusText.textContent = 'Sí, activo';
+            } else {
+                activeToggle.classList.remove('active');
+                statusText.textContent = 'No, inactivo';
             }
+        }
+
+        // Actualizar estado inicial
+        updateActiveStatus();
+
+        activeToggle.addEventListener('click', function(e) {
+            if (e.target.tagName !== 'INPUT') {
+                checkbox.checked = !checkbox.checked;
+            }
+
+            // Actualizar el estado visual
+            updateActiveStatus();
         });
     }
 });

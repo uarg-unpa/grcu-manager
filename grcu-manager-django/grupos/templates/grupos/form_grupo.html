@@ -12,13 +12,30 @@
 <div class="usuario-form-container">
 
     {% if messages %}
-        <div class="usuario-form-messages">
+        <div class="container-fluid mt-3">
             {% for message in messages %}
-                <div class="usuario-form-message {{ message.tags }}" role="alert">
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show django-message" role="alert" data-message-key="{{ message|slugify }}">
                     {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             {% endfor %}
         </div>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.django-message').forEach(function(alert) {
+                var key = alert.getAttribute('data-message-key');
+                var seen = sessionStorage.getItem('django_message_' + key);
+                if (seen === '1') {
+                    setTimeout(function() {
+                        var bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
+                        bsAlert.close();
+                    }, 15000);
+                } else {
+                    sessionStorage.setItem('django_message_' + key, '1');
+                }
+            });
+        });
+        </script>
     {% endif %}
 
     <form method="post" enctype="multipart/form-data">
@@ -73,17 +90,32 @@
             </div>
 
             <div class="roles-container" id="usuarios-disponibles">
-                {% for usuario in usuarios %}
-                    <label class="roles-badge">
-                        <input type="checkbox" name="integrantes" value="{{ usuario.id }}" {% if usuario.id in integrantes_ids %}checked{% endif %} hidden>
-                        {% if usuario.avatar %}
-                            <img src="{{ usuario.avatar }}" alt="Avatar de {{ usuario.nombre }}" class="integrante-avatar">
+                {% for info in usuarios_con_info %}
+                    <label class="roles-badge {% if not info.disponible %}usuario-ocupado{% endif %}" data-usuario-id="{{ info.usuario.id }}" data-nombre="{{ info.usuario.nombre }}" data-email="{{ info.usuario.email }}">
+                        <input type="checkbox" name="integrantes" value="{{ info.usuario.id }}" 
+                               {% if info.usuario.id in integrantes_ids %}checked{% endif %} 
+                               {% if not info.disponible %}disabled{% endif %} 
+                               hidden>
+                        
+                        {% if not info.disponible %}
+                            <span class="badge-ocupado">
+                                <i class="bi bi-lock-fill"></i>
+                            </span>
+                        {% endif %}
+                        
+                        {% if info.usuario.avatar %}
+                            <img src="{{ info.usuario.avatar }}" alt="Avatar de {{ info.usuario.nombre }}" class="integrante-avatar">
                         {% else %}
-                            <div class="integrante-avatar-placeholder">{{ usuario.nombre|slice:":1"|upper }}</div>
+                            <div class="integrante-avatar-placeholder">{{ info.usuario.nombre|slice:":1"|upper }}</div>
                         {% endif %}
                         <div class="integrante-info">
-                            <div class="integrante-nombre">{{ usuario.nombre }}</div>
-                            <div class="integrante-email">{{ usuario.email }}</div>
+                            <div class="integrante-nombre">{{ info.usuario.nombre }}</div>
+                            <div class="integrante-email">{{ info.usuario.email }}</div>
+                            {% if info.grupo_actual %}
+                                <div class="integrante-grupo-actual">
+                                    <i class="bi bi-people-fill"></i> En: {{ info.grupo_actual.nombre }}
+                                </div>
+                            {% endif %}
                         </div>
                     </label>
                 {% endfor %}

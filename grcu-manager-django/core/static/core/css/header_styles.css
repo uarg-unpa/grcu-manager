@@ -4,7 +4,7 @@
     margin: 0;
     position: sticky;
     top: 0;
-    z-index: 100;
+    z-index: 1000; /* Aumentado para estar por encima del navbar */
     box-shadow: 0 2px 8px rgba(68,76,138,0.10);
     transition: all 0.3s;
     height: 80px;
@@ -55,7 +55,7 @@
 }
 
 .custom-header-logo img {
-    height: 45px;
+    height: 60px;
     display: block;
 }
 

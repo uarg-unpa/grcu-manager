@@ -77,13 +77,25 @@ def admin_dashboard(request):
     
     # Combinar y sumar actividades por proyecto
     actividad_proyectos = {}
+    proyectos_ids = {}  # Guardar IDs de proyectos
+    
     for item in proyectos_requerimientos:
         nombre = item['proyecto__nombre']
         actividad_proyectos[nombre] = actividad_proyectos.get(nombre, 0) + item['actividad']
+        # Obtener ID del proyecto
+        if nombre not in proyectos_ids:
+            proyecto = Proyecto.objects.filter(nombre=nombre).first()
+            if proyecto:
+                proyectos_ids[nombre] = proyecto.id
     
     for item in proyectos_casos:
         nombre = item['proyecto__nombre']
         actividad_proyectos[nombre] = actividad_proyectos.get(nombre, 0) + item['actividad']
+        # Obtener ID del proyecto si no lo tenemos
+        if nombre not in proyectos_ids:
+            proyecto = Proyecto.objects.filter(nombre=nombre).first()
+            if proyecto:
+                proyectos_ids[nombre] = proyecto.id
     
     # Obtener los 4 proyectos más activos
     proyectos_mas_activos = sorted(actividad_proyectos.items(), key=lambda x: x[1], reverse=True)[:4]
@@ -92,12 +104,49 @@ def admin_dashboard(request):
     if proyectos_mas_activos:
         proyectos_activos_labels = [proyecto[0] for proyecto in proyectos_mas_activos]
         proyectos_activos_values = [proyecto[1] for proyecto in proyectos_mas_activos]
+        proyectos_activos_ids = [proyectos_ids.get(proyecto[0], 0) for proyecto in proyectos_mas_activos]
     else:
         proyectos_activos_labels = ["Sin actividad"]
         proyectos_activos_values = [0]
+        proyectos_activos_ids = [0]
     
     proyectos_activos_labels_json = json.dumps(proyectos_activos_labels)
     proyectos_activos_values_json = json.dumps(proyectos_activos_values)
+    proyectos_activos_ids_json = json.dumps(proyectos_activos_ids)
+
+    # === GRUPOS MÁS ACTIVOS ===
+    # Calcular actividad por grupo basado en número de proyectos y participantes
+    grupos_con_actividad = []
+    for grupo in Grupo.objects.filter(activo=True):
+        # Contar proyectos del grupo
+        num_proyectos = Proyecto.objects.filter(grupo=grupo).count()
+        # Contar integrantes activos
+        num_integrantes = grupo.integrantes.count()
+        # Calcular puntaje de actividad
+        actividad_score = num_proyectos * 3 + num_integrantes  # Priorizar proyectos
+        
+        if actividad_score > 0:
+            grupos_con_actividad.append({
+                'nombre': grupo.nombre,
+                'actividad': actividad_score,
+                'proyectos': num_proyectos,
+                'integrantes': num_integrantes,
+            })
+    
+    # Ordenar por actividad y tomar los 4 más activos
+    grupos_mas_activos = sorted(grupos_con_actividad, key=lambda x: x['actividad'], reverse=True)[:4]
+    
+    # Si no hay grupos activos, poner valores por defecto
+    if not grupos_mas_activos:
+        grupos_mas_activos = [{
+            'nombre': 'Sin grupos activos',
+            'actividad': 0,
+            'proyectos': 0,
+            'integrantes': 0,
+        }]
+    
+    # Preparar datos para el template
+    grupos_activos_data = grupos_mas_activos
 
     # Roles esperados
     roles_labels = ["Admin", "Líder", "Desarrollador", "Visitante"]
@@ -126,8 +175,48 @@ def admin_dashboard(request):
     grupos_estado_labels_json = json.dumps(grupos_estado_labels)
     grupos_estado_values_json = json.dumps(grupos_estado_values)
 
-    # Últimas acciones
-    ultimas_acciones = LogEntry.objects.select_related("user").order_by("-action_time")[:10]
+    # === ÚLTIMAS ACCIONES ADMINISTRATIVAS ===
+    # Combinar acciones del log de Django admin y de auditoría
+    from auditoria.models import RegistroActividad
+    
+    # Obtener últimas acciones del sistema de auditoría
+    acciones_auditoria = RegistroActividad.objects.select_related('usuario').order_by('-fecha')[:10]
+    
+    # Obtener últimas acciones del log de Django admin
+    acciones_admin = LogEntry.objects.select_related('user').order_by('-action_time')[:10]
+    
+    # Combinar y ordenar todas las acciones
+    ultimas_acciones = []
+    
+    # Agregar acciones de auditoría
+    for accion in acciones_auditoria:
+        ultimas_acciones.append({
+            'usuario': accion.usuario,
+            'fecha': accion.fecha,
+            'accion': accion.get_accion_display(),
+            'descripcion': accion.descripcion or f"{accion.get_accion_display()}",
+            'tipo': 'auditoria'
+        })
+    
+    # Agregar acciones del admin
+    for log in acciones_admin:
+        action_map = {
+            1: 'Creó',
+            2: 'Modificó',
+            3: 'Eliminó',
+        }
+        action_text = action_map.get(log.action_flag, 'Acción')
+        
+        ultimas_acciones.append({
+            'usuario': log.user,
+            'fecha': log.action_time,
+            'accion': action_text,
+            'descripcion': f"{action_text} {log.object_repr}",
+            'tipo': 'admin'
+        })
+    
+    # Ordenar por fecha y tomar las 10 más recientes
+    ultimas_acciones = sorted(ultimas_acciones, key=lambda x: x['fecha'], reverse=True)[:10]
 
     # Contexto para el template
     context = {
@@ -150,6 +239,8 @@ def admin_dashboard(request):
         "proyectos_activos_labels": proyectos_activos_labels,
         "proyectos_activos_labels_json": proyectos_activos_labels_json,
         "proyectos_activos_values_json": proyectos_activos_values_json,
+        "proyectos_activos_ids_json": proyectos_activos_ids_json,  # NUEVO
+        "grupos_mas_activos": grupos_activos_data,  # NUEVO
         "ultimas_acciones": ultimas_acciones,
         "page_title": "Panel de Administración",
     }

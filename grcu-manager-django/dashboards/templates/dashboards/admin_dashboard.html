@@ -4,132 +4,141 @@
 {% block title %}Dashboard Admin{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'dashboards/css/admin_dashboard.css' %}?v=1.0">
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Administrativo - GRCU Manager</title>
+  <link rel="stylesheet" href="{% static 'dashboards/css/admin_dashboard.css' %}?v=2.6">
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid mt-4 px-4">
 
+  <!-- Mensajes del sistema -->
+  {% if messages %}
+    <div class="container-fluid mt-3">
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show django-message" role="alert" data-message-key="{{ message|slugify }}">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.django-message').forEach(function(alert) {
+            var key = alert.getAttribute('data-message-key');
+            var seen = sessionStorage.getItem('django_message_' + key);
+            if (seen === '1') {
+                setTimeout(function() {
+                    var bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
+                    bsAlert.close();
+                }, 15000);
+            } else {
+                sessionStorage.setItem('django_message_' + key, '1');
+            }
+        });
+    });
+    </script>
+  {% endif %}
+
   <!-- Métricas -->
   <div class="row mb-4">
     <!-- Tarjeta Usuarios -->
     <div class="col-lg-4 col-xl-3">
-      <div class="card mb-3 shadow hover-shadow" style="border: 3px solid #667eea; background: white;">
-        <div class="card-body text-center d-flex flex-column justify-content-center">
-          <div class="mb-3">
-            <i class="bi bi-people-fill" style="font-size: 3rem; color: #667eea;"></i>
+      <a href="{% url 'usuarios:lista' %}" class="card-link">
+        <div class="card mb-3 hover-shadow">
+          <div class="card-header">
+            <i class="bi bi-people-fill me-2"></i>Usuarios por Rol
           </div>
-          <h5 class="card-title text-muted mb-2">Usuarios</h5>
-          <p class="card-text display-6 mb-3 fw-bold" style="color: #667eea;">{{ total_usuarios }}</p>
-
-          <div class="chart-container mb-3">
-            <canvas id="usuariosRolesChart" width="90" height="90"
-                    style="width: 90px; height: 90px; margin: 0 auto; display: block;"
-                    data-labels='{{ usuarios_roles_labels_json|safe }}'
-                    data-values='{{ usuarios_roles_values_json|safe }}'
-                    data-type="doughnut"
-                    data-colors='["#667eea", "#764ba2", "#17a2b8", "#ffc107"]'></canvas>
-          </div>
-
-          <div class="d-flex justify-content-center flex-wrap gap-1">
-            {% for label in usuarios_roles_labels %}
-              <span class="badge"
-                style="background-color: #667eea; color: white; font-size: 0.85em; min-width: 80px; text-align: center;">
-                {{ label }}
-              </span>
-            {% endfor %}
+          <div class="card-body">
+            <div class="d-flex align-items-center">
+              <div class="chart-container-side">
+                <canvas id="usuariosRolesChart"
+                        data-labels='{{ usuarios_roles_labels_json|safe }}'
+                        data-values='{{ usuarios_roles_values_json|safe }}'
+                        data-type="doughnut"
+                        data-colors='["#667eea", "#764ba2", "#17a2b8", "#ffc107"]'></canvas>
+              </div>
+              <div class="chart-info">
+                <div class="metric-value" style="color: #667eea;">{{ total_usuarios }}</div>
+                <div class="metric-label">Total Usuarios</div>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </a>
     </div>
 
     <!-- Tarjeta Proyectos -->
     <div class="col-lg-4 col-xl-3">
-      <div class="card mb-3 shadow hover-shadow" style="border: 3px solid #764ba2; background: white;">
-        <div class="card-body text-center d-flex flex-column justify-content-center">
-          <div class="mb-3">
-            <i class="bi bi-kanban-fill" style="font-size: 3rem; color: #764ba2;"></i>
+      <a href="{% url 'proyectos:lista_proyectos' %}" class="card-link">
+        <div class="card mb-3 hover-shadow">
+          <div class="card-header">
+            <i class="bi bi-kanban-fill me-2"></i>Estado de Proyectos
           </div>
-          <h5 class="card-title text-muted mb-2">Proyectos</h5>
-          <p class="card-text display-6 mb-3 fw-bold" style="color: #764ba2;">{{ total_grupos }}</p>
-
-          <div class="chart-container mb-3">
-            <canvas id="proyectosEstadoChart" width="90" height="90"
-                    style="width: 90px; height: 90px; margin: 0 auto; display: block;"
-                    data-labels='{{ proyectos_estado_labels_json|safe }}'
-                    data-values='{{ proyectos_estado_values_json|safe }}'
-                    data-type="doughnut"
-                    data-colors='["#764ba2", "#e83e8c"]'></canvas>
-          </div>
-
-          <div class="d-flex justify-content-center flex-wrap gap-1">
-            {% for label in proyectos_estado_labels %}
-              <span class="badge"
-                style="background-color: #764ba2; color: white; font-size: 0.85em; min-width: 80px; text-align: center;">
-                {{ label }}
-              </span>
-            {% endfor %}
+          <div class="card-body">
+            <div class="d-flex align-items-center">
+              <div class="chart-container-side">
+                <canvas id="proyectosEstadoChart"
+                        data-labels='{{ proyectos_estado_labels_json|safe }}'
+                        data-values='{{ proyectos_estado_values_json|safe }}'
+                        data-type="doughnut"
+                        data-colors='["#27ae60", "#e74c3c"]'></canvas>
+              </div>
+              <div class="chart-info">
+                <div class="metric-value" style="color: #764ba2;">{{ total_proyectos }}</div>
+                <div class="metric-label">Total Proyectos</div>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </a>
     </div>
 
     <!-- Tarjeta Grupos -->
     <div class="col-lg-4 col-xl-3">
-      <div class="card mb-3 shadow hover-shadow" style="border: 3px solid #20c997; background: white;">
-        <div class="card-body text-center d-flex flex-column justify-content-center">
-          <div class="mb-3">
-            <i class="bi bi-people-fill" style="font-size: 3rem; color: #20c997;"></i>
+      <a href="{% url 'grupos:lista_grupos' %}" class="card-link">
+        <div class="card mb-3 hover-shadow">
+          <div class="card-header">
+            <i class="bi bi-people-fill me-2"></i>Estado de Grupos
           </div>
-          <h5 class="card-title text-muted mb-2">Grupos</h5>
-          <p class="card-text display-6 mb-3 fw-bold" style="color: #20c997;">{{ total_grupos }}</p>
-
-          <div class="chart-container mb-3">
-            <canvas id="gruposEstadoChart" width="90" height="90"
-                    style="width: 90px; height: 90px; margin: 0 auto; display: block;"
-                    data-labels='{{ grupos_estado_labels_json|safe }}'
-                    data-values='{{ grupos_estado_values_json|safe }}'
-                    data-type="doughnut"
-                    data-colors='["#20c997", "#17a2b8"]'></canvas>
-          </div>
-
-          <div class="d-flex justify-content-center flex-wrap gap-1">
-            {% for label in grupos_estado_labels %}
-              <span class="badge"
-                style="background-color: #20c997; color: white; font-size: 0.85em; min-width: 80px; text-align: center;">
-                {{ label }}
-              </span>
-            {% endfor %}
+          <div class="card-body">
+            <div class="d-flex align-items-center">
+              <div class="chart-container-side">
+                <canvas id="gruposEstadoChart"
+                        data-labels='{{ grupos_estado_labels_json|safe }}'
+                        data-values='{{ grupos_estado_values_json|safe }}'
+                        data-type="doughnut"
+                        data-colors='["#20c997", "#95a5a6"]'></canvas>
+              </div>
+              <div class="chart-info">
+                <div class="metric-value" style="color: #20c997;">{{ total_grupos }}</div>
+                <div class="metric-label">Total Grupos</div>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </div>    <!-- Tarjeta Resumen General -->
+      </a>
+    </div>
+    
+    <!-- Tarjeta Proyectos Activos -->
     <div class="col-lg-12 col-xl-3">
-      <div class="card mb-3 shadow hover-shadow" style="border: 3px solid #6f42c1; background: white;">
-        <div class="card-body text-center d-flex flex-column justify-content-center">
-          <div class="mb-3">
-            <i class="bi bi-bar-chart-line-fill" style="font-size: 3rem; color: #6f42c1;"></i>
-          </div>
-          <h5 class="card-title text-muted mb-2">Proyectos Más Activos</h5>
-          <p class="card-text small mb-3 text-muted">(Últimos 10 días)</p>
-
-          <div class="chart-container mb-3">
-            <canvas id="proyectosActivosChart" width="90" height="90"
-                    style="width: 90px; height: 90px; margin: 0 auto; display: block;"
+      <div class="card mb-3 hover-shadow" id="proyectosActivosCard">
+        <div class="card-header">
+          <i class="bi bi-bar-chart-line-fill me-2"></i>Proyectos Más Activos
+        </div>
+        <div class="card-body text-center">
+          <div class="d-flex justify-content-center align-items-center" style="height: 100%;">
+            <canvas id="proyectosActivosChart"
                     data-labels='{{ proyectos_activos_labels_json|safe }}'
                     data-values='{{ proyectos_activos_values_json|safe }}'
                     data-type="doughnut"
+                    data-ids='{{ proyectos_activos_ids_json|safe }}'
                     data-colors='["#6f42c1", "#e83e8c", "#20c997", "#ffc107"]'></canvas>
-          </div>
-
-          <div class="d-flex justify-content-center flex-wrap gap-1">
-            {% for label in proyectos_activos_labels %}
-              <span class="badge"
-                style="background-color: #6f42c1; color: white; font-size: 0.75em; min-width: 70px; text-align: center;">
-                {{ label|truncatechars:12 }}
-              </span>
-            {% endfor %}
-          </div>
           </div>
         </div>
       </div>
@@ -140,102 +149,88 @@
   <div class="row mb-4">
     <!-- Usuarios sin grupos -->
     <div class="col-lg-4 col-xl-3">
-      <div class="card mb-3 shadow hover-shadow" style="border: 3px solid #ffc107; background: white;">
-        <div class="card-body text-center d-flex flex-column justify-content-center">
-          <div class="mb-3">
-            <i class="bi bi-person-x-fill" style="font-size: 3rem; color: #ffc107;"></i>
-          </div>
-          <h5 class="card-title text-muted mb-2">Usuarios sin Grupos</h5>
-          <p class="card-text display-6 mb-0 fw-bold" style="color: #ffc107;">{{ usuarios_sin_grupos }}</p>
+      <div class="metric-card">
+        <div class="text-center">
+          <i class="bi bi-person-x-fill mb-3" style="font-size: 2.5rem; color: #ffc107;"></i>
+          <div class="metric-value" style="color: #ffc107;">{{ usuarios_sin_grupos }}</div>
+          <div class="metric-label">Usuarios sin Grupos</div>
         </div>
       </div>
     </div>
 
     <!-- Proyectos sin grupo -->
     <div class="col-lg-4 col-xl-3">
-      <div class="card mb-3 shadow hover-shadow" style="border: 3px solid #dc3545; background: white;">
-        <div class="card-body text-center d-flex flex-column justify-content-center">
-          <div class="mb-3">
-            <i class="bi bi-folder-x" style="font-size: 3rem; color: #dc3545;"></i>
-          </div>
-          <h5 class="card-title text-muted mb-2">Proyectos sin Grupo</h5>
-          <p class="card-text display-6 mb-0 fw-bold" style="color: #dc3545;">{{ proyectos_sin_grupo }}</p>
+      <div class="metric-card">
+        <div class="text-center">
+          <i class="bi bi-folder-x mb-3" style="font-size: 2.5rem; color: #e74c3c;"></i>
+          <div class="metric-value" style="color: #e74c3c;">{{ proyectos_sin_grupo }}</div>
+          <div class="metric-label">Proyectos sin Grupo</div>
         </div>
       </div>
     </div>
 
     <!-- Proyectos sin requerimientos -->
     <div class="col-lg-4 col-xl-3">
-      <div class="card mb-3 shadow hover-shadow" style="border: 3px solid #e83e8c; background: white;">
-        <div class="card-body text-center d-flex flex-column justify-content-center">
-          <div class="mb-3">
-            <i class="bi bi-file-earmark-x-fill" style="font-size: 3rem; color: #e83e8c;"></i>
-          </div>
-          <h5 class="card-title text-muted mb-2">Sin Requerimientos</h5>
-          <p class="card-text display-6 mb-0 fw-bold" style="color: #e83e8c;">{{ proyectos_sin_requerimientos }}</p>
+      <div class="metric-card">
+        <div class="text-center">
+          <i class="bi bi-file-earmark-x mb-3" style="font-size: 2.5rem; color: #6c757d;"></i>
+          <div class="metric-value" style="color: #6c757d;">{{ proyectos_sin_requerimientos }}</div>
+          <div class="metric-label">Proyectos sin Requerimientos</div>
         </div>
       </div>
     </div>
 
     <!-- Proyectos actuales -->
     <div class="col-lg-4 col-xl-3">
-      <div class="card mb-3 shadow hover-shadow" style="border: 3px solid #28a745; background: white;">
-        <div class="card-body text-center d-flex flex-column justify-content-center">
-          <div class="mb-3">
-            <i class="bi bi-calendar-check-fill" style="font-size: 3rem; color: #28a745;"></i>
-          </div>
-          <h5 class="card-title text-muted mb-2">Proyectos Actuales</h5>
-          <p class="card-text display-6 mb-0 fw-bold" style="color: #28a745;">{{ proyectos_actuales }}</p>
+      <div class="metric-card">
+        <div class="text-center">
+          <i class="bi bi-calendar-check-fill mb-3" style="font-size: 2.5rem; color: #28a745;"></i>
+          <div class="metric-value" style="color: #28a745;">{{ proyectos_actuales }}</div>
+          <div class="metric-label">Proyectos del Año</div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Resumen de Auditoría -->
-  {% include 'auditoria/auditoria_resumen.html' %}
-
-  <!-- Últimas acciones del admin (Django Admin logs) -->
+  <!-- Grupos Más Activos -->
+  {% if grupos_mas_activos %}
   <div class="row mb-4">
     <div class="col-12">
-      <div class="card shadow-sm hover-shadow" style="border-radius: 12px; border: 3px solid #667eea;">
-        <div class="card-header text-white" style="border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 9px 9px 0 0;">
+      <div class="card shadow-sm hover-shadow card-auto-height">
+        <div class="card-header">
           <div class="d-flex align-items-center">
-            <i class="bi bi-clock-history me-2" style="font-size: 1.5rem;"></i>
-            <h6 class="mb-0">Últimas Acciones Administrativas</h6>
+            <i class="bi bi-people-fill me-2" style="font-size: 1.5rem;"></i>
+            <h6 class="mb-0">Grupos Más Activos</h6>
           </div>
         </div>
-        <div class="card-body p-0">
-          {% if ultimas_acciones %}
-          <div class="table-responsive">
-            <table class="table table-hover mb-0" style="border-radius: 0 0 12px 12px; overflow: hidden;">
-              <thead class="table-light">
-                <tr>
-                  <th class="border-0 ps-4"><i class="bi bi-calendar-event"></i> Fecha</th>
-                  <th class="border-0"><i class="bi bi-person"></i> Usuario</th>
-                  <th class="border-0 pe-4"><i class="bi bi-activity"></i> Acción</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for accion in ultimas_acciones %}
-                <tr>
-                  <td class="ps-4"><small class="text-muted">{{ accion.action_time|date:"d/m H:i" }}</small></td>
-                  <td><small>{{ accion.user }}</small></td>
-                  <td class="pe-4"><small>{{ accion.get_change_message }}</small></td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
+        <div class="card-body">
+          <div class="row">
+            {% for grupo in grupos_mas_activos %}
+            <div class="col-lg-6 mb-3">
+              <div class="grupo-activo-item">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <h6 class="grupo-activo-nombre mb-0">{{ grupo.nombre }}</h6>
+                  <span class="badge bg-primary">{{ grupo.actividad }} pts</span>
+                </div>
+                <div class="grupo-activo-stats">
+                  <span class="me-3">
+                    <i class="bi bi-folder-fill text-primary"></i>
+                    {{ grupo.proyectos }} proyecto{{ grupo.proyectos|pluralize }}
+                  </span>
+                  <span>
+                    <i class="bi bi-people-fill text-success"></i>
+                    {{ grupo.integrantes }} integrante{{ grupo.integrantes|pluralize }}
+                  </span>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
           </div>
-          {% else %}
-          <div class="p-4 text-center">
-            <i class="bi bi-info-circle text-muted" style="font-size: 2rem;"></i>
-            <p class="text-muted mb-0 mt-2">No hay acciones administrativas registradas</p>
-          </div>
-          {% endif %}
         </div>
       </div>
     </div>
   </div>
+  {% endif %}
 
 </div>
 {% endblock %}
@@ -243,5 +238,5 @@
 {% block extra_js %}
 <!-- === Scripts === -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
-<script src="{% static 'dashboards/js/charts.js' %}?v=7.0"></script>
+<script src="{% static 'dashboards/js/charts.js' %}?v=8.1"></script>
 {% endblock %}

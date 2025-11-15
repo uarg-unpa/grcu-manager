@@ -16,4 +16,5 @@ urlpatterns = [
     path("<int:proyecto_id>/integrantes/", views.gestionar_integrantes, name="gestionar_integrantes"),
     path("<int:proyecto_id>/detail/", views.proyecto_detail_admin, name="proyecto_detail_admin"),
     path("reportes/lider/", views.reportes_lider, name="reportes_lider"),
+    path("buscar/", views.buscar_proyectos_ajax, name="buscar_proyectos_ajax"),
 ]

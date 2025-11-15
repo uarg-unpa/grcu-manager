@@ -100,8 +100,38 @@ function initializeCharts() {
         };
 
         try {
-            new Chart(ctx, config);
+            const newChart = new Chart(ctx, config);
             canvas.dataset.chartCreated = 'true';
+            
+            // Si es el gráfico de proyectos activos, agregar evento de clic
+            if (canvas.id === 'proyectosActivosChart') {
+                const idsRaw = canvas.dataset.ids || '[]';
+                let proyectosIds = [];
+                try {
+                    proyectosIds = JSON.parse(idsRaw);
+                } catch(e) {
+                    proyectosIds = [];
+                }
+                
+                // Agregar evento onclick al canvas
+                canvas.onclick = function(evt) {
+                    const points = newChart.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
+                    
+                    if (points.length > 0) {
+                        const firstPoint = points[0];
+                        const index = firstPoint.index;
+                        const proyectoId = proyectosIds[index];
+                        
+                        if (proyectoId && proyectoId > 0) {
+                            // Redirigir al detalle del proyecto
+                            window.location.href = `/proyectos/${proyectoId}/detail/`;
+                        }
+                    }
+                };
+                
+                // Cambiar cursor cuando esté sobre un segmento
+                canvas.style.cursor = 'pointer';
+            }
         } catch (e) {
             // Silenciar errores
         }
