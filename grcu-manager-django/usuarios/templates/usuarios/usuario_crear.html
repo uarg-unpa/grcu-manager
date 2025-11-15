@@ -100,5 +100,14 @@
 
 {% block extra_js %}
 <script src="{% static 'core/js/bootstrap.bundle.min.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Enforce front-end maxlength for email input (defence-in-depth, no model changes)
+    var emailInput = document.getElementById('id_email') || document.querySelector('input[name="email"]');
+    if (emailInput) {
+        try { emailInput.setAttribute('maxlength', '80'); } catch(e) { /* noop */ }
+    }
+});
+</script>
     <script src="{% static 'usuarios/js/usuario_form.js' %}?v=9.0"></script>
 {% endblock %}

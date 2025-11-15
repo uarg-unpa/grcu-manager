@@ -37,6 +37,9 @@
             </div>
         </div>
         <div class="project-header-actions">
+            <a href="{% url 'proyectos:exportar_dashboard_pdf' proyecto.id %}" class="btn btn-outline-primary action-btn" title="Exportar Dashboard a PDF" target="_blank">
+                <i class="bi bi-file-earmark-pdf"></i> Exportar PDF
+            </a>
             <a href="{% url 'proyectos:editar_proyecto' proyecto.id %}" class="btn btn-outline-warning action-btn" title="Editar Proyecto">
                 <i class="bi bi-pencil-square"></i> Editar
             </a>

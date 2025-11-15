@@ -134,5 +134,14 @@
 
 {% block extra_js %}
 <script src="{% static 'core/js/bootstrap.bundle.min.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Limitar campo nombre del grupo a 100 caracteres (front-end)
+    var nombreInput = document.getElementById('id_nombre') || document.querySelector('input[name="nombre"]');
+    if (nombreInput) {
+        try { nombreInput.setAttribute('maxlength', '100'); } catch(e) { /* noop */ }
+    }
+});
+</script>
 <script src="{% static 'grupos/js/form_grupo.js' %}"></script>
 {% endblock %}

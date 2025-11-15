@@ -106,5 +106,14 @@
 {% endblock %}
 
 {% block extra_js %}
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Enforce front-end maxlength for email input on edit form
+        var emailInput = document.getElementById('id_email') || document.querySelector('input[name="email"]');
+        if (emailInput) {
+            try { emailInput.setAttribute('maxlength', '80'); } catch(e) { /* noop */ }
+        }
+    });
+    </script>
     <script src="{% static 'usuarios/js/usuario_editar.js' %}?v=6.0"></script>
 {% endblock %}

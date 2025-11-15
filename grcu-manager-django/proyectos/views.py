@@ -10,6 +10,9 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import JsonResponse
 
+# Importar vista de exportación PDF del dashboard
+from proyectos.views_dashboard_pdf import exportar_dashboard_pdf
+
 
 # Helpers
 def is_admin(user):
@@ -152,6 +155,20 @@ def crear_proyecto(request):
             grupo = proyecto.grupo
 
             if grupo:
+                # ⚡ VALIDAR: Un grupo solo puede tener UN proyecto activo
+                proyecto_existente = Proyecto.objects.filter(grupo=grupo, activo=True).first()
+                if proyecto_existente:
+                    proyecto.delete()  # Eliminar el proyecto creado
+                    messages.error(
+                        request,
+                        f"El grupo '{grupo.nombre}' ya tiene asignado el proyecto activo '{proyecto_existente.nombre}'. "
+                        f"Un grupo solo puede tener un proyecto activo a la vez."
+                    )
+                    return render(request, "proyectos/crear_proyecto.html", {
+                        "form": form,
+                        "page_title": "Crear Proyecto"
+                    })
+                
                 # Solo procesar líder y participantes si hay grupo
                 lider_id = form.cleaned_data.get('lider')
                 if lider_id:
@@ -274,6 +291,20 @@ def editar_proyecto(request, proyecto_id):
             grupo = proyecto.grupo
 
             if grupo:
+                # ⚡ VALIDAR: Un grupo solo puede tener UN proyecto activo (excepto el proyecto actual)
+                proyecto_existente = Proyecto.objects.filter(grupo=grupo, activo=True).exclude(id=proyecto.id).first()
+                if proyecto_existente:
+                    messages.error(
+                        request,
+                        f"El grupo '{grupo.nombre}' ya tiene asignado el proyecto activo '{proyecto_existente.nombre}'. "
+                        f"Un grupo solo puede tener un proyecto activo a la vez."
+                    )
+                    return render(request, "proyectos/editar_proyecto.html", {
+                        "form": form,
+                        "proyecto": proyecto,
+                        "page_title": "Editar Proyecto"
+                    })
+                
                 # Solo procesar líder y participantes si hay grupo
                 lider_id = form.cleaned_data.get('lider')
                 if lider_id:
@@ -1536,6 +1567,7 @@ def crear_header_footer(canvas, doc, proyecto, logo_proyecto_path, logo_grupo_pa
     from reportlab.lib import colors
     from datetime import datetime
     import os
+    from django.conf import settings
     
     canvas.saveState()
     width, height = doc.pagesize
@@ -1551,15 +1583,26 @@ def crear_header_footer(canvas, doc, proyecto, logo_proyecto_path, logo_grupo_pa
         canvas.restoreState()
     
     # === ENCABEZADO ===
+    # Logo de GRCU Manager (izquierda)
+    try:
+        logo_grcu_path = os.path.join(settings.BASE_DIR, 'accounts', 'static', 'accounts', 'img', 'logo_grcu_manager.png')
+        if os.path.exists(logo_grcu_path):
+            canvas.drawImage(logo_grcu_path, 2*cm, height - 2.5*cm, 
+                           width=2*cm, height=0.6*cm, 
+                           preserveAspectRatio=True, mask='auto')
+    except:
+        pass
+    
     # Línea superior
     canvas.setStrokeColor(colors.HexColor('#2c3e50'))
     canvas.setLineWidth(2)
     canvas.line(2*cm, height - 2*cm, width - 2*cm, height - 2*cm)
     
-    # Nombre del proyecto (izquierda, línea 1)
+    # Nombre del proyecto (izquierda, línea 1) - Truncado a 40 caracteres
     canvas.setFont('Helvetica-Bold', 9)
     canvas.setFillColor(colors.HexColor('#2c3e50'))
-    canvas.drawString(2*cm, height - 1.7*cm, f"Proyecto: {proyecto.nombre[:35]}")
+    proyecto_nombre = proyecto.nombre[:40] + '...' if len(proyecto.nombre) > 40 else proyecto.nombre
+    canvas.drawString(2*cm, height - 1.7*cm, f"Proyecto: {proyecto_nombre}")
     
     # Fecha de generación (centro, línea 1) - Más pequeña
     canvas.setFont('Helvetica', 7)
@@ -1665,21 +1708,23 @@ def crear_header_footer(canvas, doc, proyecto, logo_proyecto_path, logo_grupo_pa
     # Información del sistema (centro) - 3 líneas
     canvas.setFont('Helvetica', 6)
     canvas.setFillColor(colors.grey)
-    sistema_texto = "GRCU Manager - Sistema de Gestión de Requerimientos y Casos de Uso"
+    sistema_texto = "GRCU Manager - Sistema de Gestión de Requerimientos"
     sistema_width = canvas.stringWidth(sistema_texto, 'Helvetica', 6)
     canvas.drawString((width - sistema_width) / 2, 1.5*cm, sistema_texto)
     
     # Grupo y versión (centro, segunda línea)
     if proyecto.grupo:
-        grupo_texto = f"Grupo: {proyecto.grupo.nombre} | Versión: 1.0"
+        # Truncar nombre del grupo si es muy largo
+        grupo_nombre = proyecto.grupo.nombre[:30] + '...' if len(proyecto.grupo.nombre) > 30 else proyecto.grupo.nombre
+        grupo_texto = f"Grupo: {grupo_nombre}"
     else:
-        grupo_texto = "Versión: 1.0"
+        grupo_texto = "Sin grupo asignado"
     grupo_width = canvas.stringWidth(grupo_texto, 'Helvetica', 6)
     canvas.drawString((width - grupo_width) / 2, 1.1*cm, grupo_texto)
     
     # Universidad (centro, tercera línea)
     canvas.setFont('Helvetica-Oblique', 5)
-    univ_texto = "Universidad Nacional de la Patagonia Austral"
+    univ_texto = "Universidad Nacional de la Patagonia Austral - UNPA"
     univ_width = canvas.stringWidth(univ_texto, 'Helvetica-Oblique', 5)
     canvas.drawString((width - univ_width) / 2, 0.7*cm, univ_texto)
     

@@ -107,45 +107,49 @@ def buscar_grupos_ajax(request):
 @login_required
 @user_passes_test(is_admin)
 def crear_grupo(request):
+	integrantes_ids = []
 	if request.method == "POST":
 		form = GrupoForm(request.POST, request.FILES)
+		
+		# Obtener integrantes seleccionados para preservarlos si hay error
+		integrantes_json = request.POST.get("integrantes_seleccionados", "[]")
+		try:
+			integrantes_ids = json.loads(integrantes_json)
+		except (json.JSONDecodeError, ValueError):
+			integrantes_ids = request.POST.getlist("integrantes")
+		
 		if form.is_valid():
 			grupo = form.save(commit=False)
 			grupo.creado_por = request.user
 			grupo.save()
 
 			# Asignar integrantes seleccionados
-			integrantes_json = request.POST.get("integrantes_seleccionados", "[]")
-			try:
-				integrantes_ids = json.loads(integrantes_json)
-				if integrantes_ids:
-					# Validar que ningún usuario seleccionado esté en otro grupo activo
-					usuarios_en_otros_grupos = []
-					for user_id in integrantes_ids:
-						usuario = Usuario.objects.get(id=user_id)
-						grupo_actual = Grupo.objects.filter(integrantes=usuario, activo=True).exclude(id=grupo.id).first()
-						if grupo_actual:
-							usuarios_en_otros_grupos.append(f"{usuario.nombre} (en '{grupo_actual.nombre}')")
-					
-					if usuarios_en_otros_grupos:
-						grupo.delete()  # Eliminar el grupo creado
-						messages.error(
-							request,
-							f"No se puede crear el grupo. Los siguientes usuarios ya están en grupos activos: {', '.join(usuarios_en_otros_grupos)}"
-						)
-						return redirect("grupos:crear_grupo")
-					
+			if integrantes_ids:
+				# Validar que ningún usuario seleccionado esté en otro grupo activo
+				usuarios_en_otros_grupos = []
+				for user_id in integrantes_ids:
+					usuario = Usuario.objects.get(id=user_id)
+					grupo_actual = Grupo.objects.filter(integrantes=usuario, activo=True).exclude(id=grupo.id).first()
+					if grupo_actual:
+						usuarios_en_otros_grupos.append(f"{usuario.nombre} (en '{grupo_actual.nombre}')")
+				
+				if usuarios_en_otros_grupos:
+					grupo.delete()  # Eliminar el grupo creado
+					messages.error(
+						request,
+						f"No se puede crear el grupo. Los siguientes usuarios ya están en grupos activos: {', '.join(usuarios_en_otros_grupos)}"
+					)
+					# NO hacer redirect, sino re-renderizar con los datos
+				else:
 					integrantes = Usuario.objects.filter(id__in=integrantes_ids)
 					grupo.integrantes.set(integrantes)
-			except (json.JSONDecodeError, ValueError):
-				# Si hay error en el JSON, usar el método anterior como fallback
-				integrantes_ids = request.POST.getlist("integrantes")
-				if integrantes_ids:
-					integrantes = Usuario.objects.filter(id__in=integrantes_ids)
-					grupo.integrantes.set(integrantes)
-
-			messages.success(request, "Grupo creado correctamente.")
-			return redirect("grupos:lista_grupos")
+					messages.success(request, "Grupo creado correctamente.")
+					return redirect("grupos:lista_grupos")
+			else:
+				messages.success(request, "Grupo creado correctamente.")
+				return redirect("grupos:lista_grupos")
+		else:
+			messages.error(request, "Corrige los errores del formulario.")
 	else:
 		form = GrupoForm()
 	
@@ -165,49 +169,50 @@ def crear_grupo(request):
 		"accion": "Crear",
 		"page_title": "Crear Grupo",
 		"usuarios_con_info": usuarios_con_info,
-		"integrantes_ids": [],
-		"integrantes_ids_json": "[]",
+		"integrantes_ids": integrantes_ids if isinstance(integrantes_ids, list) else [],
+		"integrantes_ids_json": json.dumps(integrantes_ids if isinstance(integrantes_ids, list) else []),
 	})
 
 @login_required
 @user_passes_test(is_admin)
 def editar_grupo(request, grupo_id):
 	grupo = get_object_or_404(Grupo, id=grupo_id)
+	integrantes_ids = list(grupo.integrantes.values_list('id', flat=True))  # Default: integrantes actuales
+	
 	if request.method == "POST":
 		form = GrupoForm(request.POST, request.FILES, instance=grupo)
+		
+		# Obtener integrantes seleccionados para preservarlos si hay error
+		integrantes_json = request.POST.get("integrantes_seleccionados", "[]")
+		try:
+			integrantes_ids = json.loads(integrantes_json)
+		except (json.JSONDecodeError, ValueError):
+			integrantes_ids = request.POST.getlist("integrantes")
+		
 		if form.is_valid():
 			grupo = form.save()
 
-			# Asignar integrantes seleccionados
-			integrantes_json = request.POST.get("integrantes_seleccionados", "[]")
-			try:
-				integrantes_ids = json.loads(integrantes_json)
-				
-				# Validar que ningún usuario seleccionado esté en otro grupo activo
-				usuarios_en_otros_grupos = []
-				for user_id in integrantes_ids:
-					usuario = Usuario.objects.get(id=user_id)
-					grupo_actual = Grupo.objects.filter(integrantes=usuario, activo=True).exclude(id=grupo.id).first()
-					if grupo_actual:
-						usuarios_en_otros_grupos.append(f"{usuario.nombre} (en '{grupo_actual.nombre}')")
-				
-				if usuarios_en_otros_grupos:
-					messages.error(
-						request,
-						f"No se puede actualizar el grupo. Los siguientes usuarios ya están en grupos activos: {', '.join(usuarios_en_otros_grupos)}"
-					)
-					return redirect("grupos:editar_grupo", grupo_id=grupo_id)
-				
+			# Validar que ningún usuario seleccionado esté en otro grupo activo
+			usuarios_en_otros_grupos = []
+			for user_id in integrantes_ids:
+				usuario = Usuario.objects.get(id=user_id)
+				grupo_actual = Grupo.objects.filter(integrantes=usuario, activo=True).exclude(id=grupo.id).first()
+				if grupo_actual:
+					usuarios_en_otros_grupos.append(f"{usuario.nombre} (en '{grupo_actual.nombre}')")
+			
+			if usuarios_en_otros_grupos:
+				messages.error(
+					request,
+					f"No se puede actualizar el grupo. Los siguientes usuarios ya están en grupos activos: {', '.join(usuarios_en_otros_grupos)}"
+				)
+				# NO hacer redirect, sino re-renderizar con los datos
+			else:
 				integrantes = Usuario.objects.filter(id__in=integrantes_ids)
 				grupo.integrantes.set(integrantes)
-			except (json.JSONDecodeError, ValueError):
-				# Si hay error en el JSON, usar el método anterior como fallback
-				integrantes_ids = request.POST.getlist("integrantes")
-				integrantes = Usuario.objects.filter(id__in=integrantes_ids)
-				grupo.integrantes.set(integrantes)
-
-			messages.success(request, "Grupo actualizado correctamente.")
-			return redirect("grupos:lista_grupos")
+				messages.success(request, "Grupo actualizado correctamente.")
+				return redirect("grupos:lista_grupos")
+		else:
+			messages.error(request, "Corrige los errores del formulario.")
 	else:
 		form = GrupoForm(instance=grupo)
 	
@@ -222,14 +227,13 @@ def editar_grupo(request, grupo_id):
 			'disponible': grupo_actual is None or usuario in grupo.integrantes.all()  # Disponible si no está en grupo o ya está en este grupo
 		})
 
-	integrantes_ids = list(grupo.integrantes.values_list('id', flat=True))
 	return render(request, "grupos/form_grupo.html", {
 		"form": form,
 		"accion": "Editar",
 		"page_title": "Editar Grupo",
 		"usuarios_con_info": usuarios_con_info,
-		"integrantes_ids": integrantes_ids,
-		"integrantes_ids_json": json.dumps(integrantes_ids),
+		"integrantes_ids": integrantes_ids if isinstance(integrantes_ids, list) else [],
+		"integrantes_ids_json": json.dumps(integrantes_ids if isinstance(integrantes_ids, list) else []),
 		"grupo": grupo,
 	})
 
