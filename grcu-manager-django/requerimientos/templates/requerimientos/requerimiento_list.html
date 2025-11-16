@@ -481,7 +481,9 @@
                     {% endif %}
                   {% endwith %}
                 {% else %}
-                  <span class="text-muted">-</span>
+                  <span class="text-muted small">
+                    <i class="bi bi-dash-circle"></i> Sin prioridad
+                  </span>
                 {% endif %}
               </td>
               <td>
@@ -518,8 +520,8 @@
                     </span>
                   </a>
                 {% else %}
-                  <span class="text-muted">
-                    <i class="bi bi-chat"></i>
+                  <span class="text-muted small">
+                    <i class="bi bi-chat"></i> Sin comentarios
                   </span>
                 {% endif %}
               </td>
@@ -645,9 +647,12 @@
 {% endblock %}
 
 {% block extra_js %}
-<!-- Pasar proyecto_id al JavaScript -->
+<!-- Pasar proyecto_id y user_id al JavaScript -->
 <script>
     document.body.dataset.proyectoId = {{ proyecto.id|default:'null' }};
+    document.body.dataset.userId = {{ user.id|default:'null' }};
+    document.body.dataset.isLider = {{ is_lider|yesno:'true,false' }};
+    document.body.dataset.isStakeholder = {{ is_stakeholder|yesno:'true,false' }};
 </script>
 
 <!-- Inicializar tooltips de Bootstrap -->

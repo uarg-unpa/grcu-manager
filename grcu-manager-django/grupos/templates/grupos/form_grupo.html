@@ -63,7 +63,7 @@
         <div class="mb-3">
             <label class="form-label">¿El grupo está activo?</label>
             <div class="active-status-container">
-                <label class="active-status-toggle">
+                <label class="active-status-toggle" tabindex="0" role="checkbox" aria-checked="{% if form.activo.value %}true{% else %}false{% endif %}">
                     <input type="checkbox" name="activo" {% if form.activo.value %}checked{% endif %} hidden>
                     <span class="active-status-text">
                         {% if form.activo.value %}Sí, activo{% else %}No, inactivo{% endif %}

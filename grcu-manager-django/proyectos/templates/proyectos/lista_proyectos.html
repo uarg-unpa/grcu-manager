@@ -41,6 +41,7 @@
                         {% if sort == 'lider' %}<span class="proyecto-lista-sort-arrow">▲</span>{% else %}<span class="proyecto-lista-sort-arrow">▼</span>{% endif %}
                     </a>
                 </th>
+                <th>Grupo</th>
                 <th>Clientes</th>
                 <th>
                     <a href="?sort=creado_por" class="proyecto-lista-sort-link">
@@ -71,18 +72,53 @@
                 <td class="text-start">{{ proyecto.nombre }}</td>
                 <td class="text-start">
                     {% if proyecto.lider %}
-                        {{ proyecto.lider.nombre }}
+                        <div class="d-flex align-items-center gap-2">
+                            {% if proyecto.lider.avatar %}
+                                <img src="{{ proyecto.lider.avatar }}" 
+                                     alt="{{ proyecto.lider.nombre }}" 
+                                     width="24" 
+                                     height="24" 
+                                     style="object-fit: cover; border-radius: 50%; border: 1px solid #dee2e6;">
+                            {% else %}
+                                <i class="bi bi-person-circle text-primary" style="font-size: 1.5rem;"></i>
+                            {% endif %}
+                            <span>{{ proyecto.lider.nombre }}</span>
+                        </div>
                     {% else %}
                         <span class="text-muted">No asignado</span>
+                    {% endif %}
+                </td>
+                <td class="text-start">
+                    {% if proyecto.grupo %}
+                        <div class="d-flex align-items-center gap-2">
+                            {% if proyecto.grupo.logo %}
+                                <img src="{{ proyecto.grupo.logo.url }}" 
+                                     alt="{{ proyecto.grupo.nombre }}" 
+                                     width="30" 
+                                     height="30" 
+                                     style="object-fit: cover; border-radius: 6px; border: 1px solid #dee2e6;">
+                            {% endif %}
+                            <span>{{ proyecto.grupo.nombre }}</span>
+                        </div>
+                    {% else %}
+                        <span class="text-muted">Sin grupo</span>
                     {% endif %}
                 </td>
                 <td class="text-start">
                     {% if proyecto.clientes.exists %}
                         <ul class="list-unstyled mb-0">
                             {% for cliente in proyecto.clientes.all %}
-                                <li>
-                                    <i class="bi bi-person-badge text-info"></i>
-                                    {{ cliente.nombre }}
+                                <li class="d-flex align-items-center gap-2 mb-1">
+                                    {% if cliente.avatar %}
+                                        <img src="{{ cliente.avatar }}" 
+                                             alt="{{ cliente.nombre }}" 
+                                             width="24" 
+                                             height="24" 
+                                             style="object-fit: cover; border-radius: 50%; border: 1px solid #dee2e6;">
+                                    {% else %}
+                                        <i class="bi bi-person-circle text-info" style="font-size: 1.5rem;"></i>
+                                    {% endif %}
+                                    <span>{{ cliente.nombre }}</span>
                                 </li>
                             {% endfor %}
                         </ul>

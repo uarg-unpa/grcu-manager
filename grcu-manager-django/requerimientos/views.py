@@ -553,8 +553,8 @@ def buscar_requerimientos_ajax(request):
     
     # Buscar requerimientos con prefetch_related para optimizar
     requerimientos = Requerimiento.objects.filter(filtros).select_related(
-        'proyecto', 'creado_por'
-    ).prefetch_related('casos_relacionados').order_by('-fecha_creacion')[:100]
+        'proyecto', 'creado_por', 'detalle_tradicional', 'detalle_agil'
+    ).prefetch_related('casos_relacionados', 'dependencias').order_by('-fecha_creacion')[:100]
     
     # Serializar requerimientos
     requerimientos_data = []
@@ -572,6 +572,38 @@ def buscar_requerimientos_ajax(request):
                 'nombre': caso.nombre
             })
         
+        # Obtener prioridad
+        prioridad = None
+        prioridad_display = None
+        
+        # Mapeo de prioridades
+        PRIORIDAD_DISPLAY = {
+            'MUST': 'Crítico',
+            'SHOULD': 'Importante',
+            'COULD': 'Deseable',
+            'WONT': 'Descartado'
+        }
+        
+        if hasattr(req, 'detalle_tradicional') and req.detalle_tradicional and req.detalle_tradicional.prioridad:
+            prioridad = req.detalle_tradicional.prioridad
+            prioridad_display = PRIORIDAD_DISPLAY.get(prioridad, prioridad)
+        elif hasattr(req, 'detalle_agil') and req.detalle_agil and req.detalle_agil.prioridad:
+            prioridad = req.detalle_agil.prioridad
+            prioridad_display = PRIORIDAD_DISPLAY.get(prioridad, prioridad)
+        
+        # Obtener dependencias
+        dependencias = []
+        for dep in req.dependencias.all():
+            dependencias.append({
+                'id': dep.pk,
+                'nombre': dep.nombre,
+                'estado': dep.estado,
+                'estado_display': dep.get_estado_display()  # type: ignore[attr-defined]
+            })
+        
+        # Obtener número de comentarios
+        num_comentarios = req.comentarios.count() if hasattr(req, 'comentarios') else 0
+        
         requerimientos_data.append({
             'id': req.pk,
             'nombre': req.nombre,
@@ -581,7 +613,14 @@ def buscar_requerimientos_ajax(request):
             'estado_display': req.get_estado_display(),  # type: ignore[attr-defined]
             'descripcion': descripcion,
             'fecha_creacion': req.fecha_creacion.strftime('%d/%m/%Y'),
-            'casos': casos
+            'casos': casos,
+            'prioridad': prioridad,
+            'prioridad_display': prioridad_display,
+            'dependencias': dependencias,
+            'num_comentarios': num_comentarios,
+            'proyecto_id': req.proyecto.pk,
+            'proyecto_lider_id': req.proyecto.lider.pk,
+            'creado_por_id': req.creado_por.pk if req.creado_por else None,
         })
     
     return JsonResponse({

@@ -44,23 +44,18 @@
                     </a>
                 </li>
                 <li>
-                    <a href="{% url 'dashboards:lider_matriz' %}">
-                        <i class="bi bi-grid-3x3-gap"></i> Matriz de trazabilidad
+                    <a href="{% url 'requerimientos:requerimiento_list' %}">
+                        <i class="bi bi-card-checklist"></i> Requerimientos
                     </a>
                 </li>
                 <li>
                     <a href="{% url 'requerimientos:requerimiento_priorizar' %}">
-                        <i class="bi bi-list-task"></i> Priorización de requerimientos
+                        <i class="bi bi-list-task"></i> Priorización
                     </a>
                 </li>
                 <li>
                     <a href="{% url 'requerimientos:requerimiento_dependencias' %}">
-                        <i class="bi bi-diagram-3"></i> Dependencias de requerimientos
-                    </a>
-                </li>
-                <li>
-                    <a href="{% url 'requerimientos:requerimiento_list' %}">
-                        <i class="bi bi-card-checklist"></i> Requerimientos
+                        <i class="bi bi-diagram-3"></i> Dependencias
                     </a>
                 </li>
                 <li>
@@ -68,16 +63,11 @@
                         <i class="bi bi-kanban"></i> Casos de Uso
                     </a>
                 </li>
-                {% comment %} <li>
-                    <a href="#">
-                        <i class="bi bi-folder"></i> Proyectos
+                <li>
+                    <a href="{% url 'dashboards:lider_matriz' %}">
+                        <i class="bi bi-grid-3x3-gap"></i> Matriz de Trazabilidad
                     </a>
-                </li> {% endcomment %}
-                {% comment %} <li>
-                    <a href="#">
-                        <i class="bi bi-people"></i> Mi Equipo
-                    </a>
-                </li> {% endcomment %}
+                </li>
                 <li>
                     <a href="{% url 'proyectos:reportes_lider' %}">
                         <i class="bi bi-bar-chart-line"></i> Reportes
