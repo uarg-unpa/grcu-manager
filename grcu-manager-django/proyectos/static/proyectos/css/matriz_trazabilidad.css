@@ -202,6 +202,65 @@
     background: #fce4ec;
     color: #c2185b;
 }
+
+/* Badge para estado BORRADOR - más prominente - copiado del listado */
+.badge-estado-borrador {
+    background: linear-gradient(45deg, #ffc107, #ff8c00);
+    color: #212529;
+    font-weight: bold;
+    font-size: 0.85em;
+    padding: 6px 12px;
+    border-radius: 20px;
+    box-shadow: 0 2px 4px rgba(255, 193, 7, 0.3);
+    animation: pulse-borrador 2s infinite;
+    position: relative;
+}
+
+.badge-estado-borrador::after {
+    content: "📝";
+    margin-left: 5px;
+}
+
+@keyframes pulse-borrador {
+    0% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.8; transform: scale(1.05); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+/* Clases de Bootstrap para estados - mantener coherencia con listado */
+.badge {
+    display: inline-block;
+    padding: 0.35em 0.65em;
+    font-size: 0.75em;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 0.25rem;
+}
+
+.badge.bg-info {
+    background-color: #17a2b8 !important;
+    color: white;
+}
+
+.badge.bg-success {
+    background-color: #28a745 !important;
+    color: white;
+}
+
+.badge.bg-secondary {
+    background-color: #6c757d !important;
+    color: white;
+}
+
+.badge.bg-light {
+    background-color: #f8f9fa !important;
+    color: #212529;
+}
+
+/* Eliminar estilos antiguos que ya no se usan */
 .badge-estado {
     display: inline-block;
     padding: 0.25rem 0.75rem;
@@ -212,6 +271,14 @@
 .badge-pendiente {
     background: #fff3cd;
     color: #856404;
+}
+.badge-validado {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+.badge-priorizado {
+    background: #d4edda;
+    color: #155724;
 }
 .badge-en-progreso {
     background: #cfe2ff;
@@ -274,5 +341,268 @@
     }
     .btn {
         width: 100%;
+    }
+}
+
+/* ===== TOOLTIPS INTERACTIVOS ===== */
+.matriz-tooltip {
+    position: fixed;
+    z-index: 9999;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.1);
+    min-width: 280px;
+    max-width: 400px;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+.tooltip-header {
+    padding: 12px 16px;
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.tooltip-header.tooltip-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.tooltip-header.tooltip-success {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    color: white;
+}
+
+.tooltip-header.tooltip-warning {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+}
+
+.tooltip-body {
+    padding: 16px;
+}
+
+.tooltip-title {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 12px;
+    font-size: 1rem;
+    line-height: 1.4;
+}
+
+.tooltip-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 0.875rem;
+    color: #555;
+}
+
+.tooltip-item i {
+    color: #667eea;
+    font-size: 0.75rem;
+}
+
+.tooltip-warning-text {
+    background: #fff3cd;
+    border-left: 3px solid #ffc107;
+    padding: 8px 12px;
+    margin-top: 12px;
+    border-radius: 4px;
+    font-size: 0.813rem;
+    color: #856404;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.tooltip-action {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #e9ecef;
+    font-size: 0.75rem;
+    color: #6c757d;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-style: italic;
+}
+
+/* ===== EFECTOS DE HIGHLIGHT ===== */
+.row-highlight {
+    background: linear-gradient(90deg, rgba(102, 126, 234, 0.15) 0%, rgba(102, 126, 234, 0.05) 100%) !important;
+    transition: background 0.2s ease;
+}
+
+.col-highlight {
+    background: linear-gradient(180deg, rgba(102, 126, 234, 0.15) 0%, rgba(102, 126, 234, 0.05) 100%) !important;
+    transition: background 0.2s ease;
+}
+
+.header-highlight {
+    background: linear-gradient(135deg, #5568d3 0%, #6a4d9d 100%) !important;
+    transform: scale(1.02);
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* ===== EFECTOS HOVER MEJORADOS ===== */
+.req-nombre {
+    font-weight: 500;
+    color: #2c3e50;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 4px 8px;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.req-nombre:hover {
+    color: #667eea;
+    background: rgba(102, 126, 234, 0.1);
+    transform: translateX(4px);
+}
+
+.caso-header {
+    writing-mode: vertical-rl;
+    text-align: left;
+    min-width: 50px;
+    max-width: 60px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.caso-header:hover {
+    background: linear-gradient(135deg, #5568d3 0%, #6a4d9d 100%) !important;
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.celda-relacion {
+    text-align: center;
+    width: 60px;
+    background: #ecf0f1;
+    cursor: crosshair;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.celda-relacion.relacionado {
+    background: #d5f4e6;
+    color: #27ae60;
+    font-weight: bold;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+.celda-relacion.relacionado:hover {
+    background: #a8e6cf;
+    transform: scale(1.3);
+    box-shadow: 0 0 12px rgba(39, 174, 96, 0.4);
+    z-index: 10;
+}
+
+.celda-relacion.relacionado::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 4px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.celda-relacion.relacionado:hover::after {
+    opacity: 1;
+    background: radial-gradient(circle, rgba(39, 174, 96, 0.2) 0%, transparent 70%);
+}
+
+.celda-relacion.no-relacionado {
+    background: #fafafa;
+    color: #e0e0e0;
+}
+
+.celda-relacion.no-relacionado:hover {
+    background: #f0f0f0;
+}
+
+/* ===== ANIMACIONES ===== */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.matriz-table tbody tr {
+    animation: fadeIn 0.3s ease-out;
+    animation-fill-mode: both;
+}
+
+.matriz-table tbody tr:nth-child(1) { animation-delay: 0.05s; }
+.matriz-table tbody tr:nth-child(2) { animation-delay: 0.1s; }
+.matriz-table tbody tr:nth-child(3) { animation-delay: 0.15s; }
+.matriz-table tbody tr:nth-child(4) { animation-delay: 0.2s; }
+.matriz-table tbody tr:nth-child(5) { animation-delay: 0.25s; }
+
+/* ===== MEJORA DE BADGES ===== */
+.badge {
+    display: inline-block;
+    padding: 0.35em 0.65em;
+    font-size: 0.75em;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 0.35rem;
+    transition: all 0.2s ease;
+}
+
+.badge:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* ===== EFECTOS PARA CARDS DE MÉTRICAS ===== */
+.hover-shadow {
+    transition: all 0.3s ease;
+}
+
+.hover-shadow:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* ===== BARRA DE BÚSQUEDA (si se agrega) ===== */
+#matriz-search {
+    transition: all 0.3s ease;
+}
+
+#matriz-search:focus {
+    box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
+    border-color: #667eea;
+}
+
+/* ===== RESPONSIVE TOOLTIPS ===== */
+@media (max-width: 768px) {
+    .matriz-tooltip {
+        min-width: 240px;
+        max-width: 90vw;
+    }
+    
+    .tooltip-title {
+        font-size: 0.9rem;
     }
 }

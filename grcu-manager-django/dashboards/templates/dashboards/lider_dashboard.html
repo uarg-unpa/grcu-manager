@@ -5,7 +5,13 @@
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'dashboards/css/lider_dashboard_styles.css' %}?v=3.2">
     <style>
-        /* Estilos inline para asegurar visibilidad de números */
+        /* Asegurar visibilidad de canvas y números */
+        canvas {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+        
         .display-4 {
             display: block !important;
             visibility: visible !important;
@@ -15,16 +21,62 @@
             line-height: 1.2 !important;
             color: inherit !important;
         }
-        canvas {
-            display: block !important;
-            visibility: visible !important;
-        }
+        
         /* Asegurar que las tarjetas tengan fondo blanco */
         .metric-card {
             background-color: white !important;
         }
         .metric-card .card-body {
             background-color: white !important;
+        }
+        
+        .dashboard-card {
+            background-color: white !important;
+        }
+        .dashboard-card .card-body {
+            background-color: white !important;
+            min-height: 120px;
+        }
+        
+        /* Estilos para gráficos laterales */
+        .chart-container-side {
+            flex: 0 0 120px;
+            width: 120px;
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem;
+        }
+        
+        .chart-container-side canvas {
+            max-width: 120px !important;
+            max-height: 120px !important;
+            width: auto !important;
+            height: auto !important;
+        }
+        
+        .chart-info {
+            flex: 1;
+            padding-left: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            line-height: 1;
+        }
+        
+        .metric-label {
+            font-size: 0.95rem;
+            color: #6c757d;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
     </style>
 {% endblock %}
@@ -34,18 +86,8 @@
 {% endblock %}
 {% block extra_js %}
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
-        <script id="dashboard-data" type="application/json">[
-            {% for data in dashboard_data %}
-                {
-                    "reqs_huerfanos_count": {{ data.reqs_huerfanos_count }},
-                    "reqs_relacionados_count": {{ data.reqs_relacionados }},
-                    "casos_huerfanos_count": {{ data.casos_huerfanos_count }},
-                    "casos_relacionados_count": {{ data.casos_relacionados }}
-                }{% if not forloop.last %},{% endif %}
-            {% endfor %}
-        ]</script>
-        <script src="{% static 'dashboards/js/lider_dashboard.js' %}?v=4.0"></script>
+        <script src="{% static 'dashboards/js/charts.js' %}?v=9.0"></script>
+        <script src="{% static 'dashboards/js/lider_dashboard.js' %}?v=9.0"></script>
 {% endblock %}
 {% block content %}
 <div class="mt-4 px-4">
@@ -199,15 +241,27 @@
                 </div>
                 {% endif %}
                 
-                {# Métricas principales - 3 columnas #}
+                {# Métricas principales - 3 columnas con gráficos #}
                 <div class="row g-3 mb-4">
                     <div class="col-md-4">
                         <div class="dashboard-card">
                             <div class="card-header">
                                 <i class="bi bi-list-check"></i> Requerimientos
                             </div>
-                            <div class="card-body text-center">
-                                <p class="display-4 fw-bold mb-0">{{ data.total_requerimientos|default:"0" }}</p>
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="chart-container-side">
+                                        <canvas id="grafico-reqs-total-{{ forloop.counter0 }}"
+                                                data-labels='["Huérfanos", "Relacionados"]'
+                                                data-values='[{{ data.reqs_huerfanos_count }}, {{ data.reqs_relacionados }}]'
+                                                data-type="doughnut"
+                                                data-colors='["#ef4444", "#3b82f6"]'></canvas>
+                                    </div>
+                                    <div class="chart-info">
+                                        <div class="metric-value" style="color: #3b82f6;">{{ data.total_requerimientos|default:"0" }}</div>
+                                        <div class="metric-label">Total</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -216,8 +270,20 @@
                             <div class="card-header">
                                 <i class="bi bi-diagram-3"></i> Casos de Uso
                             </div>
-                            <div class="card-body text-center">
-                                <p class="display-4 fw-bold mb-0">{{ data.total_casos_de_uso|default:"0" }}</p>
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="chart-container-side">
+                                        <canvas id="grafico-cu-total-{{ forloop.counter0 }}"
+                                                data-labels='["Huérfanos", "Relacionados"]'
+                                                data-values='[{{ data.casos_huerfanos_count }}, {{ data.casos_relacionados }}]'
+                                                data-type="doughnut"
+                                                data-colors='["#ef4444", "#10b981"]'></canvas>
+                                    </div>
+                                    <div class="chart-info">
+                                        <div class="metric-value" style="color: #10b981;">{{ data.total_casos_de_uso|default:"0" }}</div>
+                                        <div class="metric-label">Total</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -226,89 +292,232 @@
                             <div class="card-header">
                                 <i class="bi bi-exclamation-triangle-fill"></i> Huérfanos
                             </div>
-                            <div class="card-body text-center">
-                                <p class="display-4 fw-bold mb-2">{{ data.total_huerfanos|default:"0" }}</p>
-                                <small class="text-muted">Reqs: {{ data.reqs_huerfanos_count|default:"0" }} | CUs: {{ data.casos_huerfanos_count|default:"0" }}</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                {# Estados de requerimientos - 3 columnas #}
-                <div class="row g-3 mb-4">
-                    <div class="col-md-4">
-                        <div class="dashboard-card">
-                            <div class="card-header">
-                                <i class="bi bi-clock-history"></i> Requerimientos Sin Validar
-                            </div>
-                            <div class="card-body text-center">
-                                <p class="display-4 fw-bold mb-0">{{ data.reqs_sin_validar|default:"0" }}</p>
-                                <small class="text-muted d-block mt-2">Estado: Borrador</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="dashboard-card">
-                            <div class="card-header">
-                                <i class="bi bi-check-circle-fill"></i> Requerimientos Completados
-                            </div>
-                            <div class="card-body text-center">
-                                <p class="display-4 fw-bold mb-0">{{ data.reqs_completados|default:"0" }}</p>
-                                <small class="text-muted d-block mt-2">Estado: Terminado/Completado</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="dashboard-card">
-                            <div class="card-header">
-                                <i class="bi bi-hourglass-split"></i> Requerimientos Sin Completar
-                            </div>
-                            <div class="card-body text-center">
-                                <p class="display-4 fw-bold mb-0">{{ data.reqs_sin_completar|default:"0" }}</p>
-                                <small class="text-muted d-block mt-2">En progreso o pendientes</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                {# Gráficos y estado - 3 columnas #}
-                <div class="row g-3 mb-4">
-                    <div class="col-md-4">
-                        <div class="dashboard-card">
-                            <div class="card-header">
-                                <i class="bi bi-pie-chart-fill"></i> Distribución de Requerimientos
-                            </div>
                             <div class="card-body">
-                                <canvas id="grafico-req-{{ forloop.counter0 }}" width="280" height="280" style="max-width: 280px; max-height: 280px; margin: 0 auto; display: block;"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="dashboard-card">
-                            <div class="card-header">
-                                <i class="bi bi-pie-chart-fill"></i> Distribución Casos de Uso
-                            </div>
-                            <div class="card-body">
-                                <canvas id="grafico-cu-{{ forloop.counter0 }}" width="280" height="280" style="max-width: 280px; max-height: 280px; margin: 0 auto; display: block;"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="dashboard-card">
-                            <div class="card-header">
-                                <i class="bi bi-bar-chart-line-fill"></i> Estado General
-                            </div>
-                            <div class="card-body text-center">
-                                <p class="small mb-3 text-muted">{{ data.proyecto.nombre|truncatechars:25 }}</p>
-                                <div class="d-flex justify-content-center flex-wrap gap-2">
-                                    <span class="badge px-3 py-2" style="background-color: #20c997; color: white;">
-                                        <i class="bi bi-check-circle-fill me-1"></i> Activo
-                                    </span>
+                                <div class="d-flex align-items-center">
+                                    <div class="chart-container-side">
+                                        <canvas id="grafico-huerfanos-{{ forloop.counter0 }}"
+                                                data-labels='["Reqs", "CUs"]'
+                                                data-values='[{{ data.reqs_huerfanos_count }}, {{ data.casos_huerfanos_count }}]'
+                                                data-type="doughnut"
+                                                data-colors='["#f59e0b", "#ef4444"]'></canvas>
+                                    </div>
+                                    <div class="chart-info">
+                                        <div class="metric-value" style="color: #ef4444;">{{ data.total_huerfanos|default:"0" }}</div>
+                                        <div class="metric-label">Total</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+                
+                {# Estados de requerimientos - 3 columnas con gráficos #}
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <i class="bi bi-clock-history"></i> Sin Validar
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="chart-container-side">
+                                        <canvas id="grafico-sin-validar-{{ forloop.counter0 }}"
+                                                data-labels='["Borrador", "Validados"]'
+                                                data-values='[{{ data.reqs_sin_validar }}, {{ data.reqs_validado|add:data.reqs_priorizado|add:data.reqs_en_proceso|add:data.reqs_terminado }}]'
+                                                data-type="doughnut"
+                                                data-colors='["#fbbf24", "#10b981"]'></canvas>
+                                    </div>
+                                    <div class="chart-info">
+                                        <div class="metric-value" style="color: #fbbf24;">{{ data.reqs_sin_validar|default:"0" }}</div>
+                                        <div class="metric-label">Borradores</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <i class="bi bi-check-circle-fill"></i> Completados
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="chart-container-side">
+                                        <canvas id="grafico-completados-{{ forloop.counter0 }}"
+                                                data-labels='["Terminados", "Pendientes"]'
+                                                data-values='[{{ data.reqs_completados }}, {{ data.reqs_sin_completar }}]'
+                                                data-type="doughnut"
+                                                data-colors='["#10b981", "#e5e7eb"]'></canvas>
+                                    </div>
+                                    <div class="chart-info">
+                                        <div class="metric-value" style="color: #10b981;">{{ data.reqs_completados|default:"0" }}</div>
+                                        <div class="metric-label">Terminados</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <i class="bi bi-hourglass-split"></i> En Progreso
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="chart-container-side">
+                                        <canvas id="grafico-en-progreso-{{ forloop.counter0 }}"
+                                                data-labels='["Validado", "Priorizado", "En Proceso"]'
+                                                data-values='[{{ data.reqs_validado }}, {{ data.reqs_priorizado }}, {{ data.reqs_en_proceso }}]'
+                                                data-type="doughnut"
+                                                data-colors='["#3b82f6", "#8b5cf6", "#6b7280"]'></canvas>
+                                    </div>
+                                    <div class="chart-info">
+                                        <div class="metric-value" style="color: #8b5cf6;">{{ data.reqs_sin_completar|default:"0" }}</div>
+                                        <div class="metric-label">Pendientes</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                {# Gráficos interactivos - 5 columnas #}
+                <div class="row g-3 mb-4">
+                    <div class="col-lg-2-4 col-md-4">
+                        <div class="dashboard-card" style="height: 340px;">
+                            <div class="card-header bg-gradient-blue">
+                                <i class="bi bi-pie-chart-fill"></i> Dist. Requerimientos
+                            </div>
+                            <div class="card-body d-flex align-items-center justify-content-center">
+                                <canvas id="grafico-req-{{ forloop.counter0 }}"
+                                        data-labels='["Huérfanos", "Relacionados"]'
+                                        data-values='[{{ data.reqs_huerfanos_count }}, {{ data.reqs_relacionados }}]'
+                                        data-type="doughnut"
+                                        data-colors='["#ef4444", "#3b82f6"]'
+                                        style="max-height: 240px;"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-2-4 col-md-4">
+                        <div class="dashboard-card" style="height: 340px;">
+                            <div class="card-header bg-gradient-green">
+                                <i class="bi bi-diagram-3-fill"></i> Dist. Casos de Uso
+                            </div>
+                            <div class="card-body d-flex align-items-center justify-content-center">
+                                <canvas id="grafico-cu-{{ forloop.counter0 }}"
+                                        data-labels='["Huérfanos", "Relacionados"]'
+                                        data-values='[{{ data.casos_huerfanos_count }}, {{ data.casos_relacionados }}]'
+                                        data-type="doughnut"
+                                        data-colors='["#ef4444", "#10b981"]'
+                                        style="max-height: 240px;"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-2-4 col-md-4">
+                        <div class="dashboard-card" style="height: 340px;">
+                            <div class="card-header bg-gradient-purple">
+                                <i class="bi bi-bar-chart-fill"></i> Estados
+                            </div>
+                            <div class="card-body p-2">
+                                <canvas id="grafico-estados-{{ forloop.counter0 }}"
+                                        data-labels='["Borrador", "Validado", "Priorizado", "En Proceso", "Terminado"]'
+                                        data-values='[{{ data.reqs_borrador }}, {{ data.reqs_validado }}, {{ data.reqs_priorizado }}, {{ data.reqs_en_proceso }}, {{ data.reqs_terminado }}]'
+                                        data-type="bar"
+                                        data-colors='["#fbbf24", "#3b82f6", "#8b5cf6", "#6b7280", "#10b981"]'
+                                        style="height: 280px;"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-2-4 col-md-6">
+                        <div class="dashboard-card" style="height: 340px;">
+                            <div class="card-header bg-gradient-success">
+                                <i class="bi bi-speedometer2"></i> Progreso
+                            </div>
+                            <div class="card-body d-flex align-items-center justify-content-center">
+                                <div style="position: relative; width: 200px; height: 200px;">
+                                    <canvas id="grafico-progreso-{{ forloop.counter0 }}"
+                                            data-labels='["Completados", "Pendientes"]'
+                                            data-values='[{{ data.porcentaje_completitud }}, {{ data.porcentaje_pendientes }}]'
+                                            data-type="doughnut"
+                                            data-colors='["#10b981", "#e5e7eb"]'></canvas>
+                                </div>
+                            </div>
+                            <div class="card-footer bg-light text-center">
+                                <small class="text-muted">
+                                    <i class="bi bi-check-circle me-1"></i>{{ data.reqs_completados }} de {{ data.total_requerimientos }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-2-4 col-md-6">
+                        <div class="dashboard-card" style="height: 340px;">
+                            <div class="card-header bg-gradient-info">
+                                <i class="bi bi-pie-chart-fill"></i> Tipos
+                            </div>
+                            <div class="card-body d-flex align-items-center justify-content-center">
+                                <canvas id="grafico-tipos-{{ forloop.counter0 }}"
+                                        data-labels='["Funcionales", "No Funcionales"]'
+                                        data-values='[{{ data.reqs_funcional }}, {{ data.reqs_no_funcional }}]'
+                                        data-type="pie"
+                                        data-colors='["#3b82f6", "#8b5cf6"]'
+                                        style="max-height: 240px;"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <style>
+                    /* Grid de 5 columnas para gráficos */
+                    @media (min-width: 992px) {
+                        .col-lg-2-4 {
+                            flex: 0 0 20%;
+                            max-width: 20%;
+                        }
+                    }
+                    
+                    /* Headers con gradientes */
+                    .bg-gradient-blue {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                    }
+                    .bg-gradient-green {
+                        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+                        color: white;
+                    }
+                    .bg-gradient-purple {
+                        background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+                        color: white;
+                    }
+                    .bg-gradient-success {
+                        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                        color: white;
+                    }
+                    .bg-gradient-info {
+                        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+                        color: white;
+                    }
+                    
+                    /* Animación para tarjetas */
+                    .dashboard-card {
+                        transition: all 0.3s ease;
+                        border: none;
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                    }
+                    .dashboard-card:hover {
+                        transform: translateY(-5px);
+                        box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+                    }
+                    
+                    /* Números animados */
+                    .display-4 {
+                        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+                        font-weight: 800;
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        -webkit-background-clip: text;
+                        -webkit-text-fill-color: transparent;
+                        background-clip: text;
+                    }
+                </style>
                 <div class="row g-3">
                     <div class="col-12">
                         <div class="dashboard-card">

@@ -146,6 +146,7 @@ def caso_de_uso_update(request, pk):
     else:
         # GET: Instanciar formulario con datos existentes
         initial_data = {
+            'identificador': caso.identificador,
             'nombre': caso.nombre,
             'descripcion': caso.descripcion,
             'link_externo': caso.link_externo,
@@ -266,6 +267,7 @@ def caso_de_uso_create(request, proyecto_id=None, requerimiento_id=None):
         if form.is_valid():
             # Crear el caso de uso base
             caso = CasoDeUso.objects.create(
+                identificador=form.cleaned_data.get('identificador', ''),
                 nombre=form.cleaned_data['nombre'],
                 descripcion=form.cleaned_data.get('descripcion', ''),
                 proyecto=proyecto,
@@ -321,13 +323,22 @@ def caso_de_uso_create(request, proyecto_id=None, requerimiento_id=None):
             # Los valores ingresados se conservarán para que el usuario los corrija
             messages.error(request, 'Por favor, corrige los errores del formulario.')
     else:
-        # Generar nombre automático CU-<número>
+        # Generar identificador automático CU-<número>
         initial_data = {}
         if proyecto:
-            # Contar el número total de casos de uso en el proyecto
-            total_casos = CasoDeUso.objects.filter(proyecto=proyecto).count()
-            nuevo_num = total_casos + 1
-            initial_data['nombre'] = f'CU-{nuevo_num:02d}'
+            # Obtener el último CU del proyecto
+            ultimo_cu = CasoDeUso.objects.filter(proyecto=proyecto).order_by('-id').first()
+            if ultimo_cu and ultimo_cu.identificador:
+                # Extraer el número del identificador (ej: CU-001 -> 1)
+                try:
+                    ultimo_numero = int(ultimo_cu.identificador.split('-')[-1])
+                    nuevo_numero = ultimo_numero + 1
+                except (ValueError, IndexError):
+                    nuevo_numero = CasoDeUso.objects.filter(proyecto=proyecto).count() + 1
+            else:
+                nuevo_numero = CasoDeUso.objects.filter(proyecto=proyecto).count() + 1
+            
+            initial_data['identificador'] = f'CU-{nuevo_numero:03d}'
         form = CasoDeUsoUnificadoForm(initial=initial_data)
 
     contexto = {

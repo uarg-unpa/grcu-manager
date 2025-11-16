@@ -22,7 +22,18 @@
                         </span>
                     </p>
                     <p><strong><i class="bi bi-folder"></i> Proyecto:</strong> {{ requerimiento.proyecto }}</p>
-                    <p><strong><i class="bi bi-person"></i> Creado por:</strong> {{ requerimiento.creado_por }}</p>
+                    <p class="d-flex align-items-center">
+                        <strong class="me-2"><i class="bi bi-person"></i> Creado por:</strong>
+                        {% if requerimiento.creado_por.avatar %}
+                            <img src="{{ requerimiento.creado_por.avatar }}" 
+                                 alt="{{ requerimiento.creado_por.get_full_name }}"
+                                 class="rounded-circle me-2"
+                                 style="width: 32px; height: 32px; object-fit: cover;">
+                        {% else %}
+                            <i class="bi bi-person-circle fs-4 text-secondary me-2"></i>
+                        {% endif %}
+                        <span>{{ requerimiento.creado_por.get_full_name }}</span>
+                    </p>
                     <p><strong><i class="bi bi-calendar"></i> Fecha de creación:</strong> {{ requerimiento.fecha_creacion|date:"d/m/Y H:i" }}</p>
                 </div>
                 <div class="col-md-6">

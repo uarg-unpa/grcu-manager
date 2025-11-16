@@ -13,6 +13,17 @@ class CasoDeUsoForm(forms.ModelForm):
 
 # Formulario unificado para casos de uso
 class CasoDeUsoUnificadoForm(forms.Form):
+    identificador = forms.CharField(
+        max_length=20,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'readonly': 'readonly',
+            'placeholder': 'CU-XXX'
+        }),
+        label='Identificador',
+        help_text='Se genera automáticamente'
+    )
     nombre = forms.CharField(
         max_length=255,
         required=True,

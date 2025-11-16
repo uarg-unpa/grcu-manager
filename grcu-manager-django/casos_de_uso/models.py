@@ -5,6 +5,7 @@ from requerimientos.models import Requerimiento
 from simple_history.models import HistoricalRecords
 
 class CasoDeUso(models.Model):
+    identificador = models.CharField(max_length=20, blank=True, help_text='Identificador único del caso de uso (ej: CU-001)')
     nombre = models.CharField(max_length=255)
     descripcion = models.TextField(blank=True)
     proyecto = models.ForeignKey(Proyecto, on_delete=models.CASCADE, related_name="casos_de_uso")
@@ -26,7 +27,28 @@ class CasoDeUso(models.Model):
     # HISTORIAL DE VERSIONES
     history = HistoricalRecords()
 
+    def save(self, *args, **kwargs):
+        # Generar identificador automáticamente si no existe
+        if not self.identificador and self.proyecto:
+            # Obtener el último CU del proyecto
+            ultimo_cu = CasoDeUso.objects.filter(proyecto=self.proyecto).order_by('-id').first()
+            if ultimo_cu and ultimo_cu.identificador:
+                # Extraer el número del identificador (ej: CU-001 -> 1)
+                try:
+                    ultimo_numero = int(ultimo_cu.identificador.split('-')[-1])
+                    nuevo_numero = ultimo_numero + 1
+                except (ValueError, IndexError):
+                    nuevo_numero = CasoDeUso.objects.filter(proyecto=self.proyecto).count() + 1
+            else:
+                nuevo_numero = CasoDeUso.objects.filter(proyecto=self.proyecto).count() + 1
+            
+            self.identificador = f"CU-{nuevo_numero:03d}"
+        
+        super().save(*args, **kwargs)
+
     def __str__(self):
+        if self.identificador:
+            return f"{self.identificador} - {self.nombre}"
         return self.nombre
 
 class DetalleCasoDeUsoTradicional(models.Model):

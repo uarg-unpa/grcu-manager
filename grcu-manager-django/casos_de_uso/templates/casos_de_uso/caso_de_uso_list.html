@@ -4,7 +4,139 @@
 
 {% block extra_css %}
   <link rel="stylesheet" href="{% static 'casos_de_uso/css/casos_de_uso_styles.css' %}?v=1.0">
-  <link rel="stylesheet" href="{% static 'casos_de_uso/css/caso_de_uso_list.css' %}?v=1.0">
+  <link rel="stylesheet" href="{% static 'casos_de_uso/css/caso_de_uso_list.css' %}?v=2.0">
+  <style>
+    /* Estilos personalizados para tooltips */
+    .tooltip-inner {
+      text-align: left;
+      max-width: 350px;
+      padding: 10px 15px;
+      background-color: #2c3e50;
+      border-radius: 6px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    
+    .tooltip.bs-tooltip-end .tooltip-arrow::before,
+    .tooltip.bs-tooltip-auto[data-popper-placement^="right"] .tooltip-arrow::before {
+      border-right-color: #2c3e50;
+    }
+    
+    .caso-tooltip:hover {
+      text-decoration: underline !important;
+      cursor: help;
+    }
+
+    /* Optimización del ancho de columnas */
+    table th:nth-child(1) { width: 30%; } /* Nombre */
+    table th:nth-child(2) { width: 20%; } /* Requerimiento */
+    table th:nth-child(3) { width: 12%; } /* Proyecto */
+    table th:nth-child(4) { width: 8%; } /* Creador */
+    table th:nth-child(5) { width: 20%; } /* Descripción */
+    table th:nth-child(6) { width: 8%; } /* Fecha */
+    table th:nth-child(7) { width: 7%; min-width: 140px; } /* Acciones */
+
+    /* Asegurar que las acciones no se corten */
+    td:nth-child(7) {
+      white-space: nowrap;
+      min-width: 140px;
+    }
+
+    /* Estilos para filas */
+    .caso-row {
+      transition: all 0.2s ease;
+    }
+
+    .caso-row.huerfano {
+      background: linear-gradient(90deg, #fff3cd 0%, #ffeaa7 100%) !important;
+      border-left: 5px solid #ff6b6b;
+      box-shadow: 0 2px 4px rgba(255, 107, 107, 0.1);
+    }
+
+    .caso-row.huerfano:hover {
+      background: linear-gradient(90deg, #ffeaa7 0%, #ffd633 100%) !important;
+      box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+      transform: translateY(-1px);
+    }
+
+    .caso-row.con-requerimiento {
+      background-color: #f8f9fa !important;
+      border-left: 4px solid #10b981;
+    }
+
+    .caso-row.con-requerimiento:hover {
+      background-color: #e9ecef !important;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+    }
+
+    /* Badge para huérfano */
+    .badge-huerfano {
+      background: linear-gradient(45deg, #ff6b6b, #ee5a6f);
+      color: white;
+      font-weight: bold;
+      font-size: 0.85em;
+      padding: 6px 12px;
+      border-radius: 20px;
+      box-shadow: 0 2px 4px rgba(255, 107, 107, 0.3);
+      animation: pulse-warning 2s infinite;
+    }
+
+    .badge-huerfano::before {
+      content: "⚠️ ";
+    }
+
+    @keyframes pulse-warning {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.8; transform: scale(1.05); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    /* Badge para con requerimiento */
+    .badge-vinculado {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      padding: 5px 10px;
+      font-size: 0.75rem;
+      border-radius: 15px;
+    }
+
+    .badge-vinculado::before {
+      content: "🔗 ";
+    }
+
+    /* Estilos para avatares */
+    .creator-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 2px solid #dee2e6;
+      object-fit: cover;
+      transition: all 0.2s ease;
+    }
+
+    .creator-avatar:hover {
+      border-color: #3b82f6;
+      transform: scale(1.1);
+    }
+
+    .creator-placeholder {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 0.875rem;
+      transition: all 0.2s ease;
+    }
+
+    .creator-placeholder:hover {
+      transform: scale(1.1);
+      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+    }
+  </style>
 {% endblock %}
   
 {% block title %}Casos de Uso{% endblock %}
@@ -40,66 +172,121 @@
   {# Tabla de casos de uso #}
   <div class="card casos-uso-list-card">
     <div class="table-responsive mb-0">
-      <table class="table table-bordered table-hover align-middle mb-0">
+      <table class="table table-bordered table-hover align-middle mb-0" id="casosTable">
         <thead>
           <tr>
-            <th><i class="bi bi-hash me-1"></i> ID</th>
             <th><i class="bi bi-diagram-3 me-1"></i> Nombre</th>
             <th><i class="bi bi-file-earmark-text me-1"></i> Requerimiento</th>
+            <th><i class="bi bi-folder me-1"></i> Proyecto</th>
+            <th><i class="bi bi-person-circle me-1"></i> Creador</th>
             <th><i class="bi bi-card-text me-1"></i> Descripción</th>
-            <th><i class="bi bi-eye me-1"></i> Acciones</th>
+            <th><i class="bi bi-calendar me-1"></i> Creación</th>
+            <th><i class="bi bi-tools me-1"></i> Acciones</th>
           </tr>
         </thead>
         <tbody>
           {% for cu in casos %}
-          <tr>
-            <td>{{ cu.pk }}</td>
+          <tr class="caso-row {% if not cu.requerimiento %}huerfano{% else %}con-requerimiento{% endif %}">
             <td>
               <a href="{% url 'casos_de_uso:caso_de_uso_detail' cu.pk %}"
-                 class="text-decoration-none caso-tooltip"
+                 class="text-decoration-none fw-semibold caso-tooltip"
                  data-bs-toggle="tooltip" 
                  data-bs-placement="right"
                  data-bs-html="true"
-                 title="<strong>{{ cu.nombre }}</strong><br>
+                 title="<strong>{% if cu.identificador %}{{ cu.identificador }} - {% endif %}{{ cu.nombre }}</strong><br>
+                        <small><strong>ID:</strong> {{ cu.pk }}</small><br>
                         <small><strong>Proyecto:</strong> {{ cu.proyecto.nombre }}</small><br>
                         {% if cu.requerimiento %}<small><strong>Requerimiento:</strong> {{ cu.requerimiento.nombre }}</small><br>{% endif %}
-                        <small><strong>Creado:</strong> {{ cu.fecha_creacion|date:'d/m/Y' }}</small><br>
-                        {% if cu.descripcion %}<small><strong>Descripción:</strong> {{ cu.descripcion|truncatechars:100 }}</small>{% endif %}">
-                {{ cu.nombre }}
+                        {% if cu.creado_por %}<small><strong>Creado por:</strong> {{ cu.creado_por.nombre }}</small><br>{% endif %}
+                        <small><strong>Creado:</strong> {{ cu.fecha_creacion|date:'d/m/Y H:i' }}</small><br>
+                        {% if cu.descripcion %}<small><strong>Descripción:</strong> {{ cu.descripcion|truncatechars:120 }}</small>{% endif %}">
+                <i class="bi bi-diagram-3-fill me-1"></i>{% if cu.identificador %}<span class="text-muted">{{ cu.identificador }}</span> - {% endif %}{{ cu.nombre }}
               </a>
+              {% if not cu.requerimiento %}
+              <span class="badge badge-huerfano ms-2">Huérfano</span>
+              {% endif %}
             </td>
             <td>
               {% if cu.requerimiento %}
                 <a href="{% url 'requerimientos:requerimiento_detail' cu.requerimiento.pk %}" 
-                   class="text-decoration-none">
-                  {{ cu.requerimiento.nombre }}
+                   class="text-decoration-none req-tooltip"
+                   data-bs-toggle="tooltip"
+                   data-bs-placement="top"
+                   data-bs-html="true"
+                   title="<strong>{{ cu.requerimiento.nombre }}</strong><br>
+                          <small><strong>Tipo:</strong> {{ cu.requerimiento.get_tipo_display }}</small><br>
+                          <small><strong>Estado:</strong> {{ cu.requerimiento.get_estado_display }}</small>">
+                  <i class="bi bi-link-45deg me-1"></i>{{ cu.requerimiento.nombre|truncatechars:40 }}
                 </a>
                 <br>
-                <small class="badge bg-{{ cu.requerimiento.estado|lower }}">{{ cu.requerimiento.get_estado_display }}</small>
+                <span class="badge bg-{% if cu.requerimiento.estado == 'BORRADOR' %}warning text-dark{% elif cu.requerimiento.estado == 'VALIDADO' %}info{% elif cu.requerimiento.estado == 'PRIORIZADO' %}primary{% elif cu.requerimiento.estado == 'EN_PROCESO' %}secondary{% else %}success{% endif %} mt-1">
+                  {{ cu.requerimiento.get_estado_display }}
+                </span>
               {% else %}
-                <span class="text-muted">Sin requerimiento</span>
+                <span class="text-danger fst-italic">
+                  <i class="bi bi-exclamation-triangle-fill me-1"></i>Sin requerimiento
+                </span>
               {% endif %}
             </td>
-            <td>{{ cu.descripcion|truncatechars:60 }}</td>
             <td>
-              <div class="d-flex gap-1">
+              <span class="badge bg-primary">
+                <i class="bi bi-folder-fill me-1"></i>{{ cu.proyecto.nombre|truncatechars:25 }}
+              </span>
+            </td>
+            <td class="text-center">
+              {% if cu.creado_por %}
+                {% if cu.creado_por.avatar %}
+                  <img src="{{ cu.creado_por.avatar }}" 
+                       alt="{{ cu.creado_por.nombre }}" 
+                       class="creator-avatar"
+                       data-bs-toggle="tooltip"
+                       data-bs-placement="top"
+                       title="{{ cu.creado_por.nombre }}">
+                {% else %}
+                  <div class="creator-placeholder"
+                       data-bs-toggle="tooltip"
+                       data-bs-placement="top"
+                       title="{{ cu.creado_por.nombre }}">
+                    {{ cu.creado_por.nombre|first|upper }}
+                  </div>
+                {% endif %}
+              {% else %}
+                <span class="text-muted"><i class="bi bi-person-x"></i></span>
+              {% endif %}
+            </td>
+            <td>
+              <small class="text-muted">{{ cu.descripcion|default:"Sin descripción"|truncatechars:60 }}</small>
+            </td>
+            <td class="text-center">
+              <small class="text-muted">
+                <i class="bi bi-calendar3 me-1"></i>{{ cu.fecha_creacion|date:"d/m/Y" }}
+              </small>
+            </td>
+            <td>
+              <div class="d-flex gap-1 justify-content-center">
                 <a href="{% url 'casos_de_uso:caso_de_uso_detail' cu.pk %}" 
                    class="btn btn-sm btn-outline-info btn-action-caso" 
-                   title="Ver Completo">
-                  <i class="bi bi-eye"></i>
+                   data-bs-toggle="tooltip"
+                   data-bs-placement="top"
+                   title="Ver Detalle">
+                  <i class="bi bi-eye-fill"></i>
                 </a>
                 {% if user == cu.proyecto.lider or cu.creado_por == user %}
                 <a href="{% url 'casos_de_uso:caso_de_uso_update' cu.pk %}" 
                    class="btn btn-sm btn-outline-warning btn-action-caso" 
+                   data-bs-toggle="tooltip"
+                   data-bs-placement="top"
                    title="Editar">
-                  <i class="bi bi-pencil"></i>
+                  <i class="bi bi-pencil-fill"></i>
                 </a>
                 {% endif %}
                 {% if user == cu.proyecto.lider %}
                 <a href="{% url 'casos_de_uso:caso_de_uso_delete' cu.pk %}" 
                    class="btn btn-sm btn-outline-danger btn-action-caso" 
+                   data-bs-toggle="tooltip"
+                   data-bs-placement="top"
                    title="Eliminar">
-                  <i class="bi bi-trash"></i>
+                  <i class="bi bi-trash-fill"></i>
                 </a>
                 {% endif %}
               </div>
@@ -107,10 +294,15 @@
           </tr>
           {% empty %}
           <tr>
-            <td colspan="5">
+            <td colspan="7">
               <div class="empty-state-caso">
                 <i class="bi bi-inbox"></i>
                 <p class="mb-0">No hay casos de uso disponibles.</p>
+                {% if proyecto %}
+                <a href="{% url 'casos_de_uso:caso_de_uso_create' proyecto.pk %}" class="btn btn-primary mt-3">
+                  <i class="bi bi-plus-circle-fill me-2"></i>Crear primer Caso de Uso
+                </a>
+                {% endif %}
               </div>
             </td>
           </tr>
@@ -142,5 +334,5 @@
     document.body.dataset.proyectoId = {{ proyecto.id }};
   {% endif %}
 </script>
-<script src="{% static 'casos_de_uso/js/caso_de_uso_list.js' %}?v=1.0"></script>
+<script src="{% static 'casos_de_uso/js/caso_de_uso_list.js' %}?v=2.0"></script>
 {% endblock %}

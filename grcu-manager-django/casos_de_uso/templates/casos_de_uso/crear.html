@@ -64,15 +64,38 @@
                                 Información Básica
                             </div>
                             
-                            <!-- Nombre -->
-                            <div class="mb-3">
-                                <label for="{{ form.nombre.id_for_label }}" class="form-label required-field">
-                                    {{ form.nombre.label }}
-                                </label>
-                                {{ form.nombre }}
-                                {% if form.nombre.errors %}
-                                    <div class="text-danger small mt-1">{{ form.nombre.errors.0 }}</div>
-                                {% endif %}
+                            <!-- Identificador y Nombre en la misma fila -->
+                            <div class="row mb-3">
+                                <!-- Identificador -->
+                                <div class="col-md-4">
+                                    <label for="{{ form.identificador.id_for_label }}" class="form-label">
+                                        {{ form.identificador.label }}
+                                    </label>
+                                    {{ form.identificador }}
+                                    {% if form.identificador.errors %}
+                                        <div class="text-danger small mt-1">{{ form.identificador.errors.0 }}</div>
+                                    {% endif %}
+                                    {% if form.identificador.help_text %}
+                                        <div class="form-text">
+                                            <i class="bi bi-info-circle"></i> {{ form.identificador.help_text }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Nombre -->
+                                <div class="col-md-8">
+                                    <label for="{{ form.nombre.id_for_label }}" class="form-label required-field">
+                                        {{ form.nombre.label }}
+                                    </label>
+                                    {{ form.nombre }}
+                                    {% if form.nombre.errors %}
+                                        <div class="text-danger small mt-1">{{ form.nombre.errors.0 }}</div>
+                                    {% endif %}
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle"></i> 
+                                        Nombre descriptivo del caso de uso (sin incluir el identificador)
+                                    </div>
+                                </div>
                             </div>
                             
                             <!-- Descripción -->

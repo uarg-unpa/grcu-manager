@@ -35,7 +35,10 @@
                     <th class="caso-header caso-tooltip {% if caso in casos_huerfanos %}caso-huerfano{% endif %}" 
                         data-nombre="{{ caso.nombre }}"
                         title="{% if caso in casos_huerfanos %}⚠️ Caso de uso sin requerimientos asociados{% else %}{{ caso.nombre }}{% endif %}">
-                        CU-{{ caso.pk }}
+                        <a href="{% url 'casos_de_uso:caso_de_uso_detail' caso.pk %}" 
+                           class="text-white text-decoration-none">
+                            {{ caso.nombre|truncatechars:15 }}
+                        </a>
                     </th>
                     {% endfor %}
                 </tr>
@@ -44,21 +47,37 @@
                 {% for fila in matriz %}
                 <tr>
                     <td>
-                        <span class="req-id">REQ-{{ fila.requerimiento.pk }}</span>
-                        <span class="req-nombre {% if fila.requerimiento in reqs_huerfanos %}req-huerfano{% endif %}"
-                              title="{% if fila.requerimiento in reqs_huerfanos %}⚠️ Requerimiento sin casos de uso asociados{% endif %}">
-                            {{ fila.requerimiento.nombre }}
-                        </span>
+                        <a href="{% url 'requerimientos:requerimiento_detail' fila.requerimiento.pk %}" 
+                           class="text-decoration-none {% if fila.requerimiento in reqs_huerfanos %}req-huerfano{% endif %}"
+                           title="{% if fila.requerimiento in reqs_huerfanos %}⚠️ Requerimiento sin casos de uso asociados{% endif %}">
+                            <span class="req-nombre">
+                                {{ fila.requerimiento.nombre }}
+                            </span>
+                        </a>
                     </td>
                     <td>
-                        {% if fila.requerimiento.estado == 'CREADO' %}
-                            <span class="badge-estado badge-pendiente">Creado</span>
-                        {% elif fila.requerimiento.estado == 'EN_PROGRESO' %}
-                            <span class="badge-estado badge-en-progreso">En Progreso</span>
+                        {% if fila.requerimiento.estado == 'BORRADOR' %}
+                            <span class="badge badge-estado-borrador">
+                                <i class="bi bi-file-earmark-text me-1"></i>{{ fila.requerimiento.get_estado_display }}
+                            </span>
                         {% elif fila.requerimiento.estado == 'VALIDADO' %}
-                            <span class="badge-estado badge-completado">Validado</span>
+                            <span class="badge bg-info">
+                                <i class="bi bi-check-circle-fill me-1"></i>{{ fila.requerimiento.get_estado_display }}
+                            </span>
+                        {% elif fila.requerimiento.estado == 'PRIORIZADO' %}
+                            <span class="badge bg-success">
+                                <i class="bi bi-flag-fill me-1"></i>{{ fila.requerimiento.get_estado_display }}
+                            </span>
+                        {% elif fila.requerimiento.estado == 'EN_PROCESO' %}
+                            <span class="badge bg-secondary">
+                                <i class="bi bi-gear-fill me-1"></i>{{ fila.requerimiento.get_estado_display }}
+                            </span>
+                        {% elif fila.requerimiento.estado == 'TERMINADO' %}
+                            <span class="badge bg-success">
+                                <i class="bi bi-check-circle-fill me-1"></i>{{ fila.requerimiento.get_estado_display }} ✓
+                            </span>
                         {% else %}
-                            <span class="badge-estado badge-completado">Completado</span>
+                            <span class="badge bg-light text-dark">{{ fila.requerimiento.get_estado_display }}</span>
                         {% endif %}
                     </td>
                     {% for caso in casos %}
@@ -140,18 +159,40 @@
     <div class="filtros-container">
         <h5 class="mb-3">
             <i class="bi bi-funnel"></i>
-            Filtros
+            Filtros y Búsqueda
         </h5>
+        
+        <!-- Barra de búsqueda rápida -->
+        <div class="mb-3">
+            <div class="input-group">
+                <span class="input-group-text bg-primary text-white">
+                    <i class="bi bi-search"></i>
+                </span>
+                <input type="text" 
+                       id="matriz-search" 
+                       class="form-control" 
+                       placeholder="Buscar requerimiento por nombre...">
+                <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('matriz-search').value = ''; document.getElementById('matriz-search').dispatchEvent(new Event('input'));">
+                    <i class="bi bi-x-circle"></i> Limpiar
+                </button>
+            </div>
+            <small class="text-muted">
+                <i class="bi bi-info-circle me-1"></i>
+                La búsqueda filtra en tiempo real mientras escribes
+            </small>
+        </div>
+        
         <form method="get" id="filtrosForm">
             <div class="filtros-grid">
                 <div class="filtro-group">
                     <label for="estado_req">Estado de Requerimiento</label>
                     <select name="estado_req" id="estado_req" class="form-select">
                         <option value="">Todos</option>
-                        <option value="CREADO" {% if filtro_estado_req == 'CREADO' %}selected{% endif %}>Creado</option>
-                        <option value="EN_PROGRESO" {% if filtro_estado_req == 'EN_PROGRESO' %}selected{% endif %}>En Progreso</option>
+                        <option value="BORRADOR" {% if filtro_estado_req == 'BORRADOR' %}selected{% endif %}>Borrador</option>
                         <option value="VALIDADO" {% if filtro_estado_req == 'VALIDADO' %}selected{% endif %}>Validado</option>
-                        <option value="COMPLETADO" {% if filtro_estado_req == 'COMPLETADO' %}selected{% endif %}>Completado</option>
+                        <option value="PRIORIZADO" {% if filtro_estado_req == 'PRIORIZADO' %}selected{% endif %}>Priorizado</option>
+                        <option value="EN_PROCESO" {% if filtro_estado_req == 'EN_PROCESO' %}selected{% endif %}>En Proceso</option>
+                        <option value="TERMINADO" {% if filtro_estado_req == 'TERMINADO' %}selected{% endif %}>Terminado</option>
                     </select>
                 </div>
                 <div class="filtro-group">

@@ -321,9 +321,24 @@ def lider_dashboard(request):
         casos_relacionados = total_casos_de_uso - casos_huerfanos_count
 
         # Calcular métricas adicionales de requerimientos por estado
-        reqs_sin_validar = requerimientos.filter(estado='BORRADOR').count()
-        reqs_completados = requerimientos.filter(estado__in=['TERMINADO', 'COMPLETADO']).count()
+        reqs_borrador = requerimientos.filter(estado='BORRADOR').count()
+        reqs_validado = requerimientos.filter(estado='VALIDADO').count()
+        reqs_priorizado = requerimientos.filter(estado='PRIORIZADO').count()
+        reqs_en_proceso = requerimientos.filter(estado='EN_PROCESO').count()
+        reqs_terminado = requerimientos.filter(estado='TERMINADO').count()
+        
+        reqs_sin_validar = reqs_borrador
+        reqs_completados = reqs_terminado
         reqs_sin_completar = total_requerimientos - reqs_completados
+        
+        # Métricas de tipos de requerimientos
+        reqs_funcional = requerimientos.filter(tipo='FUNCIONAL').count()
+        reqs_no_funcional = requerimientos.filter(tipo='NO_FUNCIONAL').count()
+        
+        # Calcular porcentaje de completitud
+        porcentaje_completitud = (reqs_completados / total_requerimientos * 100) if total_requerimientos > 0 else 0
+        porcentaje_pendientes = 100 - porcentaje_completitud
+        porcentaje_validados = ((reqs_validado + reqs_priorizado + reqs_en_proceso + reqs_terminado) / total_requerimientos * 100) if total_requerimientos > 0 else 0
 
         dashboard_data.append({
             "proyecto": proyecto,
@@ -346,8 +361,19 @@ def lider_dashboard(request):
             "reqs_sin_validar": reqs_sin_validar,
             "reqs_completados": reqs_completados,
             "reqs_sin_completar": reqs_sin_completar,
-            "necesita_metodologia": proyecto.necesita_metodologia(),  # ⚡ NUEVO
-            "puede_cambiar_metodologia": proyecto.puede_cambiar_metodologia(),  # ⚡ NUEVO
+            "necesita_metodologia": proyecto.necesita_metodologia(),
+            "puede_cambiar_metodologia": proyecto.puede_cambiar_metodologia(),
+            # Nuevos datos para gráficos
+            "reqs_borrador": reqs_borrador,
+            "reqs_validado": reqs_validado,
+            "reqs_priorizado": reqs_priorizado,
+            "reqs_en_proceso": reqs_en_proceso,
+            "reqs_terminado": reqs_terminado,
+            "reqs_funcional": reqs_funcional,
+            "reqs_no_funcional": reqs_no_funcional,
+            "porcentaje_completitud": round(porcentaje_completitud, 1),
+            "porcentaje_pendientes": round(porcentaje_pendientes, 1),
+            "porcentaje_validados": round(porcentaje_validados, 1),
         })
 
     # Obtener el primer proyecto para el título

@@ -319,8 +319,8 @@ def requerimiento_create(request, proyecto_id=None):
                 )
                 messages.success(request, f'✅ User Story "{requerimiento.nombre}" creada exitosamente.')
             
-            # Redirigir al dashboard del líder
-            return redirect('dashboards:lider_dashboard')
+            # Redirigir al listado de requerimientos del proyecto
+            return redirect(f"{reverse('requerimientos:requerimiento_list')}?proyecto_id={proyecto.id}")
         else:
             # Si el formulario no es válido, se mantendrá con los datos POST
             # Los valores ingresados se conservarán para que el usuario los corrija
