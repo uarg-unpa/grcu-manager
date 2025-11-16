@@ -3,141 +3,144 @@
 {% load static %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'dashboards/css/developer_dashboard_styles.css' %}?v=1.0">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="{% static 'proyectos/css/proyecto_detail_styles.css' %}">
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="{% static 'dashboards/js/developer_dashboard.js' %}?v=1.0"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        {% for data in dashboard_data %}
-        createDeveloperDashboardChart(
-            'grafico-req-{{ forloop.counter0 }}',
-            {{ data.reqs_huerfanos|length }},
-            {{ data.reqs_relacionados }},
-            ['#EF4444', '#3B82F6']
-        );
-        createDeveloperDashboardChart(
-            'grafico-cu-{{ forloop.counter0 }}',
-            {{ data.casos_huerfanos|length }},
-            {{ data.casos_relacionados }},
-            ['#EF4444', '#10B981']
-        );
-        {% endfor %}
-    });
-</script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
+    <script src="{% static 'dashboards/js/charts.js' %}?v=3.1"></script>
 {% endblock %}
 
 {% block title %}{{ page_title }}{% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="project-detail-container">
     {% if dashboard_data %}
         {% for data in dashboard_data %}
-        <div class="card mb-4 shadow-sm developer-dashboard-card">
+        <div class="project-detail-container">
             
-            <div class="card-body">
-                {% comment %} ⚡ ALERTA INFORMATIVA: Proyecto sin metodología {% endcomment %}
-                {% if data.necesita_metodologia %}
-                <div class="alert alert-warning alert-dismissible fade show d-flex align-items-center" role="alert">
-                    <i class="bi bi-exclamation-triangle-fill me-3" style="font-size: 1.5em;"></i>
-                    <div class="flex-grow-1">
-                        <strong>¡Atención!</strong> 
-                        Este proyecto aún no tiene una metodología asignada. 
-                        El líder debe seleccionar una metodología antes de poder crear requerimientos.
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            {% if data.necesita_metodologia %}
+            <div class="alert alert-warning alert-dismissible fade show d-flex align-items-center mb-3" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-3" style="font-size: 1.5em;"></i>
+                <div class="flex-grow-1">
+                    <strong>¡Atención!</strong> 
+                    Este proyecto aún no tiene una metodología asignada. 
+                    El líder debe seleccionar una metodología antes de poder crear requerimientos.
                 </div>
-                {% endif %}
-                
-                <div class="row mb-3">
-                    <div class="col-md-4">
-                        <div class="card text-bg-light mb-3">
-                            <div class="card-body">
-                                <h6 class="card-title">
-                                    <i class="bi bi-list-check me-2"></i> Requerimientos
-                                </h6>
-                                <h3 class="card-text">{{ data.requerimientos|length }}</h3>
-                            </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endif %}
+            
+            {# Métricas principales - 3 columnas #}
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <i class="bi bi-list-check"></i> Requerimientos
                         </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card text-bg-light mb-3">
-                            <div class="card-body">
-                                <h6 class="card-title">
-                                    <i class="bi bi-diagram-3 me-2"></i> Casos de Uso
-                                </h6>
-                                <h3 class="card-text">{{ data.casos_de_uso|length }}</h3>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card text-bg-light mb-3">
-                            <div class="card-body">
-                                <h6 class="card-title">
-                                    <i class="bi bi-exclamation-triangle me-2"></i> Huérfanos
-                                </h6>
-                                <span class="text-danger">Reqs: {{ data.reqs_huerfanos|length }}</span><br>
-                                <span class="text-danger">CUs: {{ data.casos_huerfanos|length }}</span>
-                            </div>
+                        <div class="card-body text-center">
+                            <p class="display-4 fw-bold mb-0">{{ data.requerimientos|length }}</p>
                         </div>
                     </div>
                 </div>
-                
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <div class="card text-bg-light mb-3">
-                            <div class="card-body">
-                                <h6 class="card-title">
-                                    <i class="bi bi-pie-chart me-2"></i> Distribución de Requerimientos
-                                </h6>
-                                <canvas id="grafico-req-{{ forloop.counter0 }}" width="80" height="80" style="max-width:80px;max-height:80px;display:block;margin:auto;"></canvas>
-                            </div>
+                <div class="col-md-4">
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <i class="bi bi-diagram-3"></i> Casos de Uso
                         </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card text-bg-light mb-3">
-                            <div class="card-body">
-                                <h6 class="card-title">
-                                    <i class="bi bi-pie-chart-fill me-2"></i> Distribución Casos de Uso
-                                </h6>
-                                <canvas id="grafico-cu-{{ forloop.counter0 }}" width="80" height="80" style="max-width:80px;max-height:80px;display:block;margin:auto;"></canvas>
-                            </div>
+                        <div class="card-body text-center">
+                            <p class="display-4 fw-bold mb-0">{{ data.casos_de_uso|length }}</p>
                         </div>
                     </div>
                 </div>
-                
-                <div class="row">
-                    <div class="col-md-6">
-                        <h5>Requerimientos huérfanos <span class="badge bg-danger">{{ data.reqs_huerfanos|length }}</span></h5>
-                        <ul class="list-group mb-3">
-                            {% for req in data.reqs_huerfanos %}
-                                <li class="list-group-item text-danger"
-                                    data-bs-toggle="tooltip"
-                                    data-bs-placement="top"
-                                    title="Tipo: {{ req.get_tipo_display }} | Estado: {{ req.get_estado_display }}&#10;{{ req.descripcion|default:'Sin descripción'|striptags|truncatechars:120 }}">
-                                    {{ req.nombre }}
-                                </li>
-                            {% empty %}
-                                <li class="list-group-item">Ninguno</li>
-                            {% endfor %}
-                        </ul>
+                <div class="col-md-4">
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <i class="bi bi-exclamation-triangle-fill"></i> Huérfanos
+                        </div>
+                        <div class="card-body text-center">
+                            <p class="text-danger mb-2">Reqs: {{ data.reqs_huerfanos|length }}</p>
+                            <p class="text-danger mb-0">CUs: {{ data.casos_huerfanos|length }}</p>
+                        </div>
                     </div>
-                    <div class="col-md-6">
-                        <h5>Casos de uso huérfanos <span class="badge bg-danger">{{ data.casos_huerfanos|length }}</span></h5>
-                        <ul class="list-group mb-3">
-                            {% for cu in data.casos_huerfanos %}
-                                <li class="list-group-item text-danger"
-                                    data-bs-toggle="tooltip"
-                                    data-bs-placement="top"
-                                    title="{{ cu.descripcion|default:'Sin descripción'|striptags|truncatechars:120 }}">
-                                    {{ cu.nombre }}
-                                </li>
-                            {% empty %}
-                                <li class="list-group-item">Ninguno</li>
-                            {% endfor %}
-                        </ul>
+                </div>
+            </div>
+            {# Gráficos - 2 columnas #}
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <i class="bi bi-pie-chart-fill"></i> Distribución de Requerimientos
+                        </div>
+                        <div class="card-body">
+                            <canvas id="grafico-req-{{ forloop.counter0 }}" 
+                                    data-labels='["Huérfanos", "Relacionados"]'
+                                    data-values='[{{ data.reqs_huerfanos|length }}, {{ data.reqs_relacionados }}]'
+                                    data-colors='["#EF4444", "#3B82F6"]'
+                                    data-type="pie"
+                                    width="280" height="280" style="max-width: 280px; max-height: 280px; margin: 0 auto; display: block;"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <i class="bi bi-pie-chart-fill"></i> Distribución Casos de Uso
+                        </div>
+                        <div class="card-body">
+                            <canvas id="grafico-cu-{{ forloop.counter0 }}" 
+                                    data-labels='["Huérfanos", "Relacionados"]'
+                                    data-values='[{{ data.casos_huerfanos|length }}, {{ data.casos_relacionados }}]'
+                                    data-colors='["#EF4444", "#10B981"]'
+                                    data-type="pie"
+                                    width="280" height="280" style="max-width: 280px; max-height: 280px; margin: 0 auto; display: block;"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {# Huérfanos - 2 columnas #}
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <i class="bi bi-exclamation-triangle-fill"></i> Requerimientos Huérfanos ({{ data.reqs_huerfanos|length }})
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-group list-group-flush">
+                                {% for req in data.reqs_huerfanos %}
+                                    <li class="list-group-item text-danger"
+                                        data-bs-toggle="tooltip"
+                                        data-bs-placement="top"
+                                        title="Tipo: {{ req.get_tipo_display }} | Estado: {{ req.get_estado_display }}&#10;{{ req.descripcion|default:'Sin descripción'|striptags|truncatechars:120 }}">
+                                        {{ req.nombre }}
+                                    </li>
+                                {% empty %}
+                                    <li class="list-group-item">Ninguno</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <i class="bi bi-exclamation-triangle-fill"></i> Casos de Uso Huérfanos ({{ data.casos_huerfanos|length }})
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-group list-group-flush">
+                                {% for cu in data.casos_huerfanos %}
+                                    <li class="list-group-item text-danger"
+                                        data-bs-toggle="tooltip"
+                                        data-bs-placement="top"
+                                        title="{{ cu.descripcion|default:'Sin descripción'|striptags|truncatechars:120 }}">
+                                        {{ cu.nombre }}
+                                    </li>
+                                {% empty %}
+                                    <li class="list-group-item">Ninguno</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>

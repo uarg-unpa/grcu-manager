@@ -218,7 +218,7 @@ def requerimiento_create(request, proyecto_id=None):
     if request.method == 'POST':
         # Instanciar el formulario apropiado con datos POST y archivos
         if es_tradicional:
-            form = RequerimientoTradicionalForm(request.POST, request.FILES)
+            form = RequerimientoTradicionalForm(request.POST, request.FILES, proyecto=proyecto)
         elif es_agil:
             form = RequerimientoAgilForm(request.POST, request.FILES)
         else:
@@ -226,9 +226,14 @@ def requerimiento_create(request, proyecto_id=None):
             return redirect('dashboards:lider_dashboard')
         
         if form.is_valid():
+            # Combinar identificador y nombre
+            identificador = form.cleaned_data.get('identificador', '').strip()
+            nombre = form.cleaned_data.get('nombre', '').strip()
+            nombre_completo = f"{identificador} - {nombre}" if identificador else nombre
+            
             # Crear el requerimiento base
             requerimiento = Requerimiento(
-                nombre=form.cleaned_data['nombre'],
+                nombre=nombre_completo,
                 descripcion=form.cleaned_data.get('descripcion', ''),
                 tipo=form.cleaned_data['tipo'],
                 estado='BORRADOR',  # Forzar estado inicial como BORRADOR
@@ -241,14 +246,55 @@ def requerimiento_create(request, proyecto_id=None):
             
             # Crear el detalle específico según la metodología
             if es_tradicional:
-                # Manejar campos "Otro" para fuente y categoría
-                fuente_valor = form.cleaned_data.get('fuente', '')
-                if fuente_valor == 'OTRO':
-                    fuente_valor = form.cleaned_data.get('fuente_otro', 'Otro')
+                from .models import FuenteRequerimiento, CategoriaRequerimiento
                 
+                # Manejar fuente (crear nueva si es necesario)
+                fuente_valor = form.cleaned_data.get('fuente', '')
+                if fuente_valor == 'NUEVA':
+                    nueva_fuente_nombre = form.cleaned_data.get('nueva_fuente', '').strip()
+                    if nueva_fuente_nombre:
+                        # Crear nueva fuente personalizada
+                        fuente_obj, created = FuenteRequerimiento.objects.get_or_create(
+                            proyecto=proyecto,
+                            nombre=nueva_fuente_nombre,
+                            defaults={'creado_por': request.user}
+                        )
+                        fuente_valor = nueva_fuente_nombre
+                        if created:
+                            messages.info(request, f'✨ Nueva fuente "{nueva_fuente_nombre}" agregada al proyecto.')
+                    else:
+                        fuente_valor = ''
+                elif fuente_valor:
+                    # Incrementar contador de uso
+                    try:
+                        fuente_obj = FuenteRequerimiento.objects.get(proyecto=proyecto, nombre=fuente_valor)
+                        fuente_obj.incrementar_uso()
+                    except FuenteRequerimiento.DoesNotExist:
+                        pass
+                
+                # Manejar categoría (crear nueva si es necesario)
                 categoria_valor = form.cleaned_data.get('categoria', '')
-                if categoria_valor == 'OTRO':
-                    categoria_valor = form.cleaned_data.get('categoria_otro', 'Otro')
+                if categoria_valor == 'NUEVA':
+                    nueva_categoria_nombre = form.cleaned_data.get('nueva_categoria', '').strip()
+                    if nueva_categoria_nombre:
+                        # Crear nueva categoría personalizada
+                        categoria_obj, created = CategoriaRequerimiento.objects.get_or_create(
+                            proyecto=proyecto,
+                            nombre=nueva_categoria_nombre,
+                            defaults={'creado_por': request.user}
+                        )
+                        categoria_valor = nueva_categoria_nombre
+                        if created:
+                            messages.info(request, f'✨ Nueva categoría "{nueva_categoria_nombre}" agregada al proyecto.')
+                    else:
+                        categoria_valor = ''
+                elif categoria_valor:
+                    # Incrementar contador de uso
+                    try:
+                        categoria_obj = CategoriaRequerimiento.objects.get(proyecto=proyecto, nombre=categoria_valor)
+                        categoria_obj.incrementar_uso()
+                    except CategoriaRequerimiento.DoesNotExist:
+                        pass
                 
                 # Crear detalle tradicional (la relación se establece automáticamente vía requerimiento_padre)
                 DetalleRequerimientoTradicional.objects.create(
@@ -280,7 +326,7 @@ def requerimiento_create(request, proyecto_id=None):
             # Los valores ingresados se conservarán para que el usuario los corrija
             messages.error(request, 'Por favor, corrige los errores del formulario.')
     else:
-        # GET: Generar nombre automático según tipo más frecuente del proyecto
+        # GET: Generar identificador automático según tipo más frecuente del proyecto
         initial_data = {}
         
         # Analizar qué tipo de requerimiento es más común para sugerir el siguiente
@@ -293,7 +339,7 @@ def requerimiento_create(request, proyecto_id=None):
         # Determinar el tipo sugerido (el más común, o FUNCIONAL por defecto)
         tipo_sugerido = tipos_count[0]['tipo'] if tipos_count else 'FUNCIONAL'
         
-        # Generar nombre automático basado en el tipo
+        # Generar identificador automático basado en el tipo
         # RF-01 para FUNCIONAL, RNF-01 para NO_FUNCIONAL, RS-01 para SISTEMA
         prefijos = {
             'FUNCIONAL': 'RF',
@@ -301,19 +347,15 @@ def requerimiento_create(request, proyecto_id=None):
             'SISTEMA': 'RS'
         }
         
-        for tipo_key, prefijo in prefijos.items():
-            count = Requerimiento.objects.filter(proyecto=proyecto, tipo=tipo_key).count()
-            nuevo_num = count + 1
-            initial_data[f'nombre_sugerido_{tipo_key.lower()}'] = f'{prefijo}-{nuevo_num:02d}'
-        
-        # Nombre por defecto según el tipo más común
+        # Identificador por defecto según el tipo más común
         prefijo_default = prefijos.get(tipo_sugerido, 'RF')
         count_default = Requerimiento.objects.filter(proyecto=proyecto, tipo=tipo_sugerido).count()
-        initial_data['nombre'] = f'{prefijo_default}-{count_default + 1:02d}'
+        initial_data['identificador'] = f'{prefijo_default}-{count_default + 1:02d}'
+        initial_data['nombre'] = ''  # Campo nombre vacío para que el usuario lo complete
         
         # Instanciar formulario con datos iniciales
         if es_tradicional:
-            form = RequerimientoTradicionalForm(initial=initial_data)
+            form = RequerimientoTradicionalForm(initial=initial_data, proyecto=proyecto)
         elif es_agil:
             form = RequerimientoAgilForm(initial=initial_data)
         else:
@@ -912,7 +954,7 @@ def requerimiento_update(request, pk):
     if request.method == 'POST':
         # Instanciar el formulario apropiado con datos POST y archivos
         if es_tradicional:
-            form = RequerimientoTradicionalForm(request.POST, request.FILES)
+            form = RequerimientoTradicionalForm(request.POST, request.FILES, proyecto=proyecto)
         elif es_agil:
             form = RequerimientoAgilForm(request.POST, request.FILES)
         else:
@@ -920,8 +962,13 @@ def requerimiento_update(request, pk):
             return redirect('requerimientos:requerimiento_detail', pk=pk)
         
         if form.is_valid():
+            # Combinar identificador y nombre
+            identificador = form.cleaned_data.get('identificador', '').strip()
+            nombre = form.cleaned_data.get('nombre', '').strip()
+            nombre_completo = f"{identificador} - {nombre}" if identificador else nombre
+            
             # Actualizar requerimiento base
-            requerimiento.nombre = form.cleaned_data['nombre']
+            requerimiento.nombre = nombre_completo
             requerimiento.descripcion = form.cleaned_data.get('descripcion', '')
             requerimiento.tipo = form.cleaned_data['tipo']
            
@@ -935,14 +982,51 @@ def requerimiento_update(request, pk):
             
             # Actualizar el detalle específico según la metodología
             if es_tradicional:
-                # Manejar campos "Otro" para fuente y categoría
-                fuente_valor = form.cleaned_data.get('fuente', '')
-                if fuente_valor == 'OTRO':
-                    fuente_valor = form.cleaned_data.get('fuente_otro', 'Otro')
+                from .models import FuenteRequerimiento, CategoriaRequerimiento
                 
+                # Manejar fuente (crear nueva si es necesario)
+                fuente_valor = form.cleaned_data.get('fuente', '')
+                if fuente_valor == 'NUEVA':
+                    nueva_fuente_nombre = form.cleaned_data.get('nueva_fuente', '').strip()
+                    if nueva_fuente_nombre:
+                        fuente_obj, created = FuenteRequerimiento.objects.get_or_create(
+                            proyecto=proyecto,
+                            nombre=nueva_fuente_nombre,
+                            defaults={'creado_por': request.user}
+                        )
+                        fuente_valor = nueva_fuente_nombre
+                        if created:
+                            messages.info(request, f'✨ Nueva fuente "{nueva_fuente_nombre}" agregada al proyecto.')
+                    else:
+                        fuente_valor = ''
+                elif fuente_valor:
+                    try:
+                        fuente_obj = FuenteRequerimiento.objects.get(proyecto=proyecto, nombre=fuente_valor)
+                        fuente_obj.incrementar_uso()
+                    except FuenteRequerimiento.DoesNotExist:
+                        pass
+                
+                # Manejar categoría (crear nueva si es necesario)
                 categoria_valor = form.cleaned_data.get('categoria', '')
-                if categoria_valor == 'OTRO':
-                    categoria_valor = form.cleaned_data.get('categoria_otro', 'Otro')
+                if categoria_valor == 'NUEVA':
+                    nueva_categoria_nombre = form.cleaned_data.get('nueva_categoria', '').strip()
+                    if nueva_categoria_nombre:
+                        categoria_obj, created = CategoriaRequerimiento.objects.get_or_create(
+                            proyecto=proyecto,
+                            nombre=nueva_categoria_nombre,
+                            defaults={'creado_por': request.user}
+                        )
+                        categoria_valor = nueva_categoria_nombre
+                        if created:
+                            messages.info(request, f'✨ Nueva categoría "{nueva_categoria_nombre}" agregada al proyecto.')
+                    else:
+                        categoria_valor = ''
+                elif categoria_valor:
+                    try:
+                        categoria_obj = CategoriaRequerimiento.objects.get(proyecto=proyecto, nombre=categoria_valor)
+                        categoria_obj.incrementar_uso()
+                    except CategoriaRequerimiento.DoesNotExist:
+                        pass
                 
                 detalle, created = DetalleRequerimientoTradicional.objects.get_or_create(
                     requerimiento_padre=requerimiento
@@ -973,8 +1057,22 @@ def requerimiento_update(request, pk):
     else:
         # GET: Cargar datos existentes en el formulario
         from typing import Any, Dict
+        
+        # Separar identificador y nombre si existe el formato "ID - Nombre"
+        nombre_completo = requerimiento.nombre
+        identificador = ''
+        nombre = nombre_completo
+        
+        # Intentar extraer identificador si tiene formato "RF-## - Nombre"
+        import re
+        match = re.match(r'^(R[FNS]+F?-\d+)\s*-\s*(.+)$', nombre_completo)
+        if match:
+            identificador = match.group(1)
+            nombre = match.group(2)
+        
         initial_data: Dict[str, Any] = {
-            'nombre': requerimiento.nombre,
+            'identificador': identificador,
+            'nombre': nombre,
             'descripcion': requerimiento.descripcion,
             'tipo': requerimiento.tipo,
             # NO incluir estado - no se edita aquí
@@ -986,32 +1084,16 @@ def requerimiento_update(request, pk):
             try:
                 detalle = requerimiento.detalle_tradicional
                 if detalle:
-                    # Definir opciones válidas para fuente y categoría
-                    fuentes_validas = ['ENTREVISTA_STAKEHOLDER', 'DOCUMENTO_REQUERIMIENTOS', 'OBSERVACION_USUARIO',
-                                      'ENCUESTA_CUESTIONARIO', 'ANALISIS_SISTEMA', 'SOLICITUD_CLIENTE']
-                    categorias_validas = ['SEGURIDAD', 'RENDIMIENTO', 'USABILIDAD', 'MANTENIBILIDAD',
-                                         'COMPATIBILIDAD', 'DISPONIBILIDAD', 'ESCALABILIDAD', 'CONFIABILIDAD']
-                    
-                    # Manejar fuente
-                    fuente_valor = detalle.fuente if detalle.fuente in fuentes_validas else 'OTRO'
-                    fuente_otro_valor = '' if detalle.fuente in fuentes_validas else detalle.fuente
-                    
-                    # Manejar categoría
-                    categoria_valor = detalle.categoria if detalle.categoria in categorias_validas else 'OTRO'
-                    categoria_otro_valor = '' if detalle.categoria in categorias_validas else detalle.categoria
-                    
                     initial_data.update({
                         # NO incluir prioridad ni estado_validacion
-                        'fuente': fuente_valor,
-                        'fuente_otro': fuente_otro_valor,
-                        'categoria': categoria_valor,
-                        'categoria_otro': categoria_otro_valor,
+                        'fuente': detalle.fuente if detalle.fuente else '',
+                        'categoria': detalle.categoria if detalle.categoria else '',
                         'fecha_compromiso': detalle.fecha_compromiso,
                         'observaciones': detalle.observaciones,
                     })
             except DetalleRequerimientoTradicional.DoesNotExist:
                 pass
-            form = RequerimientoTradicionalForm(initial=initial_data)
+            form = RequerimientoTradicionalForm(initial=initial_data, proyecto=proyecto)
         elif es_agil:
             try:
                 detalle = requerimiento.detalle_agil

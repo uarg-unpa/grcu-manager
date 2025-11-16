@@ -202,35 +202,32 @@
                 {# Métricas principales - 3 columnas #}
                 <div class="row g-3 mb-4">
                     <div class="col-md-4">
-                        <div class="card shadow hover-shadow" style="border: 3px solid #667eea; background: white; min-height: 200px; overflow: visible !important;">
-                            <div class="card-body text-center" style="display: block !important;">
-                                <div class="mb-3">
-                                    <i class="bi bi-list-check" style="font-size: 3rem; color: #667eea;"></i>
-                                </div>
-                                <h5 class="card-title mb-2 text-muted">Requerimientos</h5>
-                                <p class="display-4 fw-bold mb-0" style="color: #667eea !important; font-size: 3rem !important;">{{ data.total_requerimientos|default:"0" }}</p>
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <i class="bi bi-list-check"></i> Requerimientos
+                            </div>
+                            <div class="card-body text-center">
+                                <p class="display-4 fw-bold mb-0">{{ data.total_requerimientos|default:"0" }}</p>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="card shadow hover-shadow" style="border: 3px solid #764ba2; background: white; min-height: 200px; overflow: visible !important;">
-                            <div class="card-body text-center" style="display: block !important;">
-                                <div class="mb-3">
-                                    <i class="bi bi-diagram-3" style="font-size: 3rem; color: #764ba2;"></i>
-                                </div>
-                                <h5 class="card-title mb-2 text-muted">Casos de Uso</h5>
-                                <p class="display-4 fw-bold mb-0" style="color: #764ba2 !important; font-size: 3rem !important;">{{ data.total_casos_de_uso|default:"0" }}</p>
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <i class="bi bi-diagram-3"></i> Casos de Uso
+                            </div>
+                            <div class="card-body text-center">
+                                <p class="display-4 fw-bold mb-0">{{ data.total_casos_de_uso|default:"0" }}</p>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="card shadow hover-shadow" style="border: 3px solid #dc3545; background: white; min-height: 200px; overflow: visible !important;">
-                            <div class="card-body text-center" style="display: block !important;">
-                                <div class="mb-3">
-                                    <i class="bi bi-exclamation-triangle-fill" style="font-size: 3rem; color: #dc3545;"></i>
-                                </div>
-                                <h5 class="card-title mb-2 text-muted">Huérfanos</h5>
-                                <p class="display-4 fw-bold mb-2" style="color: #dc3545 !important; font-size: 3rem !important;">{{ data.total_huerfanos|default:"0" }}</p>
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <i class="bi bi-exclamation-triangle-fill"></i> Huérfanos
+                            </div>
+                            <div class="card-body text-center">
+                                <p class="display-4 fw-bold mb-2">{{ data.total_huerfanos|default:"0" }}</p>
                                 <small class="text-muted">Reqs: {{ data.reqs_huerfanos_count|default:"0" }} | CUs: {{ data.casos_huerfanos_count|default:"0" }}</small>
                             </div>
                         </div>
@@ -240,37 +237,34 @@
                 {# Estados de requerimientos - 3 columnas #}
                 <div class="row g-3 mb-4">
                     <div class="col-md-4">
-                        <div class="card shadow hover-shadow" style="border: 3px solid #ffc107; background: white; min-height: 200px; overflow: visible !important;">
-                            <div class="card-body text-center" style="display: block !important;">
-                                <div class="mb-3">
-                                    <i class="bi bi-clock-history" style="font-size: 3rem; color: #ffc107;"></i>
-                                </div>
-                                <h5 class="card-title mb-2 text-muted">Requerimientos Sin Validar</h5>
-                                <p class="display-4 fw-bold mb-0" style="color: #ffc107 !important; font-size: 3rem !important;">{{ data.reqs_sin_validar|default:"0" }}</p>
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <i class="bi bi-clock-history"></i> Requerimientos Sin Validar
+                            </div>
+                            <div class="card-body text-center">
+                                <p class="display-4 fw-bold mb-0">{{ data.reqs_sin_validar|default:"0" }}</p>
                                 <small class="text-muted d-block mt-2">Estado: Borrador</small>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="card shadow hover-shadow" style="border: 3px solid #28a745; background: white; min-height: 200px; overflow: visible !important;">
-                            <div class="card-body text-center" style="display: block !important;">
-                                <div class="mb-3">
-                                    <i class="bi bi-check-circle-fill" style="font-size: 3rem; color: #28a745;"></i>
-                                </div>
-                                <h5 class="card-title mb-2 text-muted">Requerimientos Completados</h5>
-                                <p class="display-4 fw-bold mb-0" style="color: #28a745 !important; font-size: 3rem !important;">{{ data.reqs_completados|default:"0" }}</p>
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <i class="bi bi-check-circle-fill"></i> Requerimientos Completados
+                            </div>
+                            <div class="card-body text-center">
+                                <p class="display-4 fw-bold mb-0">{{ data.reqs_completados|default:"0" }}</p>
                                 <small class="text-muted d-block mt-2">Estado: Terminado/Completado</small>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="card shadow hover-shadow" style="border: 3px solid #17a2b8; background: white; min-height: 200px; overflow: visible !important;">
-                            <div class="card-body text-center" style="display: block !important;">
-                                <div class="mb-3">
-                                    <i class="bi bi-hourglass-split" style="font-size: 3rem; color: #17a2b8;"></i>
-                                </div>
-                                <h5 class="card-title mb-2 text-muted">Requerimientos Sin Completar</h5>
-                                <p class="display-4 fw-bold mb-0" style="color: #17a2b8 !important; font-size: 3rem !important;">{{ data.reqs_sin_completar|default:"0" }}</p>
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <i class="bi bi-hourglass-split"></i> Requerimientos Sin Completar
+                            </div>
+                            <div class="card-body text-center">
+                                <p class="display-4 fw-bold mb-0">{{ data.reqs_sin_completar|default:"0" }}</p>
                                 <small class="text-muted d-block mt-2">En progreso o pendientes</small>
                             </div>
                         </div>
@@ -280,34 +274,31 @@
                 {# Gráficos y estado - 3 columnas #}
                 <div class="row g-3 mb-4">
                     <div class="col-md-4">
-                        <div class="card shadow hover-shadow" style="border: 3px solid #6f42c1; background: white; min-height: 350px; overflow: visible !important;">
-                            <div class="card-body" style="display: block !important;">
-                                <div class="d-flex align-items-center mb-3">
-                                    <i class="bi bi-pie-chart-fill me-2" style="font-size: 1.5rem; color: #6f42c1;"></i>
-                                    <h6 class="card-title mb-0 text-muted">Distribución de Requerimientos</h6>
-                                </div>
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <i class="bi bi-pie-chart-fill"></i> Distribución de Requerimientos
+                            </div>
+                            <div class="card-body">
                                 <canvas id="grafico-req-{{ forloop.counter0 }}" width="280" height="280" style="max-width: 280px; max-height: 280px; margin: 0 auto; display: block;"></canvas>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="card shadow hover-shadow" style="border: 3px solid #e83e8c; background: white; min-height: 350px; overflow: visible !important;">
-                            <div class="card-body" style="display: block !important;">
-                                <div class="d-flex align-items-center mb-3">
-                                    <i class="bi bi-pie-chart-fill me-2" style="font-size: 1.5rem; color: #e83e8c;"></i>
-                                    <h6 class="card-title mb-0 text-muted">Distribución Casos de Uso</h6>
-                                </div>
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <i class="bi bi-pie-chart-fill"></i> Distribución Casos de Uso
+                            </div>
+                            <div class="card-body">
                                 <canvas id="grafico-cu-{{ forloop.counter0 }}" width="280" height="280" style="max-width: 280px; max-height: 280px; margin: 0 auto; display: block;"></canvas>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="card shadow hover-shadow" style="border: 3px solid #20c997; background: white; min-height: 350px; overflow: visible !important;">
-                            <div class="card-body text-center" style="display: block !important;">
-                                <div class="mb-3">
-                                    <i class="bi bi-bar-chart-line-fill" style="font-size: 3rem; color: #20c997;"></i>
-                                </div>
-                                <h5 class="card-title mb-2 text-muted">Estado General</h5>
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <i class="bi bi-bar-chart-line-fill"></i> Estado General
+                            </div>
+                            <div class="card-body text-center">
                                 <p class="small mb-3 text-muted">{{ data.proyecto.nombre|truncatechars:25 }}</p>
                                 <div class="d-flex justify-content-center flex-wrap gap-2">
                                     <span class="badge px-3 py-2" style="background-color: #20c997; color: white;">
@@ -320,34 +311,46 @@
                 </div>
                 <div class="row g-3">
                     <div class="col-12">
-                        <h5>Requerimientos huérfanos <span class="badge bg-danger">{{ data.reqs_huerfanos|length }}</span></h5>
-                        <ul class="list-group mb-3">
-                            {% for req in data.reqs_huerfanos %}
-                                <li class="list-group-item text-danger"
-                                    data-bs-toggle="tooltip"
-                                    data-bs-placement="top"
-                                    title="Tipo: {{ req.get_tipo_display }} | Estado: {{ req.get_estado_display }}&#10;{{ req.descripcion|default:'Sin descripción'|striptags|truncatechars:120 }}">
-                                    {{ req.nombre }}
-                                </li>
-                            {% empty %}
-                                <li class="list-group-item">Ninguno</li>
-                            {% endfor %}
-                        </ul>
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <i class="bi bi-exclamation-triangle-fill"></i> Requerimientos Huérfanos ({{ data.reqs_huerfanos|length }})
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-group list-group-flush">
+                                    {% for req in data.reqs_huerfanos %}
+                                        <li class="list-group-item text-danger"
+                                            data-bs-toggle="tooltip"
+                                            data-bs-placement="top"
+                                            title="Tipo: {{ req.get_tipo_display }} | Estado: {{ req.get_estado_display }}&#10;{{ req.descripcion|default:'Sin descripción'|striptags|truncatechars:120 }}">
+                                            {{ req.nombre }}
+                                        </li>
+                                    {% empty %}
+                                        <li class="list-group-item">Ninguno</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
                     </div>
                     <div class="col-12">
-                        <h5>Casos de uso huérfanos <span class="badge bg-danger">{{ data.casos_huerfanos|length }}</span></h5>
-                        <ul class="list-group mb-3">
-                            {% for cu in data.casos_huerfanos %}
-                                <li class="list-group-item text-danger"
-                                    data-bs-toggle="tooltip"
-                                    data-bs-placement="top"
-                                    title="{{ cu.descripcion|default:'Sin descripción'|striptags|truncatechars:120 }}">
-                                    {{ cu.nombre }}
-                                </li>
-                            {% empty %}
-                                <li class="list-group-item">Ninguno</li>
-                            {% endfor %}
-                        </ul>
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <i class="bi bi-exclamation-triangle-fill"></i> Casos de Uso Huérfanos ({{ data.casos_huerfanos|length }})
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-group list-group-flush">
+                                    {% for cu in data.casos_huerfanos %}
+                                        <li class="list-group-item text-danger"
+                                            data-bs-toggle="tooltip"
+                                            data-bs-placement="top"
+                                            title="{{ cu.descripcion|default:'Sin descripción'|striptags|truncatechars:120 }}">
+                                            {{ cu.nombre }}
+                                        </li>
+                                    {% empty %}
+                                        <li class="list-group-item">Ninguno</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
