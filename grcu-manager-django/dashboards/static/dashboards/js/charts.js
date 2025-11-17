@@ -56,9 +56,9 @@ function initializeCharts() {
                             display: type !== 'bar',
                             position: 'bottom',
                             labels: {
-                                boxWidth: 12,
-                                padding: 10,
-                                font: { size: 11, weight: '600' }
+                                boxWidth: 14,
+                                padding: 12,
+                                font: { size: 12, weight: '600' }
                             }
                         },
                         tooltip: {

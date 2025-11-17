@@ -11,6 +11,21 @@
 
     <form method="post" enctype="multipart/form-data" class="proyecto-form" id="proyectoForm">
         {% csrf_token %}
+        {# Mostrar errores globales del formulario #}
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {% for err in form.non_field_errors %}
+                    <div>{{ err }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {# Mensajes de Django (success/error) #}
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
 
         <div class="proyecto-form-group">
             {{ form.nombre.label_tag }}
@@ -30,7 +45,7 @@
 
         <div class="proyecto-form-group">
             {{ form.logo.label_tag }}
-            {% if proyecto.logo %}
+            {% if proyecto.logo and proyecto.logo.name %}
                 <div style="margin-bottom:12px;">
                     <img src="{{ proyecto.logo.url }}" alt="Logo actual" style="max-width:180px; max-height:180px; border-radius:16px; box-shadow:0 2px 8px rgba(68,76,138,0.10); border:2px solid #eee;">
                 </div>
@@ -73,10 +88,10 @@
         </div>
 
         <div class="proyecto-form-acciones">
-            <button type="submit" class="proyecto-form-btn-crear" title="Guardar proyecto" data-bs-toggle="tooltip">
+            <button type="submit" class="proyecto-form-btn-crear" title="Guardar proyecto">
                 <i class="bi bi-check-lg"></i> Guardar
             </button>
-            <a href="{% url 'proyectos:lista_proyectos' %}" class="proyecto-form-btn-cancelar btn-secondary" style="margin-left:10px;" title="Cancelar" data-bs-toggle="tooltip">
+            <a href="{% url 'proyectos:lista_proyectos' %}" class="proyecto-form-btn-cancelar btn-secondary" style="margin-left:10px;" title="Cancelar">
                 <i class="bi bi-x-lg"></i> Cancelar
             </a>
         </div>

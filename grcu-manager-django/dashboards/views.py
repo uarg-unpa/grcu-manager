@@ -543,6 +543,15 @@ def stakeholder_dashboard(request):
     proyectos = Proyecto.objects.filter(clientes=request.user)
     dashboard_data = []
     
+    # Métricas globales
+    proyectos_activos = proyectos.count()
+    requerimientos_pendientes = Requerimiento.objects.filter(
+        proyecto__in=proyectos, 
+        estado='BORRADOR'
+    ).count()
+    validaciones_pendientes = requerimientos_pendientes  # Para stakeholders, es lo mismo
+    participaciones = proyectos_activos  # Número de proyectos donde participa
+    
     for proyecto in proyectos:
         requerimientos = Requerimiento.objects.filter(proyecto=proyecto)
         casos_de_uso = CasoDeUso.objects.filter(proyecto=proyecto)
@@ -555,9 +564,16 @@ def stakeholder_dashboard(request):
         casos_relacionados = casos_de_uso.count() - casos_huerfanos.count()
         
         # Métricas por estado
-        reqs_pendientes = requerimientos.filter(estado='BORRADOR').count()
+        reqs_pendientes_validacion = requerimientos.filter(estado='BORRADOR').count()
         reqs_validados = requerimientos.filter(estado='VALIDADO').count()
         reqs_completados = requerimientos.filter(estado__in=['TERMINADO', 'COMPLETADO']).count()
+        
+        # Requerimientos pendientes de validación (BORRADOR)
+        reqs_pendientes_lista = requerimientos.filter(estado='BORRADOR').order_by('-fecha_creacion')
+        
+        # Calcular progreso
+        total_reqs = requerimientos.count()
+        progreso = (reqs_completados / total_reqs * 100) if total_reqs > 0 else 0
         
         dashboard_data.append({
             "proyecto": proyecto,
@@ -567,10 +583,37 @@ def stakeholder_dashboard(request):
             "casos_huerfanos": casos_huerfanos,
             "reqs_relacionados": reqs_relacionados,
             "casos_relacionados": casos_relacionados,
-            "reqs_pendientes": reqs_pendientes,
+            "reqs_pendientes_validacion": reqs_pendientes_validacion,
+            "reqs_pendientes_lista": reqs_pendientes_lista,
             "reqs_validados": reqs_validados,
             "reqs_completados": reqs_completados,
+            "progreso": progreso,
         })
+    
+    # Actividad reciente (últimos requerimientos validados o comentarios)
+    from requerimientos.models import ComentarioValidacion
+    actividad_reciente = []
+    
+    # Últimos comentarios en requerimientos de proyectos del stakeholder
+    comentarios_recientes = ComentarioValidacion.objects.filter(
+        requerimiento__proyecto__in=proyectos
+    ).select_related('requerimiento', 'autor').order_by('-fecha_creacion')[:5]
+    
+    for comentario in comentarios_recientes:
+        actividad_reciente.append(
+            f"{comentario.autor.nombre} comentó en '{comentario.requerimiento.nombre}'"
+        )
+    
+    # Si no hay comentarios, mostrar requerimientos recientes
+    if not actividad_reciente:
+        reqs_recientes = Requerimiento.objects.filter(
+            proyecto__in=proyectos
+        ).select_related('proyecto').order_by('-fecha_creacion')[:5]
+        
+        for req in reqs_recientes:
+            actividad_reciente.append(
+                f"Nuevo requerimiento '{req.nombre}' en {req.proyecto.nombre}"
+            )
     
     # Obtener el primer proyecto para el título
     primer_proyecto = proyectos.first()
@@ -578,6 +621,11 @@ def stakeholder_dashboard(request):
     
     return render(request, "dashboards/stakeholder_dashboard.html", {
         "dashboard_data": dashboard_data,
+        "proyectos_activos": proyectos_activos,
+        "requerimientos_pendientes": requerimientos_pendientes,
+        "validaciones_pendientes": validaciones_pendientes,
+        "participaciones": participaciones,
+        "actividad_reciente": actividad_reciente,
         "page_title": f"{titulo_proyecto} - Dashboard Cliente",
     })
 

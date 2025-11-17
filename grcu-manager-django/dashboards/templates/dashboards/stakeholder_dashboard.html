@@ -1,303 +1,233 @@
 {% extends "core/base.html" %}
 {% load static %}
 
-{% block extra_css %}
-    <link rel="stylesheet" href="{% static 'dashboards/css/stakeholder_dashboard.css' %}?v=1.0">
-{% endblock %}
-
 {% block title %}Dashboard Cliente{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dashboards/css/admin_dashboard.css' %}?v=2.8">
+<style>
+.metric-card {
+  border: none;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+.metric-value {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.metric-label {
+  font-size: 0.9rem;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Estilos para las tarjetas de proyecto */
+.metric-value-small {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 0.25rem;
+}
+
+.metric-label-small {
+  font-size: 0.75rem;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.card-auto-height {
+  min-height: 300px;
+}
+
+.btn-primary {
+  background: linear-gradient(45deg, #007bff, #0056b3);
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(45deg, #0056b3, #004085);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="row mb-4">
-        <div class="col-12">
-            <h2 class="dashboard-title">
-                <i class="bi bi-person-badge text-info me-2"></i>
-                Dashboard de Cliente
-            </h2>
-            <p class="text-muted">Vista de tus proyectos como cliente/stakeholder</p>
+<div class="container-fluid mt-4 px-4">
+
+  <!-- Encabezado -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <h1 class="h3 mb-1">
+        <i class="bi bi-person-badge text-primary me-2"></i>Panel de Cliente
+      </h1>
+      <p class="text-muted">Vista de tus proyectos como cliente/stakeholder</p>
+    </div>
+  </div>
+
+  <!-- Métricas principales -->
+  <div class="row mb-4">
+    <!-- Proyectos Activos -->
+    <div class="col-lg-3 col-md-6">
+      <div class="metric-card">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <div class="metric-value" style="color: #667eea;">{{ proyectos_activos|default:0 }}</div>
+            <div class="metric-label">Proyectos Activos</div>
+          </div>
+          <div>
+            <i class="bi bi-kanban-fill" style="font-size: 3rem; color: #667eea; opacity: 0.2;"></i>
+          </div>
         </div>
+      </div>
     </div>
 
-    {% if dashboard_data %}
-        {% for data in dashboard_data %}
-        <div class="card mb-4 shadow-sm proyecto-card">
-            <div class="card-header bg-info text-white">
-                <div class="row align-items-center">
-                    <div class="col-md-6">
-                        <div class="d-flex align-items-center">
-                            {% if data.proyecto.logo %}
-                                <img src="{{ data.proyecto.logo.url }}" alt="Logo" class="proyecto-logo me-3">
-                            {% endif %}
-                            <div>
-                                <h4 class="mb-1">
-                                    <i class="bi bi-diagram-3 me-2"></i>
-                                    {{ data.proyecto.nombre }}
-                                </h4>
-                                {% if data.proyecto.metodologia %}
-                                    <span class="badge bg-light text-dark">
-                                        Metodología: {{ data.proyecto.get_metodologia_display }}
-                                    </span>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6 text-end">
-                        <div class="btn-group" role="group">
-                            <a href="{% url 'proyectos:proyecto_reportes' data.proyecto.id %}" 
-                               class="btn btn-light btn-sm"
-                               title="Ver reportes del proyecto">
-                                <i class="bi bi-file-earmark-bar-graph me-1"></i>Reportes
-                            </a>
-                            <a href="{% url 'proyectos:matriz_trazabilidad' data.proyecto.id %}" 
-                               class="btn btn-light btn-sm"
-                               title="Ver matriz de trazabilidad">
-                                <i class="bi bi-diagram-3 me-1"></i>Matriz
-                            </a>
-                            <a href="{% url 'requerimientos:requerimiento_list' %}?proyecto={{ data.proyecto.id }}" 
-                               class="btn btn-light btn-sm"
-                               title="Ver todos los requerimientos">
-                                <i class="bi bi-list-check me-1"></i>Requerimientos
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="card-body">
-                <!-- Métricas principales -->
-                <div class="row g-3 mb-4">
-                    <div class="col-lg-2 col-md-4 col-sm-6">
-                        <div class="metric-card bg-primary text-white">
-                            <div class="metric-icon">
-                                <i class="bi bi-list-check"></i>
-                            </div>
-                            <div class="metric-content">
-                                <h3 class="metric-value">{{ data.requerimientos.count }}</h3>
-                                <p class="metric-label">Requerimientos</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-2 col-md-4 col-sm-6">
-                        <div class="metric-card bg-info text-white">
-                            <div class="metric-icon">
-                                <i class="bi bi-diagram-2"></i>
-                            </div>
-                            <div class="metric-content">
-                                <h3 class="metric-value">{{ data.casos_de_uso.count }}</h3>
-                                <p class="metric-label">Casos de Uso</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-2 col-md-4 col-sm-6">
-                        <div class="metric-card bg-success text-white">
-                            <div class="metric-icon">
-                                <i class="bi bi-check-circle"></i>
-                            </div>
-                            <div class="metric-content">
-                                <h3 class="metric-value">{{ data.reqs_completados }}</h3>
-                                <p class="metric-label">Completados</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-2 col-md-4 col-sm-6">
-                        <div class="metric-card bg-warning text-white">
-                            <div class="metric-icon">
-                                <i class="bi bi-clock-history"></i>
-                            </div>
-                            <div class="metric-content">
-                                <h3 class="metric-value">{{ data.reqs_pendientes }}</h3>
-                                <p class="metric-label">Pendientes</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-2 col-md-4 col-sm-6">
-                        <div class="metric-card bg-secondary text-white">
-                            <div class="metric-icon">
-                                <i class="bi bi-shield-check"></i>
-                            </div>
-                            <div class="metric-content">
-                                <h3 class="metric-value">{{ data.reqs_validados }}</h3>
-                                <p class="metric-label">Validados</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-2 col-md-4 col-sm-6">
-                        <div class="metric-card bg-dark text-white">
-                            <div class="metric-icon">
-                                <i class="bi bi-people"></i>
-                            </div>
-                            <div class="metric-content">
-                                <h3 class="metric-value">{{ data.proyecto.participantes.count }}</h3>
-                                <p class="metric-label">Equipo</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Información del proyecto -->
-                <div class="row mb-3">
-                    <div class="col-md-8">
-                        {% if data.proyecto.descripcion %}
-                        <div class="alert alert-light mb-3">
-                            <h6 class="mb-2"><i class="bi bi-info-circle me-2"></i>Descripción del Proyecto</h6>
-                            <p class="mb-0">{{ data.proyecto.descripcion }}</p>
-                        </div>
-                        {% endif %}
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card">
-                            <div class="card-body">
-                                <h6 class="card-title mb-3">
-                                    <i class="bi bi-gear me-2"></i>Información del Proyecto
-                                </h6>
-                                {% if data.proyecto.metodologia %}
-                                <p class="mb-2">
-                                    <strong>Metodología:</strong><br>
-                                    <span class="badge bg-primary">{{ data.proyecto.get_metodologia_display }}</span>
-                                </p>
-                                {% endif %}
-                                {% if data.proyecto.lider %}
-                                <p class="mb-2">
-                                    <strong>Líder del Proyecto:</strong><br>
-                                    <i class="bi bi-person-badge me-1"></i>{{ data.proyecto.lider.nombre }}
-                                </p>
-                                {% endif %}
-                                {% if data.proyecto.grupo %}
-                                <p class="mb-2">
-                                    <strong>Grupo de Desarrollo:</strong><br>
-                                    <i class="bi bi-people me-1"></i>{{ data.proyecto.grupo.nombre }}
-                                </p>
-                                {% endif %}
-                                <p class="mb-0">
-                                    <strong>Fecha de Creación:</strong><br>
-                                    <i class="bi bi-calendar me-1"></i>{{ data.proyecto.fecha_creacion|date:"d/m/Y" }}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tabs para Requerimientos y Casos de Uso -->
-                <div class="mt-4">
-                    <ul class="nav nav-tabs" id="proyecto-{{ data.proyecto.id }}-tabs" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="requerimientos-tab-{{ data.proyecto.id }}" 
-                                    data-bs-toggle="tab" data-bs-target="#requerimientos-{{ data.proyecto.id }}" 
-                                    type="button" role="tab">
-                                <i class="bi bi-file-earmark-text me-2"></i>
-                                Requerimientos ({{ data.requerimientos.count }})
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="casos-tab-{{ data.proyecto.id }}" 
-                                    data-bs-toggle="tab" data-bs-target="#casos-{{ data.proyecto.id }}" 
-                                    type="button" role="tab">
-                                <i class="bi bi-diagram-2 me-2"></i>
-                                Casos de Uso ({{ data.casos_de_uso.count }})
-                            </button>
-                        </li>
-                    </ul>
-                    <div class="tab-content mt-3" id="proyecto-{{ data.proyecto.id }}-tabContent">
-                        <!-- Tab de Requerimientos -->
-                        <div class="tab-pane fade show active" id="requerimientos-{{ data.proyecto.id }}" 
-                             role="tabpanel" aria-labelledby="requerimientos-tab-{{ data.proyecto.id }}">
-                            {% if data.requerimientos %}
-                                <div class="list-group">
-                                    {% for req in data.requerimientos|slice:":5" %}
-                                    <a href="{% url 'requerimientos:requerimiento_detail' req.id %}" 
-                                       class="list-group-item list-group-item-action">
-                                        <div class="d-flex justify-content-between align-items-start">
-                                            <div class="flex-grow-1">
-                                                <h6 class="mb-1">
-                                                    <span class="badge bg-secondary me-2">{{ req.codigo }}</span>
-                                                    {{ req.nombre }}
-                                                </h6>
-                                                <p class="mb-1 text-muted small">{{ req.descripcion|truncatewords:20 }}</p>
-                                                {% if req.prioridad %}
-                                                    <small class="text-muted">
-                                                        <i class="bi bi-flag me-1"></i>
-                                                        Prioridad: {{ req.get_prioridad_display }}
-                                                    </small>
-                                                {% endif %}
-                                            </div>
-                                            <div class="ms-3">
-                                                {% if req.estado == 'BORRADOR' %}
-                                                    <span class="badge bg-warning">Pendiente</span>
-                                                {% elif req.estado == 'VALIDADO' %}
-                                                    <span class="badge bg-info">Validado</span>
-                                                {% elif req.estado == 'COMPLETADO' or req.estado == 'TERMINADO' %}
-                                                    <span class="badge bg-success">Completado</span>
-                                                {% else %}
-                                                    <span class="badge bg-secondary">{{ req.get_estado_display }}</span>
-                                                {% endif %}
-                                            </div>
-                                        </div>
-                                    </a>
-                                    {% endfor %}
-                                </div>
-                                {% if data.requerimientos.count > 5 %}
-                                <div class="text-center mt-3">
-                                    <a href="{% url 'requerimientos:requerimiento_list' %}?proyecto={{ data.proyecto.id }}" 
-                                       class="btn btn-outline-primary">
-                                        Ver todos los requerimientos ({{ data.requerimientos.count }})
-                                    </a>
-                                </div>
-                                {% endif %}
-                            {% else %}
-                                <p class="text-muted">No hay requerimientos en este proyecto.</p>
-                            {% endif %}
-                        </div>
-                        
-                        <!-- Tab de Casos de Uso -->
-                        <div class="tab-pane fade" id="casos-{{ data.proyecto.id }}" 
-                             role="tabpanel" aria-labelledby="casos-tab-{{ data.proyecto.id }}">
-                            {% if data.casos_de_uso %}
-                                <div class="list-group">
-                                    {% for caso in data.casos_de_uso|slice:":5" %}
-                                    <a href="{% url 'casos_de_uso:caso_de_uso_detail' caso.id %}" 
-                                       class="list-group-item list-group-item-action">
-                                        <div class="d-flex justify-content-between align-items-start">
-                                            <div class="flex-grow-1">
-                                                <h6 class="mb-1">
-                                                    <span class="badge bg-info me-2">{{ caso.codigo }}</span>
-                                                    {{ caso.nombre }}
-                                                </h6>
-                                                <p class="mb-1 text-muted small">{{ caso.descripcion|truncatewords:20 }}</p>
-                                                {% if caso.actor_principal %}
-                                                    <small class="text-muted">
-                                                        <i class="bi bi-person me-1"></i>
-                                                        Actor: {{ caso.actor_principal }}
-                                                    </small>
-                                                {% endif %}
-                                            </div>
-                                        </div>
-                                    </a>
-                                    {% endfor %}
-                                </div>
-                                {% if data.casos_de_uso.count > 5 %}
-                                <div class="text-center mt-3">
-                                    <a href="{% url 'casos_de_uso:caso_de_uso_list' %}?proyecto={{ data.proyecto.id }}" 
-                                       class="btn btn-outline-info">
-                                        Ver todos los casos de uso ({{ data.casos_de_uso.count }})
-                                    </a>
-                                </div>
-                                {% endif %}
-                            {% else %}
-                                <p class="text-muted">No hay casos de uso en este proyecto.</p>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <!-- Requerimientos Pendientes -->
+    <div class="col-lg-3 col-md-6">
+      <div class="metric-card">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <div class="metric-value" style="color: #f093fb;">{{ requerimientos_pendientes|default:0 }}</div>
+            <div class="metric-label">Pendientes Validación</div>
+          </div>
+          <div>
+            <i class="bi bi-clock-history" style="font-size: 3rem; color: #f093fb; opacity: 0.2;"></i>
+          </div>
         </div>
-        {% endfor %}
-    {% else %}
-        <div class="alert alert-info">
-            <i class="bi bi-info-circle me-2"></i>
-            No tienes proyectos asignados como cliente.
+      </div>
+    </div>
+
+    <!-- Validaciones Pendientes -->
+    <div class="col-lg-3 col-md-6">
+      <div class="metric-card">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <div class="metric-value" style="color: #4facfe;">{{ validaciones_pendientes|default:0 }}</div>
+            <div class="metric-label">Validaciones Pendientes</div>
+          </div>
+          <div>
+            <i class="bi bi-shield-check" style="font-size: 3rem; color: #4facfe; opacity: 0.2;"></i>
+          </div>
         </div>
-    {% endif %}
+      </div>
+    </div>
+
+    <!-- Participaciones -->
+    <div class="col-lg-3 col-md-6">
+      <div class="metric-card">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <div class="metric-value" style="color: #43e97b;">{{ participaciones|default:0 }}</div>
+            <div class="metric-label">Participaciones</div>
+          </div>
+          <div>
+            <i class="bi bi-people-fill" style="font-size: 3rem; color: #43e97b; opacity: 0.2;"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Actividad Reciente -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card card-auto-height">
+        <div class="card-header">
+          <i class="bi bi-clock-history me-2"></i>Actividad Reciente
+        </div>
+        <div class="card-body">
+          {% if actividad_reciente %}
+            <ul class="list-group list-group-flush">
+              {% for item in actividad_reciente %}
+                <li class="list-group-item">{{ item }}</li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div class="text-center py-4">
+              <i class="bi bi-inbox" style="font-size: 3rem; color: #95a5a6;"></i>
+              <p class="text-muted mt-3 mb-0">No hay actividad reciente.</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Proyectos del Cliente -->
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <i class="bi bi-folder me-2"></i>Mis Proyectos
+        </div>
+        <div class="card-body">
+          {% if dashboard_data %}
+            <div class="row">
+              {% for data in dashboard_data %}
+                <div class="col-lg-4 col-md-6 mb-3">
+                  <div class="card h-100 border-primary">
+                    <div class="card-body">
+                      <h5 class="card-title">
+                        <i class="bi bi-kanban text-primary me-2"></i>{{ data.proyecto.nombre }}
+                      </h5>
+                      <p class="card-text text-muted small">{{ data.proyecto.descripcion|truncatechars:100 }}</p>
+                      
+                      <div class="row text-center mb-3">
+                        <div class="col-4">
+                          <div class="metric-value-small">{{ data.requerimientos|length }}</div>
+                          <div class="metric-label-small">Requerimientos</div>
+                        </div>
+                        <div class="col-4">
+                          <div class="metric-value-small text-warning">{{ data.reqs_pendientes_validacion }}</div>
+                          <div class="metric-label-small">Pendientes</div>
+                        </div>
+                        <div class="col-4">
+                          <div class="metric-value-small text-success">{{ data.reqs_validados }}</div>
+                          <div class="metric-label-small">Validados</div>
+                        </div>
+                      </div>
+                      
+                      <div class="d-grid gap-2">
+                        <a href="{% url 'requerimientos:requerimiento_list' %}?proyecto_id={{ data.proyecto.id }}" 
+                           class="btn btn-primary btn-sm">
+                          <i class="bi bi-list-check me-1"></i>Ver Requerimientos
+                        </a>
+                        <a href="{% url 'requerimientos:requerimiento_validar_cliente_proyecto' data.proyecto.id %}" 
+                           class="btn btn-outline-success btn-sm">
+                          <i class="bi bi-check-circle me-1"></i>Validar Requerimientos
+                        </a>
+                        <a href="{% url 'proyectos:proyecto_reportes' data.proyecto.id %}" 
+                           class="btn btn-outline-info btn-sm">
+                          <i class="bi bi-bar-chart-line me-1"></i>Ver Reportes
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="text-center py-4">
+              <i class="bi bi-folder-x" style="font-size: 3rem; color: #95a5a6;"></i>
+              <p class="text-muted mt-3 mb-0">No tienes proyectos asignados como cliente.</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
 {% endblock %}
 

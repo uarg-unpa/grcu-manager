@@ -98,6 +98,25 @@
                     </a>
                 </li>
             {% endif %}
+
+            <!-- Enlaces para Stakeholder/Cliente -->
+            {% if user.es_stakeholder %}
+                <li>
+                    <a href="{% url 'dashboards:stakeholder_dashboard' %}">
+                        <i class="bi bi-house"></i> Inicio
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'requerimientos:requerimiento_list' %}">
+                        <i class="bi bi-card-checklist"></i> Requerimientos
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'proyectos:reportes_stakeholder' %}">
+                        <i class="bi bi-bar-chart-line"></i> Reportes
+                    </a>
+                </li>
+            {% endif %}
         {% endif %}
     </ul>
 </nav>

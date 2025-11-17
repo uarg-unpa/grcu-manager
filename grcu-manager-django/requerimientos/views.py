@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
 from .models import Requerimiento
-from proyectos.models import Proyecto
+from proyectos.models import Proyecto, ParticipacionProyecto
 from django.contrib.auth.decorators import login_required
 from .forms import RequerimientoForm, RequerimientoTradicionalForm, RequerimientoAgilForm
 from requerimientos.models import DetalleRequerimientoTradicional, DetalleRequerimientoAgil, ComentarioValidacion
@@ -17,6 +17,14 @@ def requerimiento_list(request, proyecto_id=None):
     # Allow passing proyecto_id via URL param or querystring
     if not proyecto_id:
         proyecto_id = request.GET.get('proyecto_id')
+
+    # Si es un stakeholder y no se especifica proyecto, usar el primer proyecto donde es cliente
+    if not proyecto_id and request.user.es_stakeholder():
+        proyectos_cliente = Proyecto.objects.filter(clientes=request.user)
+        if proyectos_cliente.exists():
+            primer_proyecto = proyectos_cliente.first()
+            if primer_proyecto:
+                proyecto_id = primer_proyecto.pk
 
     # Si es un líder y no se especifica proyecto, usar sus proyectos
     if not proyecto_id and hasattr(request.user, 'lidera_proyectos'):
@@ -40,25 +48,27 @@ def requerimiento_list(request, proyecto_id=None):
     if proyecto_id:
         proyecto = get_object_or_404(Proyecto, id=proyecto_id)
         
-        # Filtrar requerimientos según el rol del usuario
+        # IMPORTANTE: Verificar stakeholder PRIMERO antes de otros roles
+        # Un usuario es stakeholder si tiene el rol Stakeholder Y está en la lista de clientes del proyecto
+        tiene_rol_stakeholder = request.user.es_stakeholder()
+        esta_en_clientes = proyecto.clientes.filter(id=request.user.id).exists()
+        es_stakeholder = tiene_rol_stakeholder and esta_en_clientes
+        
+        # SEGURIDAD: Si el usuario SOLO es stakeholder (no líder ni participante)
+        # y NO está en la lista de clientes de este proyecto, bloquear acceso
         es_lider = request.user == proyecto.lider
         es_participante = proyecto.participantes.filter(id=request.user.id).exists()
         
-        # Verificar si es stakeholder
-        try:
-            from roles.models import Rol
-            from proyectos.models import ParticipacionProyecto
-            stakeholder_rol = Rol.objects.get(nombre='Stakeholder')
-            es_stakeholder = ParticipacionProyecto.objects.filter(
-                usuario=request.user,
-                proyecto=proyecto,
-                rol=stakeholder_rol
-            ).exists()
-        except:
-            pass
+        if tiene_rol_stakeholder and not (es_lider or es_participante or esta_en_clientes):
+            # Stakeholder intentando acceder a un proyecto donde NO es cliente
+            from django.contrib import messages
+            messages.error(request, "No tienes permiso para ver los requerimientos de este proyecto.")
+            # Redirigir a sus proyectos como cliente
+            return redirect('dashboards:stakeholder_dashboard')
         
         if es_stakeholder:
-            # Stakeholders solo ven requerimientos pendientes de validación
+            # Stakeholders solo ven requerimientos pendientes de validación (BORRADOR)
+            # independientemente de si también son participantes
             requerimientos = Requerimiento.objects.filter(
                 proyecto=proyecto,
                 estado='BORRADOR'
@@ -138,10 +148,11 @@ def requerimiento_detail(request, pk):
     requerimiento = get_object_or_404(Requerimiento, pk=pk)
     proyecto = requerimiento.proyecto
     
-    # Verificar permisos: solo participantes del proyecto pueden ver detalles completos
+    # Verificar permisos: participantes del proyecto y clientes pueden ver detalles
     es_lider = request.user == proyecto.lider
     es_participante = proyecto.participantes.filter(id=request.user.id).exists()
-    tiene_permiso = es_lider or es_participante
+    es_cliente = request.user.es_stakeholder() and proyecto.clientes.filter(id=request.user.id).exists()
+    tiene_permiso = es_lider or es_participante or es_cliente
     
     # Obtener comentarios si el usuario tiene permiso
     comentarios = []
@@ -170,6 +181,8 @@ def requerimiento_detail(request, pk):
         'tiene_permiso': tiene_permiso,
         'es_lider': es_lider,
         'es_participante': es_participante,
+        'es_cliente': es_cliente,
+        'is_stakeholder': es_cliente,  # Alias para mantener consistencia con template
     }
     
     return render(request, "requerimientos/requerimiento_detail.html", context)
@@ -1520,14 +1533,97 @@ def requerimiento_validar_cliente_individual(request, pk):
 def requerimiento_discusion(request, pk):
     """
     Vista para ver y participar en la discusión de validación de un requerimiento.
-    Permite ver todos los comentarios y agregar respuestas.
-    
-    ⚠️ FUNCIONALIDAD EN DESARROLLO - No disponible en esta versión de demostración
+    Permite ver todos los comentarios y agregar respuestas en diferentes contextos.
     """
-    # Mostrar template de "en desarrollo"
-    return render(request, 'core/under_development.html', {
-        'page_title': 'Discusión de Requerimientos - En Desarrollo',
-    })
+    requerimiento = get_object_or_404(Requerimiento, pk=pk)
+    proyecto = requerimiento.proyecto
+    
+    # Verificar permisos de acceso al requerimiento
+    es_lider = request.user == proyecto.lider
+    es_participante = ParticipacionProyecto.objects.filter(
+        proyecto=proyecto,
+        usuario=request.user
+    ).exists()
+    es_stakeholder = request.user.roles.filter(nombre__iexact='Stakeholder').exists() and \
+                     proyecto.clientes.filter(id=request.user.id).exists()
+    
+    # Solo permitir acceso a miembros del proyecto
+    if not (es_lider or es_participante or es_stakeholder):
+        messages.error(request, '⛔ No tienes permisos para ver este requerimiento.')
+        return redirect('dashboards:developer_dashboard')
+    
+    # Determinar permisos de comentario
+    puede_comentar_interno = es_lider or es_participante
+    puede_comentar_cliente = es_stakeholder or es_lider
+    
+    # Procesar formulario de nuevo comentario
+    if request.method == 'POST':
+        tipo_comentario = request.POST.get('tipo_comentario', 'DISCUSION_INTERNA')
+        tipo_accion = request.POST.get('tipo_accion', 'RESPUESTA')
+        comentario_texto = request.POST.get('comentario', '').strip()
+        comentario_padre_id = request.POST.get('comentario_padre_id')
+        
+        # Validar permisos según tipo de comentario
+        if tipo_comentario == 'DISCUSION_INTERNA' and not puede_comentar_interno:
+            messages.error(request, '⛔ No tienes permisos para comentarios internos.')
+        elif tipo_comentario == 'VALIDACION_CLIENTE' and not puede_comentar_cliente:
+            messages.error(request, '⛔ No tienes permisos para comentarios con el cliente.')
+        elif not comentario_texto:
+            messages.error(request, '⚠️ El comentario no puede estar vacío.')
+        else:
+            # Crear el comentario
+            comentario_padre = None
+            if comentario_padre_id:
+                comentario_padre = get_object_or_404(ComentarioValidacion, pk=comentario_padre_id)
+            
+            ComentarioValidacion.objects.create(
+                requerimiento=requerimiento,
+                autor=request.user,
+                comentario=comentario_texto,
+                tipo_accion=tipo_accion,
+                tipo_comentario=tipo_comentario,
+                comentario_padre=comentario_padre
+            )
+            
+            messages.success(request, '✅ Comentario agregado correctamente.')
+            return redirect('requerimientos:requerimiento_discusion', pk=pk)
+    
+    # Obtener comentarios organizados por tipo y jerarquía
+    comentarios_internos = ComentarioValidacion.objects.filter(
+        requerimiento=requerimiento,
+        tipo_comentario='DISCUSION_INTERNA',
+        comentario_padre__isnull=True
+    ).select_related('autor').order_by('fecha_creacion')
+    
+    comentarios_cliente = ComentarioValidacion.objects.filter(
+        requerimiento=requerimiento,
+        tipo_comentario='VALIDACION_CLIENTE',
+        comentario_padre__isnull=True
+    ).select_related('autor').order_by('fecha_creacion')
+    
+    comentarios_implementacion = ComentarioValidacion.objects.filter(
+        requerimiento=requerimiento,
+        tipo_comentario='IMPLEMENTACION',
+        comentario_padre__isnull=True
+    ).select_related('autor').order_by('fecha_creacion')
+    
+    total_comentarios = ComentarioValidacion.objects.filter(requerimiento=requerimiento).count()
+    
+    context = {
+        'page_title': f'Discusión - {requerimiento.nombre}',
+        'requerimiento': requerimiento,
+        'proyecto': proyecto,
+        'comentarios_internos': comentarios_internos,
+        'comentarios_cliente': comentarios_cliente,
+        'comentarios_implementacion': comentarios_implementacion,
+        'total_comentarios': total_comentarios,
+        'puede_comentar_interno': puede_comentar_interno,
+        'puede_comentar_cliente': puede_comentar_cliente,
+        'es_lider': es_lider,
+        'es_stakeholder': es_stakeholder,
+    }
+    
+    return render(request, 'requerimientos/requerimiento_discusion.html', context)
 
 
 # ============================================================================

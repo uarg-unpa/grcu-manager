@@ -261,6 +261,14 @@ def crear_proyecto(request):
                     defaults={"color": "#17a2b8"}
                 )
                 for cliente in clientes:
+                    # IMPORTANTE: Si el cliente ya era participante, removerlo de participantes
+                    # Los stakeholders NO deben ser participantes del equipo de desarrollo
+                    ParticipacionProyecto.objects.filter(
+                        usuario=cliente,
+                        proyecto=proyecto
+                    ).delete()
+                    
+                    # Crear nueva participación como Stakeholder
                     ParticipacionProyecto.objects.get_or_create(
                         usuario=cliente,
                         proyecto=proyecto,
@@ -284,8 +292,22 @@ def editar_proyecto(request, proyecto_id):
 
     if request.method == "POST":
         form = ProyectoCrearForm(request.POST, request.FILES, instance=proyecto)
+        # DEBUG: logear llegada del POST para depuración
+        try:
+            print('\n--- Received POST to editar_proyecto ---')
+            print('PATH:', request.path)
+            print('POST keys:', list(request.POST.keys()))
+            print("Clientes en POST (getlist):", request.POST.getlist('clientes'))
+            print('Líder en POST:', request.POST.get('lider'))
+            print('Grupo en POST:', request.POST.get('grupo'))
+        except Exception as _err:
+            print('Error al imprimir debug POST:', _err)
+
         if form.is_valid():
-            proyecto = form.save()
+            
+            # No guardar ManyToMany todavía
+            proyecto = form.save(commit=False)
+            proyecto.save()
 
             # Obtener el grupo seleccionado (puede ser None)
             grupo = proyecto.grupo
@@ -433,6 +455,12 @@ def editar_proyecto(request, proyecto_id):
                     defaults={"color": "#17a2b8"}
                 )
                 for cliente in clientes:
+                    # Eliminar cualquier participación existente antes de crear la nueva como Stakeholder
+                    ParticipacionProyecto.objects.filter(
+                        usuario=cliente,
+                        proyecto=proyecto
+                    ).delete()
+                    
                     ParticipacionProyecto.objects.get_or_create(
                         usuario=cliente,
                         proyecto=proyecto,
@@ -1269,7 +1297,7 @@ def proyecto_reportes(request, proyecto_id):
     """
     Vista de reportes y estadísticas del proyecto.
     Muestra métricas, gráficos y análisis del estado del proyecto.
-    Accesible por líder y participantes del proyecto.
+    Accesible por líder, participantes y stakeholders (clientes) del proyecto.
     """
     from requerimientos.models import Requerimiento
     from casos_de_uso.models import CasoDeUso
@@ -1278,13 +1306,15 @@ def proyecto_reportes(request, proyecto_id):
     
     proyecto = get_object_or_404(Proyecto, id=proyecto_id)
     
-    # Verificar permisos: líder o participante del proyecto
+    # Verificar permisos: líder, participante o stakeholder (cliente)
     es_lider = proyecto.lider == request.user
     es_participante = proyecto.participantes.filter(id=request.user.id).exists()
+    es_stakeholder = request.user.roles.filter(nombre__iexact='Stakeholder').exists() and \
+                     proyecto.clientes.filter(id=request.user.id).exists()
     
-    if not (es_lider or es_participante):
+    if not (es_lider or es_participante or es_stakeholder):
         messages.error(request, "No tienes permiso para ver los reportes de este proyecto.")
-        return redirect("dashboards:lider_dashboard")
+        return redirect("dashboards:developer_dashboard")
     
     # === MÉTRICAS GENERALES ===
     total_requerimientos = Requerimiento.objects.filter(proyecto=proyecto).count()
@@ -1335,6 +1365,7 @@ def proyecto_reportes(request, proyecto_id):
     context = {
         'proyecto': proyecto,
         'es_lider': es_lider,
+        'es_stakeholder': es_stakeholder,
         'page_title': f'{proyecto.nombre} - Reportes',
         
         # Métricas
@@ -2616,3 +2647,21 @@ def reportes_lider(request):
     # Redirigir al reporte del primer proyecto
     proyecto = proyectos.first()
     return redirect('proyectos:proyecto_reportes', proyecto_id=proyecto.id)
+
+
+@login_required
+def reportes_stakeholder(request):
+    """
+    Redirige al stakeholder a la página de reportes de su proyecto.
+    Si tiene múltiples proyectos como cliente, redirige al primero.
+    """
+    proyectos = Proyecto.objects.filter(clientes=request.user)
+    
+    if not proyectos.exists():
+        messages.warning(request, "No tienes proyectos asignados como cliente.")
+        return redirect('dashboards:stakeholder_dashboard')
+    
+    # Redirigir al reporte del primer proyecto
+    proyecto = proyectos.first()
+    return redirect('proyectos:proyecto_reportes', proyecto_id=proyecto.id)
+
