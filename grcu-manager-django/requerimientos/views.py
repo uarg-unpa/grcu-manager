@@ -1562,6 +1562,8 @@ def requerimiento_discusion(request, pk):
         tipo_accion = request.POST.get('tipo_accion', 'RESPUESTA')
         comentario_texto = request.POST.get('comentario', '').strip()
         comentario_padre_id = request.POST.get('comentario_padre_id')
+        imagen = request.FILES.get('imagen')
+        link_externo = request.POST.get('link_externo', '').strip()
         
         # Validar permisos según tipo de comentario
         if tipo_comentario == 'DISCUSION_INTERNA' and not puede_comentar_interno:
@@ -1582,7 +1584,9 @@ def requerimiento_discusion(request, pk):
                 comentario=comentario_texto,
                 tipo_accion=tipo_accion,
                 tipo_comentario=tipo_comentario,
-                comentario_padre=comentario_padre
+                comentario_padre=comentario_padre,
+                imagen=imagen,
+                link_externo=link_externo
             )
             
             messages.success(request, '✅ Comentario agregado correctamente.')

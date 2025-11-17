@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 
 class UsuarioCrearForm(forms.ModelForm):
     roles = forms.ModelChoiceField(
-        queryset=Rol.objects.filter(nombre__in=["Admin", "Desarrollador", "Stakeholder"]),  # Roles disponibles
+        queryset=Rol.objects.filter(nombre__in=["Admin", "Desarrollador", "Stakeholder", "Visitante"]),  # Roles disponibles
         widget=forms.RadioSelect,
         required=False,
         empty_label="Sin rol asignado"
@@ -43,7 +43,7 @@ class UsuarioCrearForm(forms.ModelForm):
 
 class UsuarioEditarForm(forms.ModelForm):
     roles = forms.ModelChoiceField(
-        queryset=Rol.objects.filter(nombre__in=["Admin", "Desarrollador", "Stakeholder"]),  # Roles disponibles
+        queryset=Rol.objects.filter(nombre__in=["Admin", "Desarrollador", "Stakeholder", "Visitante"]),  # Roles disponibles
         widget=forms.RadioSelect,
         required=False,
         empty_label="Sin rol asignado"

@@ -3,8 +3,7 @@
 {% load static %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="{% static 'proyectos/css/proyecto_detail_styles.css' %}">
+    <link rel="stylesheet" href="{% static 'dashboards/css/admin_dashboard.css' %}?v=2.8">
 {% endblock %}
 
 {% block extra_js %}
@@ -15,10 +14,9 @@
 {% block title %}{{ page_title }}{% endblock %}
 
 {% block content %}
-<div class="project-detail-container">
+<div class="container-fluid mt-4 px-4">
     {% if dashboard_data %}
         {% for data in dashboard_data %}
-        <div class="project-detail-container">
             
             {% if data.necesita_metodologia %}
             <div class="alert alert-warning alert-dismissible fade show d-flex align-items-center mb-3" role="alert">
@@ -32,79 +30,87 @@
             </div>
             {% endif %}
             
-            {# Métricas principales - 3 columnas #}
-            <div class="row g-3 mb-4">
-                <div class="col-md-4">
-                    <div class="dashboard-card">
+            {# Métricas principales - 3 columnas con gráficos tipo admin #}
+            <div class="row mb-4">
+                <!-- Tarjeta Requerimientos -->
+                <div class="col-lg-4">
+                    <div class="card mb-3 hover-shadow">
                         <div class="card-header">
-                            <i class="bi bi-list-check"></i> Requerimientos
+                            <i class="bi bi-list-check me-2"></i>Requerimientos
                         </div>
-                        <div class="card-body text-center">
-                            <p class="display-4 fw-bold mb-0">{{ data.requerimientos|length }}</p>
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="chart-container-side">
+                                    <canvas id="grafico-req-{{ forloop.counter0 }}" 
+                                            data-labels='["Huérfanos", "Relacionados"]'
+                                            data-values='[{{ data.reqs_huerfanos|length }}, {{ data.reqs_relacionados }}]'
+                                            data-colors='["#EF4444", "#3B82F6"]'
+                                            data-type="doughnut"></canvas>
+                                </div>
+                                <div class="chart-info">
+                                    <div class="metric-value" style="color: #3B82F6;">{{ data.requerimientos|length }}</div>
+                                    <div class="metric-label">Total</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="dashboard-card">
+                
+                <!-- Tarjeta Casos de Uso -->
+                <div class="col-lg-4">
+                    <div class="card mb-3 hover-shadow">
                         <div class="card-header">
-                            <i class="bi bi-diagram-3"></i> Casos de Uso
+                            <i class="bi bi-diagram-3 me-2"></i>Casos de Uso
                         </div>
-                        <div class="card-body text-center">
-                            <p class="display-4 fw-bold mb-0">{{ data.casos_de_uso|length }}</p>
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="chart-container-side">
+                                    <canvas id="grafico-cu-{{ forloop.counter0 }}" 
+                                            data-labels='["Huérfanos", "Relacionados"]'
+                                            data-values='[{{ data.casos_huerfanos|length }}, {{ data.casos_relacionados }}]'
+                                            data-colors='["#EF4444", "#10B981"]'
+                                            data-type="doughnut"></canvas>
+                                </div>
+                                <div class="chart-info">
+                                    <div class="metric-value" style="color: #10B981;">{{ data.casos_de_uso|length }}</div>
+                                    <div class="metric-label">Total</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="dashboard-card">
+                
+                <!-- Tarjeta Huérfanos -->
+                <div class="col-lg-4">
+                    <div class="card mb-3 hover-shadow">
                         <div class="card-header">
-                            <i class="bi bi-exclamation-triangle-fill"></i> Huérfanos
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>Elementos Huérfanos
                         </div>
-                        <div class="card-body text-center">
-                            <p class="text-danger mb-2">Reqs: {{ data.reqs_huerfanos|length }}</p>
-                            <p class="text-danger mb-0">CUs: {{ data.casos_huerfanos|length }}</p>
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="chart-container-side">
+                                    <canvas id="grafico-huerfanos-{{ forloop.counter0 }}" 
+                                            data-labels='["Requerimientos", "Casos de Uso"]'
+                                            data-values='[{{ data.reqs_huerfanos|length }}, {{ data.casos_huerfanos|length }}]'
+                                            data-colors='["#F59E0B", "#EF4444"]'
+                                            data-type="doughnut"></canvas>
+                                </div>
+                                <div class="chart-info">
+                                    <div class="metric-value" style="color: #EF4444;">{{ data.reqs_huerfanos|length|add:data.casos_huerfanos|length }}</div>
+                                    <div class="metric-label">Total</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-            {# Gráficos - 2 columnas #}
-            <div class="row g-3 mb-4">
-                <div class="col-md-6">
-                    <div class="dashboard-card">
-                        <div class="card-header">
-                            <i class="bi bi-pie-chart-fill"></i> Distribución de Requerimientos
-                        </div>
-                        <div class="card-body">
-                            <canvas id="grafico-req-{{ forloop.counter0 }}" 
-                                    data-labels='["Huérfanos", "Relacionados"]'
-                                    data-values='[{{ data.reqs_huerfanos|length }}, {{ data.reqs_relacionados }}]'
-                                    data-colors='["#EF4444", "#3B82F6"]'
-                                    data-type="pie"
-                                    width="280" height="280" style="max-width: 280px; max-height: 280px; margin: 0 auto; display: block;"></canvas>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="dashboard-card">
-                        <div class="card-header">
-                            <i class="bi bi-pie-chart-fill"></i> Distribución Casos de Uso
-                        </div>
-                        <div class="card-body">
-                            <canvas id="grafico-cu-{{ forloop.counter0 }}" 
-                                    data-labels='["Huérfanos", "Relacionados"]'
-                                    data-values='[{{ data.casos_huerfanos|length }}, {{ data.casos_relacionados }}]'
-                                    data-colors='["#EF4444", "#10B981"]'
-                                    data-type="pie"
-                                    width="280" height="280" style="max-width: 280px; max-height: 280px; margin: 0 auto; display: block;"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            
             {# Huérfanos - 2 columnas #}
             <div class="row g-3">
                 <div class="col-md-6">
-                    <div class="dashboard-card">
+                    <div class="card hover-shadow">
                         <div class="card-header">
-                            <i class="bi bi-exclamation-triangle-fill"></i> Requerimientos Huérfanos ({{ data.reqs_huerfanos|length }})
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>Requerimientos Huérfanos ({{ data.reqs_huerfanos|length }})
                         </div>
                         <div class="card-body">
                             <ul class="list-group list-group-flush">
@@ -123,9 +129,9 @@
                     </div>
                 </div>
                 <div class="col-md-6">
-                    <div class="dashboard-card">
+                    <div class="card hover-shadow">
                         <div class="card-header">
-                            <i class="bi bi-exclamation-triangle-fill"></i> Casos de Uso Huérfanos ({{ data.casos_huerfanos|length }})
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>Casos de Uso Huérfanos ({{ data.casos_huerfanos|length }})
                         </div>
                         <div class="card-body">
                             <ul class="list-group list-group-flush">
@@ -144,7 +150,7 @@
                     </div>
                 </div>
             </div>
-        </div>
+            
         {% endfor %}
     {% else %}
         <div class="alert alert-info">

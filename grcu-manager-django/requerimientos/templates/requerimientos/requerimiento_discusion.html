@@ -60,7 +60,7 @@
                 <!-- Formulario para nuevo comentario -->
                 <div class="collapse" id="nuevoComentario">
                     <div class="card-body border-bottom">
-                        <form method="post">
+                        <form method="post" enctype="multipart/form-data">
                             {% csrf_token %}
                             
                             <!-- Selector de tipo de comentario -->
@@ -123,6 +123,25 @@
                                 </div>
                             </div>
                             
+                            <!-- Adjuntos -->
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="imagen" class="form-label">
+                                        <i class="bi bi-image me-1"></i>Imagen Adjunta (Opcional)
+                                    </label>
+                                    <input type="file" class="form-control" id="imagen" name="imagen" accept="image/*">
+                                    <div class="form-text">Formatos: PNG, JPG, JPEG (Máx. 5MB)</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="link_externo" class="form-label">
+                                        <i class="bi bi-link-45deg me-1"></i>Enlace Externo (Opcional)
+                                    </label>
+                                    <input type="url" class="form-control" id="link_externo" name="link_externo" 
+                                           placeholder="https://ejemplo.com">
+                                    <div class="form-text">URL completa del recurso externo</div>
+                                </div>
+                            </div>
+                            
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-send me-1"></i>Enviar Comentario
                             </button>
@@ -173,6 +192,55 @@
                                     <div class="comentario-contenido mt-2">
                                         {{ hilo.comentario.comentario|linebreaks }}
                                     </div>
+                                    
+                                    <!-- Adjuntos del comentario -->
+                                    {% if hilo.comentario.imagen or hilo.comentario.link_externo %}
+                                    <div class="mt-3">
+                                        <div class="row g-2">
+                                            {% if hilo.comentario.imagen %}
+                                            <div class="col-md-6">
+                                                <div class="card border-info">
+                                                    <div class="card-body p-2">
+                                                        <small class="text-muted d-block mb-2">
+                                                            <i class="bi bi-image text-info"></i> Imagen adjunta:
+                                                        </small>
+                                                        <a href="{{ hilo.comentario.imagen.url }}" target="_blank" class="d-block">
+                                                            <img src="{{ hilo.comentario.imagen.url }}" 
+                                                                 alt="Adjunto" 
+                                                                 class="img-fluid rounded"
+                                                                 style="max-height: 200px; cursor: pointer;"
+                                                                 title="Click para ver en tamaño completo">
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% endif %}
+                                            
+                                            {% if hilo.comentario.link_externo %}
+                                            <div class="col-md-6">
+                                                <div class="card border-primary">
+                                                    <div class="card-body p-2">
+                                                        <small class="text-muted d-block mb-2">
+                                                            <i class="bi bi-link-45deg text-primary"></i> Enlace externo:
+                                                        </small>
+                                                        <a href="{{ hilo.comentario.link_externo }}" 
+                                                           target="_blank" 
+                                                           rel="noopener noreferrer"
+                                                           class="btn btn-sm btn-outline-primary w-100">
+                                                            <i class="bi bi-box-arrow-up-right me-1"></i>
+                                                            Abrir recurso
+                                                        </a>
+                                                        <small class="text-muted text-break d-block mt-1" style="font-size: 0.75rem;">
+                                                            {{ hilo.comentario.link_externo|truncatechars:50 }}
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
                                     <div class="mt-2">
                                         <button class="btn btn-sm btn-outline-secondary" type="button" 
                                                 data-bs-toggle="collapse" data-bs-target="#respuestas-{{ hilo.comentario.pk }}">
@@ -183,17 +251,29 @@
                                     <!-- Formulario de respuesta colapsable -->
                                     <div class="collapse mt-3" id="respuestas-{{ hilo.comentario.pk }}">
                                         <div class="respuesta-form">
-                                            <form method="post">
+                                            <form method="post" enctype="multipart/form-data">
                                                 {% csrf_token %}
-                                                <input type="hidden" name="comentario_padre" value="{{ hilo.comentario.pk }}">
+                                                <input type="hidden" name="comentario_padre_id" value="{{ hilo.comentario.pk }}">
                                                 <input type="hidden" name="tipo_comentario" value="{{ hilo.tipo_comentario }}">
-                                                <div class="input-group">
+                                                <div class="mb-2">
                                                     <textarea name="comentario" class="form-control" rows="2" 
                                                               placeholder="Escribe tu respuesta..." required></textarea>
-                                                    <button class="btn btn-outline-primary" type="submit">
-                                                        <i class="bi bi-send"></i>
-                                                    </button>
                                                 </div>
+                                                <div class="row g-2 mb-2">
+                                                    <div class="col-md-6">
+                                                        <input type="file" class="form-control form-control-sm" 
+                                                               name="imagen" accept="image/*" 
+                                                               placeholder="Imagen (opcional)">
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <input type="url" class="form-control form-control-sm" 
+                                                               name="link_externo" 
+                                                               placeholder="https://enlace-externo.com (opcional)">
+                                                    </div>
+                                                </div>
+                                                <button class="btn btn-sm btn-primary" type="submit">
+                                                    <i class="bi bi-send me-1"></i>Enviar Respuesta
+                                                </button>
                                             </form>
                                         </div>
                                     </div>
@@ -227,6 +307,40 @@
                                                 <div class="comentario-contenido mt-1">
                                                     {{ respuesta.comentario.comentario|linebreaks }}
                                                 </div>
+                                                
+                                                <!-- Adjuntos en respuestas -->
+                                                {% if respuesta.comentario.imagen or respuesta.comentario.link_externo %}
+                                                <div class="mt-2">
+                                                    {% if respuesta.comentario.imagen %}
+                                                    <div class="mb-2">
+                                                        <small class="text-muted d-block">
+                                                            <i class="bi bi-image text-info"></i> Imagen:
+                                                        </small>
+                                                        <a href="{{ respuesta.comentario.imagen.url }}" target="_blank">
+                                                            <img src="{{ respuesta.comentario.imagen.url }}" 
+                                                                 alt="Adjunto" 
+                                                                 class="img-fluid rounded border"
+                                                                 style="max-height: 150px; cursor: pointer;">
+                                                        </a>
+                                                    </div>
+                                                    {% endif %}
+                                                    
+                                                    {% if respuesta.comentario.link_externo %}
+                                                    <div class="mb-2">
+                                                        <small class="text-muted d-block">
+                                                            <i class="bi bi-link-45deg text-primary"></i> Enlace:
+                                                        </small>
+                                                        <a href="{{ respuesta.comentario.link_externo }}" 
+                                                           target="_blank" 
+                                                           rel="noopener noreferrer"
+                                                           class="btn btn-sm btn-outline-primary">
+                                                            <i class="bi bi-box-arrow-up-right me-1"></i>
+                                                            Abrir
+                                                        </a>
+                                                    </div>
+                                                    {% endif %}
+                                                </div>
+                                                {% endif %}
                                             </div>
                                         </div>
                                     </div>

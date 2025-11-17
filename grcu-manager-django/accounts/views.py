@@ -256,6 +256,9 @@ def google_login_callback(request):
     elif user.roles.filter(nombre__iexact='Stakeholder').exists():
         # Stakeholders/Clientes van a su dashboard específico
         return redirect("dashboards:stakeholder_dashboard")
+    elif user.roles.filter(nombre__iexact='Visitante').exists():
+        # Visitantes van a su dashboard específico
+        return redirect("dashboards:visitor_dashboard")
     else:
         # Desarrolladores y otros roles
         return redirect("dashboards:developer_dashboard")

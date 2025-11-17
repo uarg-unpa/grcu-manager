@@ -87,6 +87,17 @@
             {% endif %}
         </div>
 
+        <div class="proyecto-form-group">
+            {{ form.visitantes.label_tag }}
+            {{ form.visitantes }}
+            {% if form.visitantes.help_text %}
+                <small class="form-text text-muted">{{ form.visitantes.help_text }}</small>
+            {% endif %}
+            {% if form.visitantes.errors %}
+                <div class="text-danger">{{ form.visitantes.errors.as_text }}</div>
+            {% endif %}
+        </div>
+
         <div class="proyecto-form-acciones">
             <button type="submit" class="proyecto-form-btn-crear" title="Guardar proyecto">
                 <i class="bi bi-check-lg"></i> Guardar

@@ -25,9 +25,17 @@ class ProyectoCrearForm(forms.ModelForm):
         help_text='Selecciona uno o más clientes para este proyecto (mantén Ctrl/Cmd para seleccionar múltiples)'
     )
 
+    visitantes = forms.MultipleChoiceField(
+        choices=[],
+        widget=forms.SelectMultiple(attrs={'class': 'form-control', 'id': 'id_visitantes', 'size': '5'}),
+        required=False,
+        label='Visitantes',
+        help_text='Selecciona uno o más visitantes para este proyecto (acceso de solo lectura)'
+    )
+
     class Meta:
         model = Proyecto
-        fields = ['nombre', 'descripcion', 'logo', 'grupo', 'clientes']
+        fields = ['nombre', 'descripcion', 'logo', 'grupo', 'clientes', 'visitantes']
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control', 'required': True}),
             'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
@@ -36,15 +44,23 @@ class ProyectoCrearForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Inicializar choices vacíos para lider y clientes
+        # Inicializar choices vacíos para lider, clientes y visitantes
         self.fields['lider'].choices = []
         self.fields['clientes'].choices = []
+        self.fields['visitantes'].choices = []
 
         # Cargar clientes disponibles (usuarios con rol Stakeholder)
         stakeholders = Usuario.objects.filter(roles__nombre='Stakeholder').distinct().order_by('nombre')
         self.fields['clientes'].choices = [
             (usuario.pk, f"{usuario.nombre} ({usuario.email})")
             for usuario in stakeholders
+        ]
+
+        # Cargar visitantes disponibles (usuarios con rol Visitante)
+        visitantes = Usuario.objects.filter(roles__nombre='Visitante').distinct().order_by('nombre')
+        self.fields['visitantes'].choices = [
+            (usuario.pk, f"{usuario.nombre} ({usuario.email})")
+            for usuario in visitantes
         ]
 
         # Si hay un grupo seleccionado, cargar sus integrantes
@@ -75,9 +91,10 @@ class ProyectoCrearForm(forms.ModelForm):
             # No hay grupo seleccionado
             self.fields['lider'].required = False  # No requerir lider cuando no hay grupo
         
-        # Si estamos editando, preseleccionar los clientes actuales
+        # Si estamos editando, preseleccionar los clientes y visitantes actuales
         if self.instance and self.instance.pk:
             self.initial['clientes'] = list(self.instance.clientes.values_list('id', flat=True))
+            self.initial['visitantes'] = list(self.instance.visitantes.values_list('id', flat=True))
 
     def clean(self):
         cleaned_data = super().clean()

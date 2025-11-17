@@ -275,6 +275,15 @@ def crear_proyecto(request):
                         defaults={'rol': rol_stakeholder}
                     )
 
+            # Asignar visitantes al proyecto (independientemente de si hay grupo o no)
+            visitantes_ids = form.cleaned_data.get('visitantes')
+            if visitantes_ids:
+                # Convertir IDs (strings) a enteros y obtener objetos Usuario
+                visitantes_ids_int = [int(id) for id in visitantes_ids]
+                visitantes = Usuario.objects.filter(id__in=visitantes_ids_int)
+                proyecto.visitantes.set(visitantes)
+                messages.success(request, f"{len(visitantes)} visitante(s) asignado(s) al proyecto.")
+
             return redirect("proyectos:lista_proyectos")
     else:
         form = ProyectoCrearForm()
@@ -477,6 +486,16 @@ def editar_proyecto(request, proyecto_id):
                     ).delete()
                 proyecto.clientes.clear()
 
+            # Gestionar visitantes
+            visitantes_ids = form.cleaned_data.get('visitantes')
+            if visitantes_ids:
+                visitantes_ids_int = [int(id) for id in visitantes_ids]
+                visitantes = Usuario.objects.filter(id__in=visitantes_ids_int)
+                proyecto.visitantes.set(visitantes)
+                messages.success(request, f"{len(visitantes)} visitante(s) asignado(s) al proyecto.")
+            else:
+                proyecto.visitantes.clear()
+
             return redirect("proyectos:lista_proyectos")
     else:
         form = ProyectoCrearForm(instance=proyecto)
@@ -568,7 +587,7 @@ def matriz_trazabilidad(request, proyecto_id):
     """
     Vista de Matriz de Trazabilidad con Live Traceability.
     Muestra relaciones dinámicas entre requerimientos y casos de uso.
-    Accesible por líder y participantes del proyecto.
+    Accesible por líder, participantes, stakeholders y visitantes del proyecto.
     """
     from requerimientos.models import Requerimiento, RequerimientoCaso
     from casos_de_uso.models import CasoDeUso
@@ -576,13 +595,15 @@ def matriz_trazabilidad(request, proyecto_id):
     
     proyecto = get_object_or_404(Proyecto, id=proyecto_id)
     
-    # Verificar permisos: líder o participante del proyecto
+    # Verificar permisos: líder, participante, stakeholder o visitante del proyecto
     es_lider = proyecto.lider == request.user
     es_participante = proyecto.participantes.filter(id=request.user.id).exists()
+    es_stakeholder = proyecto.clientes.filter(id=request.user.id).exists()
+    es_visitante = proyecto.visitantes.filter(id=request.user.id).exists()
     
-    if not (es_lider or es_participante):
+    if not (es_lider or es_participante or es_stakeholder or es_visitante):
         messages.error(request, "No tienes permiso para ver la matriz de trazabilidad de este proyecto.")
-        return redirect("dashboards:lider_dashboard")
+        return redirect("dashboards:visitor_dashboard" if request.user.es_visitante() else "dashboards:lider_dashboard")
     
     # Filtros
     tipo_req = request.GET.get('tipo_req')
@@ -1297,7 +1318,7 @@ def proyecto_reportes(request, proyecto_id):
     """
     Vista de reportes y estadísticas del proyecto.
     Muestra métricas, gráficos y análisis del estado del proyecto.
-    Accesible por líder, participantes y stakeholders (clientes) del proyecto.
+    Accesible por líder, participantes, stakeholders (clientes) y visitantes del proyecto.
     """
     from requerimientos.models import Requerimiento
     from casos_de_uso.models import CasoDeUso
@@ -1306,14 +1327,16 @@ def proyecto_reportes(request, proyecto_id):
     
     proyecto = get_object_or_404(Proyecto, id=proyecto_id)
     
-    # Verificar permisos: líder, participante o stakeholder (cliente)
+    # Verificar permisos: líder, participante, stakeholder (cliente) o visitante
     es_lider = proyecto.lider == request.user
     es_participante = proyecto.participantes.filter(id=request.user.id).exists()
-    es_stakeholder = request.user.roles.filter(nombre__iexact='Stakeholder').exists() and \
-                     proyecto.clientes.filter(id=request.user.id).exists()
+    es_stakeholder = proyecto.clientes.filter(id=request.user.id).exists()
+    es_visitante = proyecto.visitantes.filter(id=request.user.id).exists()
     
-    if not (es_lider or es_participante or es_stakeholder):
+    if not (es_lider or es_participante or es_stakeholder or es_visitante):
         messages.error(request, "No tienes permiso para ver los reportes de este proyecto.")
+        if request.user.es_visitante():
+            return redirect("dashboards:visitor_dashboard")
         return redirect("dashboards:developer_dashboard")
     
     # === MÉTRICAS GENERALES ===
@@ -2665,3 +2688,19 @@ def reportes_stakeholder(request):
     proyecto = proyectos.first()
     return redirect('proyectos:proyecto_reportes', proyecto_id=proyecto.id)
 
+
+@login_required
+def reportes_visitante(request):
+    """
+    Redirige al visitante a la página de reportes de su proyecto.
+    Si tiene múltiples proyectos asignados, redirige al primero.
+    """
+    proyectos = Proyecto.objects.filter(visitantes=request.user)
+    
+    if not proyectos.exists():
+        messages.warning(request, "No tienes proyectos asignados como visitante.")
+        return redirect('dashboards:visitor_dashboard')
+    
+    # Redirigir al reporte del primer proyecto
+    proyecto = proyectos.first()
+    return redirect('proyectos:proyecto_reportes', proyecto_id=proyecto.id)

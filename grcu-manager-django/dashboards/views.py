@@ -631,6 +631,64 @@ def stakeholder_dashboard(request):
 
 
 @login_required
+def visitor_dashboard(request):
+    """
+    Dashboard para visitantes.
+    Muestra los proyectos donde el usuario es visitante (solo lectura).
+    Los visitantes pueden ver matriz de trazabilidad y reportes únicamente.
+    """
+    from requerimientos.models import Requerimiento
+    from casos_de_uso.models import CasoDeUso
+    
+    # Obtener proyectos donde el usuario es visitante
+    proyectos = Proyecto.objects.filter(visitantes=request.user)
+    dashboard_data = []
+    
+    for proyecto in proyectos:
+        requerimientos = Requerimiento.objects.filter(proyecto=proyecto)
+        casos_de_uso = CasoDeUso.objects.filter(proyecto=proyecto)
+        
+        # Estadísticas básicas
+        total_requerimientos = requerimientos.count()
+        total_casos_uso = casos_de_uso.count()
+        
+        # Calcular huérfanos
+        reqs_huerfanos = requerimientos.annotate(rel_count=Count('relaciones_casos')).filter(rel_count=0)
+        casos_huerfanos = casos_de_uso.annotate(rel_count=Count('relaciones_requerimientos')).filter(rel_count=0)
+        
+        reqs_relacionados = total_requerimientos - reqs_huerfanos.count()
+        casos_relacionados = total_casos_uso - casos_huerfanos.count()
+        
+        # Métricas por estado
+        reqs_completados = requerimientos.filter(estado__in=['TERMINADO', 'COMPLETADO']).count()
+        
+        # Calcular progreso del proyecto
+        progreso = (reqs_completados / total_requerimientos * 100) if total_requerimientos > 0 else 0
+        
+        dashboard_data.append({
+            "proyecto": proyecto,
+            "total_requerimientos": total_requerimientos,
+            "total_casos_uso": total_casos_uso,
+            "reqs_huerfanos_count": reqs_huerfanos.count(),
+            "casos_huerfanos_count": casos_huerfanos.count(),
+            "reqs_relacionados": reqs_relacionados,
+            "casos_relacionados": casos_relacionados,
+            "reqs_completados": reqs_completados,
+            "progreso": round(progreso, 1),
+        })
+    
+    # Obtener el primer proyecto para el título
+    primer_proyecto = proyectos.first()
+    titulo_proyecto = primer_proyecto.nombre if primer_proyecto else "Sin Proyecto Asignado"
+    
+    return render(request, "dashboards/visitor_dashboard.html", {
+        "dashboard_data": dashboard_data,
+        "total_proyectos": proyectos.count(),
+        "page_title": f"{titulo_proyecto} - Dashboard Visitante",
+    })
+
+
+@login_required
 def limpiar_base_datos(request):
     """
     Limpia la base de datos eliminando todas las entradas de las tablas seleccionadas
@@ -699,3 +757,26 @@ def limpiar_base_datos(request):
     
     return redirect('dashboards:admin_herramientas')
 
+
+@login_required
+def visitor_matriz(request):
+    """
+    Redirige a la matriz de trazabilidad del primer proyecto del visitante.
+    Si tiene múltiples proyectos, redirige al primero.
+    """
+    from django.contrib import messages
+    
+    proyectos = Proyecto.objects.filter(visitantes=request.user)
+    
+    proyecto_id = request.GET.get('proyecto')
+    if proyecto_id:
+        proyecto = proyectos.filter(id=proyecto_id).first()
+    else:
+        proyecto = proyectos.first()
+    
+    if not proyecto:
+        messages.error(request, 'No tienes proyectos asignados como visitante.')
+        return redirect('dashboards:visitor_dashboard')
+    
+    # Redirigir a la matriz del proyecto
+    return redirect('proyectos:matriz_trazabilidad', proyecto_id=proyecto.pk)
