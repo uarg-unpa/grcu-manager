@@ -21,6 +21,7 @@ from google.auth.transport import requests as grequests
 from urllib.parse import urlencode
 from django.conf import settings
 from .models import Usuario
+from .utils import get_dashboard_for_user
 import requests
 from django.contrib import messages
 from roles.models import Rol
@@ -77,6 +78,10 @@ def login_view(request):
     if not Usuario.objects.exists() or \
        not Usuario.objects.filter(roles__nombre=Rol.ADMIN).exists():
         return redirect("accounts:setup_admin")
+
+    # Si el usuario ya está autenticado, redirigirlo a su dashboard según rol
+    if request.user.is_authenticated:
+        return redirect(get_dashboard_for_user(request.user))
 
     return render(
         request,
