@@ -28,16 +28,20 @@ class RequerimientoTradicionalForm(forms.Form):
             # Obtener fuentes del proyecto (predefinidas + personalizadas)
             fuentes_proyecto = FuenteRequerimiento.objects.filter(proyecto=proyecto)
             fuente_choices = [('', '-- Seleccionar fuente --')]
-            fuente_choices.append(('NUEVA', '➕ Nueva Fuente...'))
+            # Primero agregar las fuentes existentes
             fuente_choices.extend([(f.nombre, f.nombre) for f in fuentes_proyecto])
+            # Luego agregar la opción de nueva fuente al final
+            fuente_choices.append(('NUEVA', '➕ Nueva Fuente...'))
             
             self.fields['fuente'].choices = fuente_choices
             
             # Obtener categorías del proyecto (predefinidas + personalizadas)
             categorias_proyecto = CategoriaRequerimiento.objects.filter(proyecto=proyecto)
             categoria_choices = [('', '-- Seleccionar categoría --')]
-            categoria_choices.append(('NUEVA', '➕ Nueva Categoría...'))
+            # Primero agregar las categorías existentes
             categoria_choices.extend([(c.nombre, c.nombre) for c in categorias_proyecto])
+            # Luego agregar la opción de nueva categoría al final
+            categoria_choices.append(('NUEVA', '➕ Nueva Categoría...'))
             
             self.fields['categoria'].choices = categoria_choices
     

@@ -318,6 +318,12 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 let versionSeleccionada = null;
+let modalComparar = null;
+
+// Inicializar modal una sola vez cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', function() {
+    modalComparar = new bootstrap.Modal(document.getElementById('compararModal'));
+});
 
 function seleccionarParaComparar(historyId, numeroVersion) {
     versionSeleccionada = historyId;
@@ -370,9 +376,10 @@ function seleccionarParaComparar(historyId, numeroVersion) {
         }
     });
     
-    // Mostrar modal
-    const modal = new bootstrap.Modal(document.getElementById('compararModal'));
-    modal.show();
+    // Mostrar modal usando la instancia global
+    if (modalComparar) {
+        modalComparar.show();
+    }
 }
 
 function compararVersiones(version2Id) {

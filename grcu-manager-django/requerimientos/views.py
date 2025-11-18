@@ -255,6 +255,7 @@ def requerimiento_create(request, proyecto_id=None):
                 imagen=form.cleaned_data.get('imagen'),
                 link_externo=form.cleaned_data.get('link_externo', '')
             )
+            requerimiento._history_user = request.user
             requerimiento.save()
             
             # Crear el detalle específico según la metodología
@@ -310,7 +311,7 @@ def requerimiento_create(request, proyecto_id=None):
                         pass
                 
                 # Crear detalle tradicional (la relación se establece automáticamente vía requerimiento_padre)
-                DetalleRequerimientoTradicional.objects.create(
+                detalle = DetalleRequerimientoTradicional(
                     requerimiento_padre=requerimiento,
                     prioridad=form.cleaned_data.get('prioridad', ''),
                     fuente=fuente_valor,
@@ -319,17 +320,21 @@ def requerimiento_create(request, proyecto_id=None):
                     estado_validacion=form.cleaned_data.get('estado_validacion', ''),
                     observaciones=form.cleaned_data.get('observaciones', '')
                 )
+                detalle._history_user = request.user
+                detalle.save()
                 messages.success(request, f'✅ Requerimiento "{requerimiento.nombre}" creado exitosamente.')
                 
             elif es_agil:
                 # Crear detalle ágil (la relación se establece automáticamente vía requerimiento_padre)
-                DetalleRequerimientoAgil.objects.create(
+                detalle = DetalleRequerimientoAgil(
                     requerimiento_padre=requerimiento,
                     historia_usuario=form.cleaned_data.get('historia_usuario', ''),
                     criterio_aceptacion=form.cleaned_data.get('criterio_aceptacion', ''),
                     puntos_estimados=form.cleaned_data.get('puntos_estimados'),
                     observaciones=form.cleaned_data.get('observaciones', '')
                 )
+                detalle._history_user = request.user
+                detalle.save()
                 messages.success(request, f'✅ User Story "{requerimiento.nombre}" creada exitosamente.')
             
             # Redirigir al listado de requerimientos del proyecto
@@ -490,10 +495,11 @@ def requerimiento_priorizar(request, proyecto_id=None):
                 # Cambiar estado a PRIORIZADO si no lo está
                 if req.estado != 'PRIORIZADO':
                     req.estado = 'PRIORIZADO'
+                    req._history_user = request.user
                     req.save()
         
         messages.success(request, '✅ Priorización realizada con éxito. Los requerimientos han sido actualizados.')
-        return redirect(f"{reverse('requerimientos:requerimiento_priorizar')}?proyecto_id={proyecto.pk}")
+        return redirect(f"{reverse('requerimientos:requerimiento_list')}?proyecto_id={proyecto.pk}")
 
     context = {
         "proyecto": proyecto,
@@ -502,6 +508,34 @@ def requerimiento_priorizar(request, proyecto_id=None):
         "page_title": f"{proyecto.nombre} - Priorización de Requerimientos",
     }
     return render(request, "requerimientos/requerimiento_priorizar.html", context)
+
+
+@login_required
+def requerimiento_revertir_priorizacion(request, pk):
+    """
+    Revierte un requerimiento de PRIORIZADO a VALIDADO.
+    Solo el líder del proyecto puede revertir la priorización.
+    """
+    requerimiento = get_object_or_404(Requerimiento, pk=pk)
+    proyecto = requerimiento.proyecto
+    
+    # Verificar que el usuario sea el líder del proyecto
+    if request.user != proyecto.lider:
+        messages.error(request, '⛔ Solo el líder del proyecto puede revertir la priorización.')
+        return redirect('requerimientos:requerimiento_detail', pk=pk)
+    
+    # Verificar que el requerimiento esté en estado PRIORIZADO
+    if requerimiento.estado != 'PRIORIZADO':
+        messages.warning(request, f'⚠️ El requerimiento ya está en estado {requerimiento.get_estado_display()}.')
+        return redirect('requerimientos:requerimiento_detail', pk=pk)
+    
+    # Revertir a VALIDADO
+    requerimiento.estado = 'VALIDADO'
+    requerimiento._history_user = request.user
+    requerimiento.save()
+    
+    messages.success(request, f'✅ Requerimiento "{requerimiento.nombre}" revertido a estado VALIDADO.')
+    return redirect('requerimientos:requerimiento_detail', pk=pk)
 
 
 @login_required
@@ -679,7 +713,7 @@ def requerimiento_historial(request, pk):
             usuario_nombre = usuario.nombre if hasattr(usuario, 'nombre') else str(usuario)
         else:
             usuario = None
-            usuario_nombre = 'Sistema'
+            usuario_nombre = 'No registrado'
         
         # Tipo de cambio
         tipo_cambio = {
@@ -996,7 +1030,11 @@ def requerimiento_update(request, pk):
     es_creador = request.user == requerimiento.creado_por
     
     if not (es_lider or es_creador):
-        messages.error(request, 'No tienes permiso para editar este requerimiento.')
+        messages.error(
+            request, 
+            f'⛔ Solo el creador ({requerimiento.creado_por.nombre}) o el líder del proyecto '
+            f'pueden editar este requerimiento.'
+        )
         return redirect('requerimientos:requerimiento_detail', pk=pk)
     
     # Determinar qué formulario usar según la metodología
@@ -1030,6 +1068,7 @@ def requerimiento_update(request, pk):
                 requerimiento.imagen = nueva_imagen
             
             requerimiento.link_externo = form.cleaned_data.get('link_externo', '')
+            requerimiento._history_user = request.user
             requerimiento.save()
             
             # Actualizar el detalle específico según la metodología
@@ -1088,6 +1127,7 @@ def requerimiento_update(request, pk):
                 detalle.categoria = categoria_valor
                 detalle.fecha_compromiso = form.cleaned_data.get('fecha_compromiso')
                 detalle.observaciones = form.cleaned_data.get('observaciones', '')
+                detalle._history_user = request.user
                 detalle.save()
                 
             elif es_agil:
@@ -1098,6 +1138,7 @@ def requerimiento_update(request, pk):
                 detalle.criterio_aceptacion = form.cleaned_data.get('criterio_aceptacion', '')
                 detalle.puntos_estimados = form.cleaned_data.get('puntos_estimados')
                 detalle.observaciones = form.cleaned_data.get('observaciones', '')
+                detalle._history_user = request.user
                 detalle.save()
             
             messages.success(request, f'✅ Requerimiento "{requerimiento.nombre}" actualizado exitosamente.')
@@ -1406,6 +1447,7 @@ def requerimiento_validar_lider_individual(request, pk):
             requerimiento.fecha_validacion = timezone.now()
             requerimiento.tipo_validador = 'LIDER'
             requerimiento.requiere_discusion = False
+            requerimiento._history_user = request.user
             requerimiento.save()
             
             # Crear comentario si se proporcionó
@@ -1430,6 +1472,7 @@ def requerimiento_validar_lider_individual(request, pk):
                 requerimiento.motivo_rechazo = comentario
                 requerimiento.ultimo_rechazado_por = request.user
                 requerimiento.fecha_ultimo_rechazo = timezone.now()
+                requerimiento._history_user = request.user
                 requerimiento.save()
                 
                 # Crear comentario de rechazo
@@ -1480,6 +1523,7 @@ def requerimiento_validar_cliente_individual(request, pk):
             requerimiento.estado = 'APROBADO'
             requerimiento.validado_cliente = True
             requerimiento.fecha_validacion_cliente = timezone.now()
+            requerimiento._history_user = request.user
             requerimiento.save()
             
             # Crear comentario si se proporcionó
@@ -1504,6 +1548,7 @@ def requerimiento_validar_cliente_individual(request, pk):
                 requerimiento.motivo_rechazo_cliente = comentario
                 requerimiento.ultimo_rechazado_por_cliente = request.user
                 requerimiento.fecha_ultimo_rechazo_cliente = timezone.now()
+                requerimiento._history_user = request.user
                 requerimiento.save()
                 
                 # Crear comentario de rechazo
@@ -1597,19 +1642,62 @@ def requerimiento_discusion(request, pk):
         requerimiento=requerimiento,
         tipo_comentario='DISCUSION_INTERNA',
         comentario_padre__isnull=True
-    ).select_related('autor').order_by('fecha_creacion')
+    ).select_related('autor').prefetch_related('respuestas').order_by('fecha_creacion')
     
     comentarios_cliente = ComentarioValidacion.objects.filter(
         requerimiento=requerimiento,
         tipo_comentario='VALIDACION_CLIENTE',
         comentario_padre__isnull=True
-    ).select_related('autor').order_by('fecha_creacion')
+    ).select_related('autor').prefetch_related('respuestas').order_by('fecha_creacion')
     
     comentarios_implementacion = ComentarioValidacion.objects.filter(
         requerimiento=requerimiento,
         tipo_comentario='IMPLEMENTACION',
         comentario_padre__isnull=True
-    ).select_related('autor').order_by('fecha_creacion')
+    ).select_related('autor').prefetch_related('respuestas').order_by('fecha_creacion')
+    
+    # Combinar todos los comentarios y estructurarlos para el template
+    from itertools import chain
+    todos_comentarios = sorted(
+        chain(comentarios_internos, comentarios_cliente, comentarios_implementacion),
+        key=lambda x: x.fecha_creacion
+    )
+    
+    # Estructurar comentarios para el template
+    comentarios_hilo = []
+    for com in todos_comentarios:
+        # Obtener rol principal del autor
+        rol_principal = None
+        if hasattr(com.autor, 'roles') and com.autor.roles.exists():
+            rol_principal = com.autor.roles.first().nombre
+        
+        # Estructurar respuestas de la misma manera
+        respuestas_estructuradas = []
+        for resp in com.respuestas.all():
+            rol_resp = None
+            if hasattr(resp.autor, 'roles') and resp.autor.roles.exists():
+                rol_resp = resp.autor.roles.first().nombre
+            
+            respuestas_estructuradas.append({
+                'comentario': resp,
+                'tipo_comentario': resp.tipo_comentario,
+                'autor_info': {
+                    'nombre': resp.autor.nombre,
+                    'avatar': None,
+                    'rol_principal': rol_resp,
+                },
+            })
+        
+        comentarios_hilo.append({
+            'comentario': com,
+            'tipo_comentario': com.tipo_comentario,
+            'autor_info': {
+                'nombre': com.autor.nombre,
+                'avatar': None,  # Agregar lógica de avatar si existe
+                'rol_principal': rol_principal,
+            },
+            'respuestas': respuestas_estructuradas,
+        })
     
     total_comentarios = ComentarioValidacion.objects.filter(requerimiento=requerimiento).count()
     
@@ -1620,6 +1708,7 @@ def requerimiento_discusion(request, pk):
         'comentarios_internos': comentarios_internos,
         'comentarios_cliente': comentarios_cliente,
         'comentarios_implementacion': comentarios_implementacion,
+        'comentarios_hilo': comentarios_hilo,
         'total_comentarios': total_comentarios,
         'puede_comentar_interno': puede_comentar_interno,
         'puede_comentar_cliente': puede_comentar_cliente,

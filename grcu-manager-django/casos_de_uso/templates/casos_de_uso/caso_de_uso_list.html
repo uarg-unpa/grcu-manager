@@ -27,13 +27,13 @@
     }
 
     /* Optimización del ancho de columnas */
-    table th:nth-child(1) { width: 30%; } /* Nombre */
-    table th:nth-child(2) { width: 20%; } /* Requerimiento */
-    table th:nth-child(3) { width: 12%; } /* Proyecto */
-    table th:nth-child(4) { width: 8%; } /* Creador */
-    table th:nth-child(5) { width: 20%; } /* Descripción */
+    table th:nth-child(1) { width: 28%; } /* Nombre */
+    table th:nth-child(2) { width: 18%; } /* Requerimiento */
+    table th:nth-child(3) { width: 10%; } /* Proyecto */
+    table th:nth-child(4) { width: 12%; } /* Creador */
+    table th:nth-child(5) { width: 18%; } /* Descripción */
     table th:nth-child(6) { width: 8%; } /* Fecha */
-    table th:nth-child(7) { width: 7%; min-width: 140px; } /* Acciones */
+    table th:nth-child(7) { width: 6%; min-width: 140px; } /* Acciones */
 
     /* Asegurar que las acciones no se corten */
     td:nth-child(7) {
@@ -142,7 +142,7 @@
 {% block title %}Casos de Uso{% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container-fluid py-4">
   {# Barra de búsqueda y filtros #}
   <div class="filtros-container">
     <div class="d-flex gap-2 align-items-center flex-wrap justify-content-between w-100">
@@ -235,21 +235,24 @@
             </td>
             <td class="text-center">
               {% if cu.creado_por %}
-                {% if cu.creado_por.avatar %}
-                  <img src="{{ cu.creado_por.avatar }}" 
-                       alt="{{ cu.creado_por.nombre }}" 
-                       class="creator-avatar"
-                       data-bs-toggle="tooltip"
-                       data-bs-placement="top"
-                       title="{{ cu.creado_por.nombre }}">
-                {% else %}
-                  <div class="creator-placeholder"
-                       data-bs-toggle="tooltip"
-                       data-bs-placement="top"
-                       title="{{ cu.creado_por.nombre }}">
-                    {{ cu.creado_por.nombre|first|upper }}
-                  </div>
-                {% endif %}
+                <div class="d-flex align-items-center justify-content-center gap-2">
+                  {% if cu.creado_por.avatar %}
+                    <img src="{{ cu.creado_por.avatar }}" 
+                         alt="{{ cu.creado_por.nombre }}" 
+                         class="creator-avatar"
+                         data-bs-toggle="tooltip"
+                         data-bs-placement="top"
+                         title="{{ cu.creado_por.nombre }}">
+                  {% else %}
+                    <div class="creator-placeholder"
+                         data-bs-toggle="tooltip"
+                         data-bs-placement="top"
+                         title="{{ cu.creado_por.nombre }}">
+                      {{ cu.creado_por.nombre|first|upper }}
+                    </div>
+                  {% endif %}
+                  <small class="text-muted">{{ cu.creado_por.nombre }}</small>
+                </div>
               {% else %}
                 <span class="text-muted"><i class="bi bi-person-x"></i></span>
               {% endif %}

@@ -104,10 +104,12 @@ class ProyectoCrearForm(forms.ModelForm):
 
         # Si hay grupo seleccionado, debe haber lider
         if grupo and not lider:
+            self.add_error('lider', "Por favor, selecciona un líder del grupo. El campo de líder se llena automáticamente cuando seleccionas un grupo.")
             raise forms.ValidationError("Debe seleccionar un líder cuando hay un grupo asignado.")
 
         # Si hay lider seleccionado, debe haber grupo
         if lider and not grupo:
+            self.add_error('grupo', "No puedes seleccionar un líder sin asignar primero un grupo.")
             raise forms.ValidationError("No puede seleccionar un líder sin asignar un grupo.")
 
         # Validar que los clientes NO pertenezcan al grupo de desarrollo

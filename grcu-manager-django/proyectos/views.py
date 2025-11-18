@@ -145,20 +145,21 @@ def buscar_proyectos_ajax(request):
 def crear_proyecto(request):
     if request.method == "POST":
         form = ProyectoCrearForm(request.POST, request.FILES)
+        
+        # Debug: Imprimir errores del formulario
+        if not form.is_valid():
+            print("❌ FORMULARIO NO VÁLIDO")
+            print("Errores del formulario:", form.errors)
+            print("Errores no de campo:", form.non_field_errors())
+        
         if form.is_valid():
-            # Crear el proyecto
-            proyecto = form.save(commit=False)
-            proyecto.creado_por = request.user
-            proyecto.save()
+            # Obtener el grupo seleccionado ANTES de crear el proyecto
+            grupo = form.cleaned_data.get('grupo')  # Ya es un objeto Grupo, no un ID
 
-            # Obtener el grupo seleccionado (puede ser None)
-            grupo = proyecto.grupo
-
+            # ⚡ VALIDAR: Un grupo solo puede tener UN proyecto activo (ANTES de crear)
             if grupo:
-                # ⚡ VALIDAR: Un grupo solo puede tener UN proyecto activo
                 proyecto_existente = Proyecto.objects.filter(grupo=grupo, activo=True).first()
                 if proyecto_existente:
-                    proyecto.delete()  # Eliminar el proyecto creado
                     messages.error(
                         request,
                         f"El grupo '{grupo.nombre}' ya tiene asignado el proyecto activo '{proyecto_existente.nombre}'. "
@@ -168,8 +169,13 @@ def crear_proyecto(request):
                         "form": form,
                         "page_title": "Crear Proyecto"
                     })
-                
-                # Solo procesar líder y participantes si hay grupo
+
+            # Crear el proyecto DESPUÉS de validar
+            proyecto = form.save(commit=False)
+            proyecto.creado_por = request.user
+            proyecto.save()
+
+            if grupo:
                 lider_id = form.cleaned_data.get('lider')
                 if lider_id:
                     lider = Usuario.objects.get(id=lider_id)

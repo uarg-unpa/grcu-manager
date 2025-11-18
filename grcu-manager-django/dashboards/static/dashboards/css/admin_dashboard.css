@@ -5,7 +5,8 @@
   border: 3px solid #ecf0f1;
   border-radius: 12px;
   overflow: hidden;
-  height: 280px;
+  min-height: 280px;
+  height: auto;
   display: flex;
   flex-direction: column;
   transition: all 0.3s ease;
@@ -53,10 +54,23 @@
 .card-header {
   background-color: #f8f9fa;
   border-bottom: 2px solid #ecf0f1;
-  padding: 1rem 1.5rem;
+  padding: 1rem 1.25rem;
   font-weight: 600;
   color: #2c3e50;
-  font-size: 1.05rem;
+  font-size: 0.95rem;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.3;
+  min-height: 3.2rem;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.card-header i {
+  margin-right: 0.5rem;
+  flex-shrink: 0;
 }
 
 /* Métricas principales */
@@ -93,6 +107,10 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 0;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.4;
 }
 
 /* Gráficas de dona */
@@ -294,7 +312,8 @@ canvas {
   }
   
   .card {
-    height: 280px;
+    min-height: 300px;
+    height: auto;
   }
   
   canvas {
@@ -316,7 +335,8 @@ canvas {
   }
   
   .card {
-    height: 280px;
+    min-height: 300px;
+    height: auto;
   }
   
   canvas {

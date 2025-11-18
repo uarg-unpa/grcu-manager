@@ -60,6 +60,9 @@ class DetalleCasoDeUsoTradicional(models.Model):
     postcondiciones = models.TextField(blank=True)
     observaciones = models.TextField(blank=True)
 
+    # HISTORIAL DE VERSIONES
+    history = HistoricalRecords()
+
     def __str__(self):
         return f"Tradicional: {self.caso_de_uso_padre.nombre}"
 
@@ -70,6 +73,9 @@ class DetalleCasoDeUsoAgil(models.Model):
     responsable = models.CharField(max_length=100, blank=True)
     estado_scrum = models.CharField(max_length=100, blank=True)
     observaciones = models.TextField(blank=True)
+
+    # HISTORIAL DE VERSIONES
+    history = HistoricalRecords()
 
     def __str__(self):
         return f"Ágil: {self.caso_de_uso_padre.nombre}"

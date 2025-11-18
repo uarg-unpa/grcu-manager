@@ -14,6 +14,7 @@ def is_admin(user):
 
 @user_passes_test(is_admin)
 @login_required
+@login_required
 def lista_usuarios(request):
     # Definir jerarquía de roles
     rol_order = {'Admin': 1, 'Líder': 2, 'Desarrollador': 3, 'Stakeholder': 4}
