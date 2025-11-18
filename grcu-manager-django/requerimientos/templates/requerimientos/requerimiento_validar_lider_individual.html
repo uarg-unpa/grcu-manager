@@ -33,9 +33,6 @@
                 <i class="bi bi-folder"></i> Proyecto: <strong>{{ proyecto.nombre }}</strong>
             </p>
         </div>
-        <a href="{% url 'requerimientos:requerimiento_detail' requerimiento.pk %}" class="btn btn-secondary">
-            <i class="bi bi-arrow-left"></i> Volver al Detalle
-        </a>
     </div>
 
     <form method="post" id="validationForm">
@@ -52,7 +49,6 @@
                             <i class="bi bi-circle-fill" style="font-size: 0.5rem;"></i> {{ requerimiento.get_estado_display }}
                         </small>
                     </div>
-                    <span class="badge bg-light text-dark">ID: {{ requerimiento.pk }}</span>
                 </div>
             </div>
             <div class="card-body">
@@ -96,9 +92,25 @@
                 {% endif %}
 
                 <hr>
-                <p class="text-muted mb-0">
-                    <i class="bi bi-person"></i> Creado por: <strong>{{ requerimiento.creado_por.get_full_name }}</strong> el {{ requerimiento.creado_en|date:"d/m/Y H:i" }}
-                </p>
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-person-circle me-2 text-muted"></i>
+                    <span class="text-muted">Creado por:</span>
+                    {% if requerimiento.creado_por %}
+                        {% if requerimiento.creado_por.avatar %}
+                            <img src="{{ requerimiento.creado_por.avatar }}" 
+                                 alt="{{ requerimiento.creado_por.get_full_name }}" 
+                                 class="rounded-circle ms-2"
+                                 style="width: 32px; height: 32px; object-fit: cover;">
+                        {% else %}
+                            <i class="bi bi-person-circle ms-2" style="font-size: 32px; color: #6c757d;"></i>
+                        {% endif %}
+                        <strong class="ms-2">{{ requerimiento.creado_por.get_full_name }}</strong>
+                        <span class="text-muted ms-2">el {{ requerimiento.fecha_creacion|date:"d/m/Y H:i" }}</span>
+                    {% else %}
+                        <strong class="ms-2 text-muted">Usuario no disponible</strong>
+                        <span class="text-muted ms-2">el {{ requerimiento.fecha_creacion|date:"d/m/Y H:i" }}</span>
+                    {% endif %}
+                </div>
             </div>
         </div>
 
@@ -120,36 +132,125 @@
             </div>
 
             <div class="d-flex gap-2 justify-content-end">
-                <button type="submit" name="accion" value="rechazar" class="btn btn-danger">
-                    <i class="bi bi-x-circle"></i> Rechazar
+                <a href="{% url 'requerimientos:requerimiento_list' %}?proyecto_id={{ proyecto.id }}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </a>
+                <a href="{% url 'requerimientos:requerimiento_detail' requerimiento.pk %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-eye"></i> Detalle
+                </a>
+                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalRechazar">
+                    <i class="bi bi-x-circle-fill"></i> Rechazar
                 </button>
-                <button type="submit" name="accion" value="validar" class="btn btn-success">
-                    <i class="bi bi-check-circle"></i> Validar
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalValidar">
+                    <i class="bi bi-check-circle-fill"></i> Validar
                 </button>
             </div>
         </div>
     </form>
 </div>
 
+<!-- Modal Validar -->
+<div class="modal fade" id="modalValidar" tabindex="-1" aria-labelledby="modalValidarLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="modalValidarLabel">
+                    <i class="bi bi-check-circle-fill me-2"></i>Confirmar Validación
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-success border-success">
+                    <h6 class="alert-heading">
+                        <i class="bi bi-info-circle-fill me-2"></i>¿Está seguro de validar este requerimiento?
+                    </h6>
+                    <hr>
+                    <p class="mb-2"><strong>Requerimiento:</strong> {{ requerimiento.nombre }}</p>
+                    <p class="mb-2"><strong>Tipo:</strong> {{ requerimiento.get_tipo_display }}</p>
+                    <p class="mb-2"><strong>Proyecto:</strong> {{ proyecto.nombre }}</p>
+                    <hr>
+                    <p class="mb-0 small text-muted">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        Al validar, el requerimiento cambiará a estado <strong>VALIDADO</strong> y podrá ser priorizado.
+                    </p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-success" onclick="submitValidacion('validar')">
+                    <i class="bi bi-check-circle-fill me-1"></i>Sí, Validar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Rechazar -->
+<div class="modal fade" id="modalRechazar" tabindex="-1" aria-labelledby="modalRechazarLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="modalRechazarLabel">
+                    <i class="bi bi-x-circle-fill me-2"></i>Confirmar Rechazo
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger border-danger">
+                    <h6 class="alert-heading">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>¿Está seguro de rechazar este requerimiento?
+                    </h6>
+                    <hr>
+                    <p class="mb-2"><strong>Requerimiento:</strong> {{ requerimiento.nombre }}</p>
+                    <p class="mb-2"><strong>Tipo:</strong> {{ requerimiento.get_tipo_display }}</p>
+                    <p class="mb-2"><strong>Proyecto:</strong> {{ proyecto.nombre }}</p>
+                    <hr>
+                    <p class="mb-0 small text-muted">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        El comentario que agregaste será enviado al creador del requerimiento.
+                    </p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-danger" onclick="submitValidacion('rechazar')">
+                    <i class="bi bi-x-circle-fill me-1"></i>Sí, Rechazar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
-document.getElementById('validationForm').addEventListener('submit', function(e) {
-    const accion = e.submitter.value;
+function submitValidacion(accion) {
     const comentario = document.getElementById('comentario').value.trim();
     
     if (accion === 'rechazar' && !comentario) {
-        e.preventDefault();
+        // Cerrar el modal
+        bootstrap.Modal.getInstance(document.getElementById('modalRechazar')).hide();
+        
+        // Mostrar alerta
         alert('Debes proporcionar un comentario al rechazar el requerimiento.');
+        
+        // Enfocar el textarea
+        document.getElementById('comentario').focus();
         return false;
     }
     
-    const mensaje = accion === 'validar' 
-        ? '¿Estás seguro de validar este requerimiento?' 
-        : '¿Estás seguro de rechazar este requerimiento?';
+    // Crear input hidden con la acción
+    const form = document.getElementById('validationForm');
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'accion';
+    input.value = accion;
+    form.appendChild(input);
     
-    if (!confirm(mensaje)) {
-        e.preventDefault();
-        return false;
-    }
-});
+    // Enviar el formulario
+    form.submit();
+}
 </script>
 {% endblock %}

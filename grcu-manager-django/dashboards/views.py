@@ -77,13 +77,25 @@ def admin_dashboard(request):
     
     # Combinar y sumar actividades por proyecto
     actividad_proyectos = {}
+    proyectos_ids = {}  # Guardar IDs de proyectos
+    
     for item in proyectos_requerimientos:
         nombre = item['proyecto__nombre']
         actividad_proyectos[nombre] = actividad_proyectos.get(nombre, 0) + item['actividad']
+        # Obtener ID del proyecto
+        if nombre not in proyectos_ids:
+            proyecto = Proyecto.objects.filter(nombre=nombre).first()
+            if proyecto:
+                proyectos_ids[nombre] = proyecto.id
     
     for item in proyectos_casos:
         nombre = item['proyecto__nombre']
         actividad_proyectos[nombre] = actividad_proyectos.get(nombre, 0) + item['actividad']
+        # Obtener ID del proyecto si no lo tenemos
+        if nombre not in proyectos_ids:
+            proyecto = Proyecto.objects.filter(nombre=nombre).first()
+            if proyecto:
+                proyectos_ids[nombre] = proyecto.id
     
     # Obtener los 4 proyectos más activos
     proyectos_mas_activos = sorted(actividad_proyectos.items(), key=lambda x: x[1], reverse=True)[:4]
@@ -92,12 +104,49 @@ def admin_dashboard(request):
     if proyectos_mas_activos:
         proyectos_activos_labels = [proyecto[0] for proyecto in proyectos_mas_activos]
         proyectos_activos_values = [proyecto[1] for proyecto in proyectos_mas_activos]
+        proyectos_activos_ids = [proyectos_ids.get(proyecto[0], 0) for proyecto in proyectos_mas_activos]
     else:
         proyectos_activos_labels = ["Sin actividad"]
         proyectos_activos_values = [0]
+        proyectos_activos_ids = [0]
     
     proyectos_activos_labels_json = json.dumps(proyectos_activos_labels)
     proyectos_activos_values_json = json.dumps(proyectos_activos_values)
+    proyectos_activos_ids_json = json.dumps(proyectos_activos_ids)
+
+    # === GRUPOS MÁS ACTIVOS ===
+    # Calcular actividad por grupo basado en número de proyectos y participantes
+    grupos_con_actividad = []
+    for grupo in Grupo.objects.filter(activo=True):
+        # Contar proyectos del grupo
+        num_proyectos = Proyecto.objects.filter(grupo=grupo).count()
+        # Contar integrantes activos
+        num_integrantes = grupo.integrantes.count()
+        # Calcular puntaje de actividad
+        actividad_score = num_proyectos * 3 + num_integrantes  # Priorizar proyectos
+        
+        if actividad_score > 0:
+            grupos_con_actividad.append({
+                'nombre': grupo.nombre,
+                'actividad': actividad_score,
+                'proyectos': num_proyectos,
+                'integrantes': num_integrantes,
+            })
+    
+    # Ordenar por actividad y tomar los 4 más activos
+    grupos_mas_activos = sorted(grupos_con_actividad, key=lambda x: x['actividad'], reverse=True)[:4]
+    
+    # Si no hay grupos activos, poner valores por defecto
+    if not grupos_mas_activos:
+        grupos_mas_activos = [{
+            'nombre': 'Sin grupos activos',
+            'actividad': 0,
+            'proyectos': 0,
+            'integrantes': 0,
+        }]
+    
+    # Preparar datos para el template
+    grupos_activos_data = grupos_mas_activos
 
     # Roles esperados
     roles_labels = ["Admin", "Líder", "Desarrollador", "Visitante"]
@@ -126,8 +175,48 @@ def admin_dashboard(request):
     grupos_estado_labels_json = json.dumps(grupos_estado_labels)
     grupos_estado_values_json = json.dumps(grupos_estado_values)
 
-    # Últimas acciones
-    ultimas_acciones = LogEntry.objects.select_related("user").order_by("-action_time")[:10]
+    # === ÚLTIMAS ACCIONES ADMINISTRATIVAS ===
+    # Combinar acciones del log de Django admin y de auditoría
+    from auditoria.models import RegistroActividad
+    
+    # Obtener últimas acciones del sistema de auditoría
+    acciones_auditoria = RegistroActividad.objects.select_related('usuario').order_by('-fecha')[:10]
+    
+    # Obtener últimas acciones del log de Django admin
+    acciones_admin = LogEntry.objects.select_related('user').order_by('-action_time')[:10]
+    
+    # Combinar y ordenar todas las acciones
+    ultimas_acciones = []
+    
+    # Agregar acciones de auditoría
+    for accion in acciones_auditoria:
+        ultimas_acciones.append({
+            'usuario': accion.usuario,
+            'fecha': accion.fecha,
+            'accion': accion.get_accion_display(),
+            'descripcion': accion.descripcion or f"{accion.get_accion_display()}",
+            'tipo': 'auditoria'
+        })
+    
+    # Agregar acciones del admin
+    for log in acciones_admin:
+        action_map = {
+            1: 'Creó',
+            2: 'Modificó',
+            3: 'Eliminó',
+        }
+        action_text = action_map.get(log.action_flag, 'Acción')
+        
+        ultimas_acciones.append({
+            'usuario': log.user,
+            'fecha': log.action_time,
+            'accion': action_text,
+            'descripcion': f"{action_text} {log.object_repr}",
+            'tipo': 'admin'
+        })
+    
+    # Ordenar por fecha y tomar las 10 más recientes
+    ultimas_acciones = sorted(ultimas_acciones, key=lambda x: x['fecha'], reverse=True)[:10]
 
     # Contexto para el template
     context = {
@@ -150,6 +239,8 @@ def admin_dashboard(request):
         "proyectos_activos_labels": proyectos_activos_labels,
         "proyectos_activos_labels_json": proyectos_activos_labels_json,
         "proyectos_activos_values_json": proyectos_activos_values_json,
+        "proyectos_activos_ids_json": proyectos_activos_ids_json,  # NUEVO
+        "grupos_mas_activos": grupos_activos_data,  # NUEVO
         "ultimas_acciones": ultimas_acciones,
         "page_title": "Panel de Administración",
     }
@@ -230,9 +321,24 @@ def lider_dashboard(request):
         casos_relacionados = total_casos_de_uso - casos_huerfanos_count
 
         # Calcular métricas adicionales de requerimientos por estado
-        reqs_sin_validar = requerimientos.filter(estado='BORRADOR').count()
-        reqs_completados = requerimientos.filter(estado__in=['TERMINADO', 'COMPLETADO']).count()
+        reqs_borrador = requerimientos.filter(estado='BORRADOR').count()
+        reqs_validado = requerimientos.filter(estado='VALIDADO').count()
+        reqs_priorizado = requerimientos.filter(estado='PRIORIZADO').count()
+        reqs_en_proceso = requerimientos.filter(estado='EN_PROCESO').count()
+        reqs_terminado = requerimientos.filter(estado='TERMINADO').count()
+        
+        reqs_sin_validar = reqs_borrador
+        reqs_completados = reqs_terminado
         reqs_sin_completar = total_requerimientos - reqs_completados
+        
+        # Métricas de tipos de requerimientos
+        reqs_funcional = requerimientos.filter(tipo='FUNCIONAL').count()
+        reqs_no_funcional = requerimientos.filter(tipo='NO_FUNCIONAL').count()
+        
+        # Calcular porcentaje de completitud
+        porcentaje_completitud = (reqs_completados / total_requerimientos * 100) if total_requerimientos > 0 else 0
+        porcentaje_pendientes = 100 - porcentaje_completitud
+        porcentaje_validados = ((reqs_validado + reqs_priorizado + reqs_en_proceso + reqs_terminado) / total_requerimientos * 100) if total_requerimientos > 0 else 0
 
         dashboard_data.append({
             "proyecto": proyecto,
@@ -255,8 +361,19 @@ def lider_dashboard(request):
             "reqs_sin_validar": reqs_sin_validar,
             "reqs_completados": reqs_completados,
             "reqs_sin_completar": reqs_sin_completar,
-            "necesita_metodologia": proyecto.necesita_metodologia(),  # ⚡ NUEVO
-            "puede_cambiar_metodologia": proyecto.puede_cambiar_metodologia(),  # ⚡ NUEVO
+            "necesita_metodologia": proyecto.necesita_metodologia(),
+            "puede_cambiar_metodologia": proyecto.puede_cambiar_metodologia(),
+            # Nuevos datos para gráficos
+            "reqs_borrador": reqs_borrador,
+            "reqs_validado": reqs_validado,
+            "reqs_priorizado": reqs_priorizado,
+            "reqs_en_proceso": reqs_en_proceso,
+            "reqs_terminado": reqs_terminado,
+            "reqs_funcional": reqs_funcional,
+            "reqs_no_funcional": reqs_no_funcional,
+            "porcentaje_completitud": round(porcentaje_completitud, 1),
+            "porcentaje_pendientes": round(porcentaje_pendientes, 1),
+            "porcentaje_validados": round(porcentaje_validados, 1),
         })
 
     # Obtener el primer proyecto para el título
@@ -426,6 +543,15 @@ def stakeholder_dashboard(request):
     proyectos = Proyecto.objects.filter(clientes=request.user)
     dashboard_data = []
     
+    # Métricas globales
+    proyectos_activos = proyectos.count()
+    requerimientos_pendientes = Requerimiento.objects.filter(
+        proyecto__in=proyectos, 
+        estado='BORRADOR'
+    ).count()
+    validaciones_pendientes = requerimientos_pendientes  # Para stakeholders, es lo mismo
+    participaciones = proyectos_activos  # Número de proyectos donde participa
+    
     for proyecto in proyectos:
         requerimientos = Requerimiento.objects.filter(proyecto=proyecto)
         casos_de_uso = CasoDeUso.objects.filter(proyecto=proyecto)
@@ -438,9 +564,16 @@ def stakeholder_dashboard(request):
         casos_relacionados = casos_de_uso.count() - casos_huerfanos.count()
         
         # Métricas por estado
-        reqs_pendientes = requerimientos.filter(estado='BORRADOR').count()
+        reqs_pendientes_validacion = requerimientos.filter(estado='BORRADOR').count()
         reqs_validados = requerimientos.filter(estado='VALIDADO').count()
         reqs_completados = requerimientos.filter(estado__in=['TERMINADO', 'COMPLETADO']).count()
+        
+        # Requerimientos pendientes de validación (BORRADOR)
+        reqs_pendientes_lista = requerimientos.filter(estado='BORRADOR').order_by('-fecha_creacion')
+        
+        # Calcular progreso
+        total_reqs = requerimientos.count()
+        progreso = (reqs_completados / total_reqs * 100) if total_reqs > 0 else 0
         
         dashboard_data.append({
             "proyecto": proyecto,
@@ -450,10 +583,37 @@ def stakeholder_dashboard(request):
             "casos_huerfanos": casos_huerfanos,
             "reqs_relacionados": reqs_relacionados,
             "casos_relacionados": casos_relacionados,
-            "reqs_pendientes": reqs_pendientes,
+            "reqs_pendientes_validacion": reqs_pendientes_validacion,
+            "reqs_pendientes_lista": reqs_pendientes_lista,
             "reqs_validados": reqs_validados,
             "reqs_completados": reqs_completados,
+            "progreso": progreso,
         })
+    
+    # Actividad reciente (últimos requerimientos validados o comentarios)
+    from requerimientos.models import ComentarioValidacion
+    actividad_reciente = []
+    
+    # Últimos comentarios en requerimientos de proyectos del stakeholder
+    comentarios_recientes = ComentarioValidacion.objects.filter(
+        requerimiento__proyecto__in=proyectos
+    ).select_related('requerimiento', 'autor').order_by('-fecha_creacion')[:5]
+    
+    for comentario in comentarios_recientes:
+        actividad_reciente.append(
+            f"{comentario.autor.nombre} comentó en '{comentario.requerimiento.nombre}'"
+        )
+    
+    # Si no hay comentarios, mostrar requerimientos recientes
+    if not actividad_reciente:
+        reqs_recientes = Requerimiento.objects.filter(
+            proyecto__in=proyectos
+        ).select_related('proyecto').order_by('-fecha_creacion')[:5]
+        
+        for req in reqs_recientes:
+            actividad_reciente.append(
+                f"Nuevo requerimiento '{req.nombre}' en {req.proyecto.nombre}"
+            )
     
     # Obtener el primer proyecto para el título
     primer_proyecto = proyectos.first()
@@ -461,7 +621,70 @@ def stakeholder_dashboard(request):
     
     return render(request, "dashboards/stakeholder_dashboard.html", {
         "dashboard_data": dashboard_data,
+        "proyectos_activos": proyectos_activos,
+        "requerimientos_pendientes": requerimientos_pendientes,
+        "validaciones_pendientes": validaciones_pendientes,
+        "participaciones": participaciones,
+        "actividad_reciente": actividad_reciente,
         "page_title": f"{titulo_proyecto} - Dashboard Cliente",
+    })
+
+
+@login_required
+def visitor_dashboard(request):
+    """
+    Dashboard para visitantes.
+    Muestra los proyectos donde el usuario es visitante (solo lectura).
+    Los visitantes pueden ver matriz de trazabilidad y reportes únicamente.
+    """
+    from requerimientos.models import Requerimiento
+    from casos_de_uso.models import CasoDeUso
+    
+    # Obtener proyectos donde el usuario es visitante
+    proyectos = Proyecto.objects.filter(visitantes=request.user)
+    dashboard_data = []
+    
+    for proyecto in proyectos:
+        requerimientos = Requerimiento.objects.filter(proyecto=proyecto)
+        casos_de_uso = CasoDeUso.objects.filter(proyecto=proyecto)
+        
+        # Estadísticas básicas
+        total_requerimientos = requerimientos.count()
+        total_casos_uso = casos_de_uso.count()
+        
+        # Calcular huérfanos
+        reqs_huerfanos = requerimientos.annotate(rel_count=Count('relaciones_casos')).filter(rel_count=0)
+        casos_huerfanos = casos_de_uso.annotate(rel_count=Count('relaciones_requerimientos')).filter(rel_count=0)
+        
+        reqs_relacionados = total_requerimientos - reqs_huerfanos.count()
+        casos_relacionados = total_casos_uso - casos_huerfanos.count()
+        
+        # Métricas por estado
+        reqs_completados = requerimientos.filter(estado__in=['TERMINADO', 'COMPLETADO']).count()
+        
+        # Calcular progreso del proyecto
+        progreso = (reqs_completados / total_requerimientos * 100) if total_requerimientos > 0 else 0
+        
+        dashboard_data.append({
+            "proyecto": proyecto,
+            "total_requerimientos": total_requerimientos,
+            "total_casos_uso": total_casos_uso,
+            "reqs_huerfanos_count": reqs_huerfanos.count(),
+            "casos_huerfanos_count": casos_huerfanos.count(),
+            "reqs_relacionados": reqs_relacionados,
+            "casos_relacionados": casos_relacionados,
+            "reqs_completados": reqs_completados,
+            "progreso": round(progreso, 1),
+        })
+    
+    # Obtener el primer proyecto para el título
+    primer_proyecto = proyectos.first()
+    titulo_proyecto = primer_proyecto.nombre if primer_proyecto else "Sin Proyecto Asignado"
+    
+    return render(request, "dashboards/visitor_dashboard.html", {
+        "dashboard_data": dashboard_data,
+        "total_proyectos": proyectos.count(),
+        "page_title": f"{titulo_proyecto} - Dashboard Visitante",
     })
 
 
@@ -534,3 +757,26 @@ def limpiar_base_datos(request):
     
     return redirect('dashboards:admin_herramientas')
 
+
+@login_required
+def visitor_matriz(request):
+    """
+    Redirige a la matriz de trazabilidad del primer proyecto del visitante.
+    Si tiene múltiples proyectos, redirige al primero.
+    """
+    from django.contrib import messages
+    
+    proyectos = Proyecto.objects.filter(visitantes=request.user)
+    
+    proyecto_id = request.GET.get('proyecto')
+    if proyecto_id:
+        proyecto = proyectos.filter(id=proyecto_id).first()
+    else:
+        proyecto = proyectos.first()
+    
+    if not proyecto:
+        messages.error(request, 'No tienes proyectos asignados como visitante.')
+        return redirect('dashboards:visitor_dashboard')
+    
+    # Redirigir a la matriz del proyecto
+    return redirect('proyectos:matriz_trazabilidad', proyecto_id=proyecto.pk)

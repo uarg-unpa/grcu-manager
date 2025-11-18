@@ -116,13 +116,14 @@
                        class="btn btn-info text-white">
                         <i class="bi bi-clock-history"></i> Ver Historial
                     </a>
-                    {% if user == proyecto.lider or caso.creado_por == user %}
+                    {% comment %} Botón editar visible para líder y participantes, pero solo creador puede editar {% endcomment %}
+                    {% if es_lider or es_participante %}
                     <a href="{% url 'casos_de_uso:caso_de_uso_update' caso.pk %}" 
                        class="btn btn-warning text-white ms-2">
                         <i class="bi bi-pencil-fill"></i> Editar
                     </a>
                     {% endif %}
-                    {% if user == proyecto.lider %}
+                    {% if es_lider or es_participante %}
                     <a href="{% url 'casos_de_uso:caso_de_uso_delete' caso.pk %}" 
                        class="btn btn-danger ms-2">
                         <i class="bi bi-trash-fill"></i> Eliminar

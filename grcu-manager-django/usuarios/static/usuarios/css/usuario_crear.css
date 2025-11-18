@@ -16,57 +16,67 @@
     background: #f8f9fa;
     border: 2px solid #e9ecef;
     border-radius: 25px;
-    padding: 8px 16px;
+    padding: 12px 20px;
     transition: all 0.3s ease;
-    min-width: 180px;
+    width: 240px; /* Ancho fijo para que "NO, INACTIVO" se vea en una sola línea */
     justify-content: space-between;
+    user-select: none;
 }
 
 .active-status-toggle:hover {
     border-color: #007bff;
     background: #f0f8ff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,123,255,0.15);
 }
 
 .active-status-text {
-    font-weight: 500;
+    font-weight: 600;
     color: #dc3545;
     transition: all 0.3s ease;
-    font-size: 14px;
-    margin-right: 12px;
+    font-size: 15px;
+    margin-right: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap; /* Evitar que el texto se quiebre en múltiples líneas */
+    flex-shrink: 0; /* Evitar que el texto se comprima */
 }
 
-.active-status-toggle input:checked ~ .active-status-text {
+.active-status-toggle.active .active-status-text {
     color: #28a745;
 }
 
 .active-status-slider {
     position: relative;
-    width: 50px;
-    height: 24px;
+    width: 60px;
+    height: 30px;
     background: #dc3545;
-    border-radius: 12px;
+    border-radius: 15px;
     transition: all 0.3s ease;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .active-status-slider::before {
     content: '';
     position: absolute;
-    top: 2px;
-    left: 2px;
-    width: 20px;
-    height: 20px;
+    top: 3px;
+    left: 3px;
+    width: 24px;
+    height: 24px;
     background: white;
     border-radius: 50%;
     transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
 }
 
-.active-status-toggle input:checked ~ .active-status-slider {
+.active-status-toggle.active .active-status-slider {
     background: #28a745;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.active-status-toggle input:checked ~ .active-status-slider::before {
-    transform: translateX(26px);
+.active-status-toggle.active .active-status-slider::before {
+    transform: translateX(30px) !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3) !important;
 }
 
 /* Estilos compartidos del formulario */
@@ -158,50 +168,84 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 12px 16px;
+    padding: 16px 20px;
     border-radius: 14px;
-    margin: 4px;
     cursor: pointer;
-    color: #25324c;
-    font-weight: 600;
-    background: #eef2ff;
-    border: 2px solid transparent;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-    transition: background 0.2s, transform 0.1s, border-color 0.2s, color 0.2s;
-    min-width: 100px;
-    min-height: 100px;
-}
-
-.roles-badge.active {
-    background: #28a745;
-    color: #ffffff !important;
-    border-color: #1e7e34;
-    box-shadow: 0 6px 16px rgba(40, 167, 69, 0.35);
-    transform: translateY(-2px);
-}
-
-.roles-badge.inactive {
-    background: #f8f9fa;
     color: #6c757d;
+    font-weight: 600;
+    background: #f8f9fa;
     border: 2px solid #dee2e6;
-    opacity: 0.8;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    min-width: 120px;
+    min-height: 120px;
+    position: relative;
 }
 
-.roles-badge:hover {
-    background: #4361ee;
+.roles-badge.sin-rol {
+    background: #f8f9fa;
+    border-color: #dee2e6;
+    color: #6c757d;
+}
+
+.roles-badge.sin-rol.selected {
+    background: #e9ecef;
+    border-color: #adb5bd;
+    color: #495057;
+}
+
+/* Check icon oculto por defecto */
+.rol-check-icon {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    background: #28a745;
+    color: white;
+    border-radius: 50%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: bold;
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.4);
+    animation: checkPop 0.3s ease;
+}
+
+/* Aplicar el color de fondo cuando está seleccionado */
+.roles-badge.selected {
     color: #ffffff !important;
-    border-color: #3a5bdb;
+    border-color: transparent;
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
 }
 
-.roles-badge:focus {
-    outline: 3px solid rgba(58, 91, 219, 0.45);
-    outline-offset: 3px;
+@keyframes checkPop {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 .rol-icon {
     width: 48px;
     height: 48px;
     margin-bottom: 8px;
+    font-size: 48px;
+}
+
+.rol-nombre {
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
 }
 
 /* Switch activo */

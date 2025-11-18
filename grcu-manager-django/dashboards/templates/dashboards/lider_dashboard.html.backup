@@ -1,0 +1,227 @@
+{% extends "core/base.html" %}
+
+{% load static %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="{% static 'proyectos/css/proyecto_detail_styles.css' %}">
+{% endblock %}
+
+{% block extra_head %}
+{% endblock %}
+
+{% block extra_js %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="{% static 'proyectos/js/proyecto_detail_charts.js' %}"></script>
+{% endblock %}
+{% block content %}
+{% if dashboard_data %}
+    {% for data in dashboard_data %}
+    <div class="project-detail-container">
+        <!-- Cabecera del Proyecto -->
+        <header class="project-header">
+            <div class="project-header-info">
+                {% if data.proyecto.logo %}
+                    <img src="{{ data.proyecto.logo.url }}" alt="Logo del Proyecto" class="project-logo">
+                {% else %}
+                    <div class="project-logo-fallback">
+                        <i class="bi bi-box-seam" style="font-size: 40px; color: #adb5bd;"></i>
+                    </div>
+                {% endif %}
+                <div class="project-title-section">
+                    <h1 class="project-name">{{ data.proyecto.nombre }}</h1>
+                    <p class="project-leader">
+                        <i class="bi bi-person-check-fill"></i> Líder: {{ request.user.nombre }}
+                    </p>
+                </div>
+            </div>
+            <div class="project-header-actions">
+                {% if data.necesita_metodologia %}
+                <a href="{% url 'proyectos:asignar_metodologia' data.proyecto.id %}" 
+                   class="btn btn-warning action-btn" title="Asignar Metodología">
+                    <i class="bi bi-exclamation-triangle-fill"></i> Asignar Metodología
+                </a>
+                {% else %}
+                <a href="{% url 'proyectos:asignar_metodologia' data.proyecto.id %}" 
+                   class="btn btn-outline-primary action-btn" title="Cambiar Metodología">
+                    <i class="bi bi-gear-fill"></i> Cambiar Metodología
+                </a>
+                {% endif %}
+                <a href="{% url 'proyectos:gestionar_integrantes' data.proyecto.id %}" 
+                   class="btn btn-info action-btn" title="Gestionar Integrantes">
+                    <i class="bi bi-people-fill"></i> Gestionar Integrantes
+                </a>
+            </div>
+        </header>
+
+        {% if data.necesita_metodologia %}
+        <div class="alert alert-warning alert-dismissible fade show d-flex align-items-center mb-3" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-3" style="font-size: 1.5em;"></i>
+            <div class="flex-grow-1">
+                <strong>¡Atención!</strong> 
+                Este proyecto aún no tiene una metodología asignada. 
+                Debes seleccionar una metodología antes de poder crear requerimientos.
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endif %}
+                
+                {# Métricas principales - 3 columnas #}
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="card shadow hover-shadow" style="border: 3px solid #667eea; background: white; min-height: 200px; overflow: visible !important;">
+                            <div class="card-body text-center" style="display: block !important;">
+                                <div class="mb-3">
+                                    <i class="bi bi-list-check" style="font-size: 3rem; color: #667eea;"></i>
+                                </div>
+                                <h5 class="card-title mb-2 text-muted">Requerimientos</h5>
+                                <p class="display-4 fw-bold mb-0" style="color: #667eea !important; font-size: 3rem !important;">{{ data.total_requerimientos|default:"0" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card shadow hover-shadow" style="border: 3px solid #764ba2; background: white; min-height: 200px; overflow: visible !important;">
+                            <div class="card-body text-center" style="display: block !important;">
+                                <div class="mb-3">
+                                    <i class="bi bi-diagram-3" style="font-size: 3rem; color: #764ba2;"></i>
+                                </div>
+                                <h5 class="card-title mb-2 text-muted">Casos de Uso</h5>
+                                <p class="display-4 fw-bold mb-0" style="color: #764ba2 !important; font-size: 3rem !important;">{{ data.total_casos_de_uso|default:"0" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card shadow hover-shadow" style="border: 3px solid #dc3545; background: white; min-height: 200px; overflow: visible !important;">
+                            <div class="card-body text-center" style="display: block !important;">
+                                <div class="mb-3">
+                                    <i class="bi bi-exclamation-triangle-fill" style="font-size: 3rem; color: #dc3545;"></i>
+                                </div>
+                                <h5 class="card-title mb-2 text-muted">Huérfanos</h5>
+                                <p class="display-4 fw-bold mb-2" style="color: #dc3545 !important; font-size: 3rem !important;">{{ data.total_huerfanos|default:"0" }}</p>
+                                <small class="text-muted">Reqs: {{ data.reqs_huerfanos_count|default:"0" }} | CUs: {{ data.casos_huerfanos_count|default:"0" }}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                {# Estados de requerimientos - 3 columnas #}
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="card shadow hover-shadow" style="border: 3px solid #ffc107; background: white; min-height: 200px; overflow: visible !important;">
+                            <div class="card-body text-center" style="display: block !important;">
+                                <div class="mb-3">
+                                    <i class="bi bi-clock-history" style="font-size: 3rem; color: #ffc107;"></i>
+                                </div>
+                                <h5 class="card-title mb-2 text-muted">Requerimientos Sin Validar</h5>
+                                <p class="display-4 fw-bold mb-0" style="color: #ffc107 !important; font-size: 3rem !important;">{{ data.reqs_sin_validar|default:"0" }}</p>
+                                <small class="text-muted d-block mt-2">Estado: Borrador</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card shadow hover-shadow" style="border: 3px solid #28a745; background: white; min-height: 200px; overflow: visible !important;">
+                            <div class="card-body text-center" style="display: block !important;">
+                                <div class="mb-3">
+                                    <i class="bi bi-check-circle-fill" style="font-size: 3rem; color: #28a745;"></i>
+                                </div>
+                                <h5 class="card-title mb-2 text-muted">Requerimientos Completados</h5>
+                                <p class="display-4 fw-bold mb-0" style="color: #28a745 !important; font-size: 3rem !important;">{{ data.reqs_completados|default:"0" }}</p>
+                                <small class="text-muted d-block mt-2">Estado: Terminado/Completado</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card shadow hover-shadow" style="border: 3px solid #17a2b8; background: white; min-height: 200px; overflow: visible !important;">
+                            <div class="card-body text-center" style="display: block !important;">
+                                <div class="mb-3">
+                                    <i class="bi bi-hourglass-split" style="font-size: 3rem; color: #17a2b8;"></i>
+                                </div>
+                                <h5 class="card-title mb-2 text-muted">Requerimientos Sin Completar</h5>
+                                <p class="display-4 fw-bold mb-0" style="color: #17a2b8 !important; font-size: 3rem !important;">{{ data.reqs_sin_completar|default:"0" }}</p>
+                                <small class="text-muted d-block mt-2">En progreso o pendientes</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                {# Gráficos y estado - 3 columnas #}
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="card shadow hover-shadow" style="border: 3px solid #6f42c1; background: white; min-height: 350px; overflow: visible !important;">
+                            <div class="card-body" style="display: block !important;">
+                                <div class="d-flex align-items-center mb-3">
+                                    <i class="bi bi-pie-chart-fill me-2" style="font-size: 1.5rem; color: #6f42c1;"></i>
+                                    <h6 class="card-title mb-0 text-muted">Distribución de Requerimientos</h6>
+                                </div>
+                                <canvas id="grafico-req-{{ forloop.counter0 }}" width="280" height="280" style="max-width: 280px; max-height: 280px; margin: 0 auto; display: block;"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card shadow hover-shadow" style="border: 3px solid #e83e8c; background: white; min-height: 350px; overflow: visible !important;">
+                            <div class="card-body" style="display: block !important;">
+                                <div class="d-flex align-items-center mb-3">
+                                    <i class="bi bi-pie-chart-fill me-2" style="font-size: 1.5rem; color: #e83e8c;"></i>
+                                    <h6 class="card-title mb-0 text-muted">Distribución Casos de Uso</h6>
+                                </div>
+                                <canvas id="grafico-cu-{{ forloop.counter0 }}" width="280" height="280" style="max-width: 280px; max-height: 280px; margin: 0 auto; display: block;"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card shadow hover-shadow" style="border: 3px solid #20c997; background: white; min-height: 350px; overflow: visible !important;">
+                            <div class="card-body text-center" style="display: block !important;">
+                                <div class="mb-3">
+                                    <i class="bi bi-bar-chart-line-fill" style="font-size: 3rem; color: #20c997;"></i>
+                                </div>
+                                <h5 class="card-title mb-2 text-muted">Estado General</h5>
+                                <p class="small mb-3 text-muted">{{ data.proyecto.nombre|truncatechars:25 }}</p>
+                                <div class="d-flex justify-content-center flex-wrap gap-2">
+                                    <span class="badge px-3 py-2" style="background-color: #20c997; color: white;">
+                                        <i class="bi bi-check-circle-fill me-1"></i> Activo
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <h5>Requerimientos huérfanos <span class="badge bg-danger">{{ data.reqs_huerfanos|length }}</span></h5>
+                        <ul class="list-group mb-3">
+                            {% for req in data.reqs_huerfanos %}
+                                <li class="list-group-item text-danger"
+                                    data-bs-toggle="tooltip"
+                                    data-bs-placement="top"
+                                    title="Tipo: {{ req.get_tipo_display }} | Estado: {{ req.get_estado_display }}&#10;{{ req.descripcion|default:'Sin descripción'|striptags|truncatechars:120 }}">
+                                    {{ req.nombre }}
+                                </li>
+                            {% empty %}
+                                <li class="list-group-item">Ninguno</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <div class="col-12">
+                        <h5>Casos de uso huérfanos <span class="badge bg-danger">{{ data.casos_huerfanos|length }}</span></h5>
+                        <ul class="list-group mb-3">
+                            {% for cu in data.casos_huerfanos %}
+                                <li class="list-group-item text-danger"
+                                    data-bs-toggle="tooltip"
+                                    data-bs-placement="top"
+                                    title="{{ cu.descripcion|default:'Sin descripción'|striptags|truncatechars:120 }}">
+                                    {{ cu.nombre }}
+                                </li>
+                            {% empty %}
+                                <li class="list-group-item">Ninguno</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="alert alert-info">No liderás ningún proyecto.</div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -22,7 +22,18 @@
                         </span>
                     </p>
                     <p><strong><i class="bi bi-folder"></i> Proyecto:</strong> {{ requerimiento.proyecto }}</p>
-                    <p><strong><i class="bi bi-person"></i> Creado por:</strong> {{ requerimiento.creado_por }}</p>
+                    <p class="d-flex align-items-center">
+                        <strong class="me-2"><i class="bi bi-person"></i> Creado por:</strong>
+                        {% if requerimiento.creado_por.avatar %}
+                            <img src="{{ requerimiento.creado_por.avatar }}" 
+                                 alt="{{ requerimiento.creado_por.get_full_name }}"
+                                 class="rounded-circle me-2"
+                                 style="width: 32px; height: 32px; object-fit: cover;">
+                        {% else %}
+                            <i class="bi bi-person-circle fs-4 text-secondary me-2"></i>
+                        {% endif %}
+                        <span>{{ requerimiento.creado_por.get_full_name }}</span>
+                    </p>
                     <p><strong><i class="bi bi-calendar"></i> Fecha de creación:</strong> {{ requerimiento.fecha_creacion|date:"d/m/Y H:i" }}</p>
                 </div>
                 <div class="col-md-6">
@@ -316,8 +327,16 @@
                             <i class="bi bi-plus-circle"></i> Crear Caso de Uso
                         </a>
                     {% endif %}
-                    {% comment %} Solo historial bloqueado {% endcomment %}
-                    {% if user == requerimiento.proyecto.lider or user == requerimiento.creado_por %}
+                    {% comment %} Botón para revertir priorización (solo líder) {% endcomment %}
+                    {% if requerimiento.estado == 'PRIORIZADO' and es_lider %}
+                    <a href="{% url 'requerimientos:requerimiento_revertir_priorizacion' requerimiento.pk %}" 
+                       class="btn btn-secondary me-2"
+                       onclick="return confirm('¿Estás seguro de revertir este requerimiento a estado VALIDADO?');">
+                        <i class="bi bi-arrow-counterclockwise"></i> Revertir a Validado
+                    </a>
+                    {% endif %}
+                    {% comment %} Botón editar visible para líder y participantes, pero solo creador puede editar {% endcomment %}
+                    {% if es_lider or es_participante %}
                     <a href="{% url 'requerimientos:requerimiento_update' requerimiento.pk %}" 
                        class="btn btn-warning">
                         <i class="bi bi-pencil"></i> Editar

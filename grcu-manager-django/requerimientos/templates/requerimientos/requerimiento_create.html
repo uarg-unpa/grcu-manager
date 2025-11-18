@@ -45,21 +45,37 @@
                                 Información Básica
                             </div>
                             
-                            <!-- Nombre -->
-                            <div class="mb-3">
-                                <label for="{{ form.nombre.id_for_label }}" class="form-label required-field">
-                                    {{ form.nombre.label }}
-                                </label>
-                                {{ form.nombre }}
-                                {% if form.nombre.errors %}
-                                    <div class="text-danger small mt-1">{{ form.nombre.errors.0 }}</div>
-                                {% endif %}
-                                <div class="form-text">
-                                    <i class="bi bi-info-circle"></i> 
-                                    <span id="nombre-sugerido-text">
-                                        Formato sugerido según tipo: <strong id="nombre-sugerido">RF-##</strong> (Funcional), 
-                                        <strong>RNF-##</strong> (No Funcional), <strong>RS-##</strong> (Sistema)
-                                    </span>
+                            <!-- Identificador y Nombre en la misma línea -->
+                            <div class="row mb-3">
+                                <!-- Identificador (solo lectura) -->
+                                <div class="col-md-4">
+                                    <label for="{{ form.identificador.id_for_label }}" class="form-label required-field">
+                                        {{ form.identificador.label }}
+                                    </label>
+                                    {{ form.identificador }}
+                                    {% if form.identificador.errors %}
+                                        <div class="text-danger small mt-1">{{ form.identificador.errors.0 }}</div>
+                                    {% endif %}
+                                    {% if form.identificador.help_text %}
+                                        <div class="form-text">
+                                            <i class="bi bi-info-circle"></i> {{ form.identificador.help_text }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Nombre -->
+                                <div class="col-md-8">
+                                    <label for="{{ form.nombre.id_for_label }}" class="form-label required-field">
+                                        {{ form.nombre.label }}
+                                    </label>
+                                    {{ form.nombre }}
+                                    {% if form.nombre.errors %}
+                                        <div class="text-danger small mt-1">{{ form.nombre.errors.0 }}</div>
+                                    {% endif %}
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle"></i> 
+                                        Nombre descriptivo del requerimiento (sin incluir el identificador)
+                                    </div>
                                 </div>
                             </div>
                             
@@ -95,17 +111,6 @@
                                     <div class="text-danger small mt-1">{{ form.descripcion.errors.0 }}</div>
                                 {% endif %}
                             </div>
-                            
-                            <!-- Estado -->
-                            <div class="mb-3">
-                                <label for="{{ form.estado.id_for_label }}" class="form-label required-field">
-                                    {{ form.estado.label }}
-                                </label>
-                                {{ form.estado }}
-                                {% if form.estado.errors %}
-                                    <div class="text-danger small mt-1">{{ form.estado.errors.0 }}</div>
-                                {% endif %}
-                            </div>
                         </div>
                     </div>
 
@@ -130,12 +135,15 @@
                                     <div class="help-text">{{ form.fuente.help_text }}</div>
                                 {% endif %}
                                 
-                                <!-- Campo "Otro" para Fuente (oculto por defecto) -->
-                                <div id="fuente-otro-container" style="display: none; margin-top: 10px;">
-                                    <label for="{{ form.fuente_otro.id_for_label }}" class="form-label">
-                                        {{ form.fuente_otro.label }}
+                                <!-- Campo "Nueva Fuente" (oculto por defecto) -->
+                                <div id="nueva-fuente-container" style="display: none; margin-top: 10px;">
+                                    <label for="{{ form.nueva_fuente.id_for_label }}" class="form-label">
+                                        {{ form.nueva_fuente.label }}
                                     </label>
-                                    {{ form.fuente_otro }}
+                                    {{ form.nueva_fuente }}
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle"></i> Esta fuente se agregará al proyecto para uso futuro
+                                    </div>
                                 </div>
                             </div>
                             
@@ -149,19 +157,20 @@
                                     <i class="bi bi-info-circle"></i> Para requerimientos No Funcionales
                                 </div>
                                 
-                                <!-- Campo "Otro" para Categoría (oculto por defecto) -->
-                                <div id="categoria-otro-container" style="display: none; margin-top: 10px;">
-                                    <label for="{{ form.categoria_otro.id_for_label }}" class="form-label">
-                                        {{ form.categoria_otro.label }}
+                                <!-- Campo "Nueva Categoría" (oculto por defecto) -->
+                                <div id="nueva-categoria-container" style="display: none; margin-top: 10px;">
+                                    <label for="{{ form.nueva_categoria.id_for_label }}" class="form-label">
+                                        {{ form.nueva_categoria.label }}
                                     </label>
-                                    {{ form.categoria_otro }}
+                                    {{ form.nueva_categoria }}
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle"></i> Esta categoría se agregará al proyecto para uso futuro
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        
-                        <div class="row">
                             <!-- Fecha Compromiso -->
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-12 mb-3">
                                 <label for="{{ form.fecha_compromiso.id_for_label }}" class="form-label">
                                     {{ form.fecha_compromiso.label }}
                                 </label>
@@ -169,14 +178,6 @@
                                 {% if form.fecha_compromiso.help_text %}
                                     <div class="help-text">{{ form.fecha_compromiso.help_text }}</div>
                                 {% endif %}
-                            </div>
-                            
-                            <!-- Estado Validación -->
-                            <div class="col-md-6 mb-3">
-                                <label for="{{ form.estado_validacion.id_for_label }}" class="form-label">
-                                    {{ form.estado_validacion.label }}
-                                </label>
-                                {{ form.estado_validacion }}
                             </div>
                         </div>
                         
@@ -244,30 +245,6 @@
                                     {% if form.puntos_estimados.help_text %}
                                         <div class="help-text">{{ form.puntos_estimados.help_text }}</div>
                                     {% endif %}
-                                </div>
-                                
-                                <!-- Sprint -->
-                                <div class="mb-3">
-                                    <label for="{{ form.sprint_asignado.id_for_label }}" class="form-label">
-                                        {{ form.sprint_asignado.label }}
-                                    </label>
-                                    {{ form.sprint_asignado }}
-                                </div>
-                                
-                                <!-- Estado Scrum -->
-                                <div class="mb-3">
-                                    <label for="{{ form.estado_scrum.id_for_label }}" class="form-label">
-                                        {{ form.estado_scrum.label }}
-                                    </label>
-                                    {{ form.estado_scrum }}
-                                </div>
-                                
-                                <!-- Responsable -->
-                                <div class="mb-3">
-                                    <label for="{{ form.responsable.id_for_label }}" class="form-label">
-                                        {{ form.responsable.label }}
-                                    </label>
-                                    {{ form.responsable }}
                                 </div>
                                 
                                 <!-- Observaciones -->
@@ -362,6 +339,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Obtener elementos
+    const identificadorInput = document.querySelector('input[name="identificador"]');
     const nombreInput = document.querySelector('input[name="nombre"]');
     const tipoRadios = document.querySelectorAll('input[name="tipo"]');
     
@@ -379,33 +357,26 @@ document.addEventListener('DOMContentLoaded', function() {
         return null;
     }
     
-    // Función para actualizar el nombre según el tipo seleccionado
-    async function actualizarNombreSugerido() {
+    // Función para actualizar el identificador según el tipo seleccionado
+    async function actualizarIdentificador() {
         const tipoSeleccionado = document.querySelector('input[name="tipo"]:checked');
         
-        if (tipoSeleccionado && nombreInput) {
+        if (tipoSeleccionado && identificadorInput) {
             const tipo = tipoSeleccionado.value;
-            const nombreActual = nombreInput.value.trim();
-            
-            // Solo actualizar si el campo está vacío o tiene un formato de código (RF-##, RNF-##, RS-##)
-            const esFormatoCodigo = /^(RF|RNF|RS)-\d+$/.test(nombreActual);
-            
-            if (!nombreActual || esFormatoCodigo) {
-                const siguienteNombre = await obtenerSiguienteNumero(tipo);
-                if (siguienteNombre) {
-                    nombreInput.value = siguienteNombre;
-                }
+            const siguienteNombre = await obtenerSiguienteNumero(tipo);
+            if (siguienteNombre) {
+                identificadorInput.value = siguienteNombre;
             }
         }
     }
     
     // Escuchar cambios en los radio buttons de tipo
     tipoRadios.forEach(radio => {
-        radio.addEventListener('change', actualizarNombreSugerido);
+        radio.addEventListener('change', actualizarIdentificador);
     });
     
     // Ejecutar al cargar si hay un tipo seleccionado
-    actualizarNombreSugerido();
+    actualizarIdentificador();
     
     // ===== Control de límite de caracteres en Descripción =====
     const descripcionTextarea = document.querySelector('textarea[name="descripcion"]');
@@ -558,50 +529,52 @@ document.addEventListener('DOMContentLoaded', function() {
         fechaCompromisoInput.setAttribute('min', hoy);
     }
     
-    // ===== Control de campos "Otro" para Fuente y Categoría =====
+    // ===== Control de campos "Nueva" para Fuente y Categoría =====
     const fuenteSelect = document.getElementById('id_fuente_select');
-    const fuenteOtroContainer = document.getElementById('fuente-otro-container');
-    const fuenteOtroInput = document.getElementById('id_fuente_otro');
+    const nuevaFuenteContainer = document.getElementById('nueva-fuente-container');
+    const nuevaFuenteInput = document.getElementById('id_nueva_fuente');
     
     const categoriaSelect = document.getElementById('id_categoria_select');
-    const categoriaOtroContainer = document.getElementById('categoria-otro-container');
-    const categoriaOtroInput = document.getElementById('id_categoria_otro');
+    const nuevaCategoriaContainer = document.getElementById('nueva-categoria-container');
+    const nuevaCategoriaInput = document.getElementById('id_nueva_categoria');
     
-    if (fuenteSelect && fuenteOtroContainer) {
+    if (fuenteSelect && nuevaFuenteContainer) {
         fuenteSelect.addEventListener('change', function() {
-            if (this.value === 'OTRO') {
-                fuenteOtroContainer.style.display = 'block';
-                fuenteOtroInput.required = true;
+            if (this.value === 'NUEVA') {
+                nuevaFuenteContainer.style.display = 'block';
+                nuevaFuenteInput.required = true;
+                nuevaFuenteInput.focus();
             } else {
-                fuenteOtroContainer.style.display = 'none';
-                fuenteOtroInput.required = false;
-                fuenteOtroInput.value = '';
+                nuevaFuenteContainer.style.display = 'none';
+                nuevaFuenteInput.required = false;
+                nuevaFuenteInput.value = '';
             }
         });
         
-        // Ejecutar al cargar si ya tiene valor "OTRO"
-        if (fuenteSelect.value === 'OTRO') {
-            fuenteOtroContainer.style.display = 'block';
-            fuenteOtroInput.required = true;
+        // Ejecutar al cargar si ya tiene valor "NUEVA"
+        if (fuenteSelect.value === 'NUEVA') {
+            nuevaFuenteContainer.style.display = 'block';
+            nuevaFuenteInput.required = true;
         }
     }
     
-    if (categoriaSelect && categoriaOtroContainer) {
+    if (categoriaSelect && nuevaCategoriaContainer) {
         categoriaSelect.addEventListener('change', function() {
-            if (this.value === 'OTRO') {
-                categoriaOtroContainer.style.display = 'block';
-                categoriaOtroInput.required = true;
+            if (this.value === 'NUEVA') {
+                nuevaCategoriaContainer.style.display = 'block';
+                nuevaCategoriaInput.required = true;
+                nuevaCategoriaInput.focus();
             } else {
-                categoriaOtroContainer.style.display = 'none';
-                categoriaOtroInput.required = false;
-                categoriaOtroInput.value = '';
+                nuevaCategoriaContainer.style.display = 'none';
+                nuevaCategoriaInput.required = false;
+                nuevaCategoriaInput.value = '';
             }
         });
         
-        // Ejecutar al cargar si ya tiene valor "OTRO"
-        if (categoriaSelect.value === 'OTRO') {
-            categoriaOtroContainer.style.display = 'block';
-            categoriaOtroInput.required = true;
+        // Ejecutar al cargar si ya tiene valor "NUEVA"
+        if (categoriaSelect.value === 'NUEVA') {
+            nuevaCategoriaContainer.style.display = 'block';
+            nuevaCategoriaInput.required = true;
         }
     }
 });

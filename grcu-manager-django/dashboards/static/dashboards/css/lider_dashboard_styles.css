@@ -25,7 +25,8 @@
 .metric-card {
     border-radius: 12px;
     overflow: hidden;
-    height: 180px;
+    min-height: 200px;
+    height: auto;
     display: flex;
     flex-direction: column;
 }
@@ -37,6 +38,38 @@
     justify-content: center;
     padding: 1.5rem;
     text-align: center;
+    min-height: 150px;
+}
+
+.dashboard-card {
+    min-height: 180px;
+    height: auto;
+}
+
+.dashboard-card .card-body {
+    min-height: 120px;
+    padding: 1.25rem;
+}
+
+.dashboard-card .card-header {
+    padding: 1rem 1.25rem;
+    white-space: normal;
+    word-wrap: break-word;
+}
+
+/* Asegurar que los textos no se corten */
+.metric-label,
+.card-header {
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    hyphens: auto;
+    line-height: 1.4;
+}
+
+.metric-value {
+    line-height: 1.2;
+    margin-bottom: 0.75rem;
 }
 
 @media (max-width: 1199.98px) {

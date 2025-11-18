@@ -248,10 +248,17 @@ def google_login_callback(request):
     # Registrar login en auditoría
     registrar_login(request)
 
-    # Redirigir según rol
+    # Redirigir según rol (verificar en orden de prioridad)
     if user.roles.filter(nombre=Rol.ADMIN).exists():
         return redirect("dashboards:admin_dashboard")
     elif user.roles.filter(nombre=Rol.LIDER).exists():
         return redirect("dashboards:lider_dashboard")
+    elif user.roles.filter(nombre__iexact='Stakeholder').exists():
+        # Stakeholders/Clientes van a su dashboard específico
+        return redirect("dashboards:stakeholder_dashboard")
+    elif user.roles.filter(nombre__iexact='Visitante').exists():
+        # Visitantes van a su dashboard específico
+        return redirect("dashboards:visitor_dashboard")
     else:
+        # Desarrolladores y otros roles
         return redirect("dashboards:developer_dashboard")

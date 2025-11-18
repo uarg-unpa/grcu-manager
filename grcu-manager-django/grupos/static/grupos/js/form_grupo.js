@@ -84,6 +84,39 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.roles-badge').forEach(badge => {
         const checkbox = badge.querySelector('input[type="checkbox"]');
         badge.setAttribute('role', 'checkbox');
+        
+        // Verificar si el usuario está ocupado (en otro grupo)
+        const esUsuarioOcupado = badge.classList.contains('usuario-ocupado');
+        
+        // Si está ocupado, no permitir interacción
+        if (esUsuarioOcupado) {
+            badge.setAttribute('tabindex', '-1'); // Quitar del tab order
+            badge.style.cursor = 'not-allowed';
+            
+            // Asegurar que el checkbox está disabled
+            checkbox.disabled = true;
+            
+            // Evento de click bloqueado
+            badge.addEventListener('click', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                // Feedback visual
+                badge.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    badge.style.transform = '';
+                }, 200);
+            });
+            
+            // Bloquear teclado también
+            badge.addEventListener('keydown', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+            });
+            
+            return; // No agregar más event listeners
+        }
+
+        // Solo para usuarios disponibles
         badge.setAttribute('tabindex', '0');
 
         // Aplicar estado inicial

@@ -46,9 +46,9 @@
                                     <p class="mb-0">
                                         <strong>Usuario:</strong> 
                                         {% if version.history_user %}
-                                            {{ version.history_user.get_full_name|default:version.history_user.username }}
+                                            {{ version.history_user.nombre|default:version.history_user.username }}
                                         {% else %}
-                                            <span class="text-muted">Sistema</span>
+                                            <span class="text-muted">No registrado</span>
                                         {% endif %}
                                     </p>
                                 </div>

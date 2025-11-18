@@ -207,6 +207,15 @@ class Usuario(AbstractUser):
         """
         return self.roles.filter(nombre__iexact='Stakeholder').exists()
 
+    def es_visitante(self) -> bool:
+        """
+        Verifica si el usuario tiene el rol de Visitante.
+
+        Returns:
+            bool: True si el usuario es visitante, False en caso contrario.
+        """
+        return self.roles.filter(nombre__iexact='Visitante').exists()
+
     def tiene_permiso(self, permiso_nombre: str) -> bool:
         """
         Verifica si el usuario tiene un permiso específico a través de sus roles.

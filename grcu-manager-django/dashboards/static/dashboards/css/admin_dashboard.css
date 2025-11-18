@@ -1,16 +1,45 @@
 /* ==== ADMIN DASHBOARD CSS ==== */
-.hover-shadow:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
-  transform: translateY(-2px);
-  transition: all 0.3s ease;
-}
 
+/* Tarjetas con estilo mejorado inspirado en asignar_metodologia */
 .card {
+  border: 3px solid #ecf0f1;
   border-radius: 12px;
   overflow: hidden;
-  height: 320px;
+  min-height: 280px;
+  height: auto;
   display: flex;
   flex-direction: column;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+/* Tarjetas con altura automática */
+.card-auto-height {
+  height: auto !important;
+  min-height: 200px;
+}
+
+/* Enlaces de tarjetas clicables */
+.card-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  cursor: pointer;
+}
+
+.card-link:hover {
+  text-decoration: none;
+  color: inherit;
+}
+
+.card-link .card {
+  cursor: pointer;
+}
+
+.card:hover {
+  border-color: #3498db;
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(52, 152, 219, 0.2);
 }
 
 .card-body {
@@ -21,17 +50,258 @@
   padding: 1.5rem;
 }
 
+/* Headers de las tarjetas */
+.card-header {
+  background-color: #f8f9fa;
+  border-bottom: 2px solid #ecf0f1;
+  padding: 1rem 1.25rem;
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 0.95rem;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.3;
+  min-height: 3.2rem;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.card-header i {
+  margin-right: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* Métricas principales */
+.metric-card {
+  border: 3px solid #ecf0f1;
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.metric-card:hover {
+  border-color: #3498db;
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(52, 152, 219, 0.15);
+}
+
+.metric-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+  line-height: 1;
+}
+
+.metric-label {
+  font-size: 0.95rem;
+  color: #7f8c8d;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.4;
+}
+
+/* Gráficas de dona */
+canvas {
+  max-width: 220px !important;
+  max-height: 220px !important;
+  width: auto !important;
+  height: auto !important;
+  margin: 0 auto;
+  display: block;
+}
+
+/* Contenedor de canvas horizontal (lado izquierdo) */
+.chart-container-side {
+  flex: 0 0 220px;
+  width: 220px;
+  height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+}
+
+/* Información al lado del gráfico */
+.chart-info {
+  flex: 1;
+  padding-left: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Lista de proyectos activos */
+.proyectos-lista {
+  max-height: 120px;
+  overflow-y: auto;
+  font-size: 0.85rem;
+}
+
+.proyectos-lista::-webkit-scrollbar {
+  width: 4px;
+}
+
+.proyectos-lista::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 4px;
+}
+
+.proyectos-lista::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
+}
+
+/* Contenedor de canvas para mantener proporción (legacy) */
+.chart-container {
+  position: relative;
+  height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  flex: 1;
+}
+
+/* Colores de gradiente mejorados */
 .bg-gradient-primary {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
+.bg-gradient-success {
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+}
+
+.bg-gradient-info {
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+}
+
+.bg-gradient-warning {
+  background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+}
+
+.bg-gradient-danger {
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+}
+
+/* Texto en tarjetas con gradiente */
 .text-white-50 {
-  color: rgba(255, 255, 255, 0.7) !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-weight: 500;
 }
 
 .badge.bg-white {
-  background-color: rgba(255, 255, 255, 0.9) !important;
-  color: #495057 !important;
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  color: #2c3e50 !important;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+}
+
+/* Lista de actividades */
+.list-group-item {
+  border: 1px solid #ecf0f1;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.list-group-item:hover {
+  background-color: #f8f9fa;
+  border-color: #3498db;
+  transform: translateX(5px);
+}
+
+/* Tablas */
+.table {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.table thead th {
+  background-color: #f8f9fa;
+  color: #2c3e50;
+  font-weight: 600;
+  border-bottom: 2px solid #ecf0f1;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+}
+
+.table tbody tr {
+  transition: all 0.2s ease;
+}
+
+.table tbody tr:hover {
+  background-color: #f8f9fa;
+  transform: scale(1.01);
+}
+
+/* Badges mejorados */
+.badge {
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+/* Grupos más activos - estilo lista */
+.grupo-activo-item {
+  border: 2px solid #ecf0f1;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.grupo-activo-item:hover {
+  border-color: #3498db;
+  transform: translateX(5px);
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.15);
+}
+
+.grupo-activo-nombre {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 1.05rem;
+  margin-bottom: 0.5rem;
+}
+
+.grupo-activo-stats {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.9rem;
+  color: #7f8c8d;
+}
+
+.grupo-activo-stats span {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* Proyectos activos - estilo mejorado */
+.proyecto-activo-badge {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 8px;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
 }
 
 /* Responsive adjustments */
@@ -40,12 +310,38 @@
     flex: 0 0 33.333333%;
     max-width: 33.333333%;
   }
+  
+  .card {
+    min-height: 300px;
+    height: auto;
+  }
+  
+  canvas {
+    max-width: 150px !important;
+    max-height: 150px !important;
+  }
+  
+  .chart-container-side {
+    flex: 0 0 150px;
+    width: 150px;
+    height: 150px;
+  }
 }
 
 @media (max-width: 991.98px) {
   .col-lg-4, .col-xl-3 {
     flex: 0 0 50%;
     max-width: 50%;
+  }
+  
+  .card {
+    min-height: 300px;
+    height: auto;
+  }
+  
+  canvas {
+    max-width: 160px !important;
+    max-height: 160px !important;
   }
 }
 
@@ -54,8 +350,84 @@
     flex: 0 0 100%;
     max-width: 100%;
   }
+  
   .card {
     height: auto;
-    min-height: 280px;
+    min-height: 240px;
   }
+  
+  canvas {
+    max-width: 140px !important;
+    max-height: 140px !important;
+  }
+  
+  .chart-container-side {
+    flex: 0 0 140px;
+    width: 140px;
+    height: 140px;
+  }
+  
+  .chart-info {
+    padding-left: 1rem;
+  }
+  
+  .metric-value {
+    font-size: 2rem;
+  }
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.card {
+  animation: fadeIn 0.4s ease-out;
+}
+
+/* Efecto hover suave */
+.hover-shadow:hover {
+  box-shadow: 0 8px 20px rgba(52, 152, 219, 0.2) !important;
+  transform: translateY(-5px);
+  transition: all 0.3s ease;
+}
+
+/* Grupos más activos */
+.grupo-activo-item {
+  padding: 1rem;
+  border: 2px solid #ecf0f1;
+  border-radius: 8px;
+  background: white;
+  transition: all 0.3s ease;
+}
+
+.grupo-activo-item:hover {
+  border-color: #3498db;
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.1);
+  transform: translateY(-2px);
+}
+
+.grupo-activo-nombre {
+  color: #2c3e50;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.grupo-activo-stats {
+  display: flex;
+  align-items: center;
+  color: #7f8c8d;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+.grupo-activo-stats i {
+  margin-right: 0.25rem;
 }

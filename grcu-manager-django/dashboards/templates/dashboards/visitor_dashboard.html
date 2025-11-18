@@ -1,0 +1,192 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Dashboard Visitante{% endblock %}
+
+{% block extra_css %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Visitante - GRCU Manager</title>
+  <link rel="stylesheet" href="{% static 'dashboards/css/admin_dashboard.css' %}?v=2.8">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4 px-4">
+
+  <!-- Mensajes del sistema -->
+  {% if messages %}
+    <div class="container-fluid mt-3">
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show django-message" role="alert" data-message-key="{{ message|slugify }}">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.django-message').forEach(function(alert) {
+            var key = alert.getAttribute('data-message-key');
+            var seen = sessionStorage.getItem('django_message_' + key);
+            if (seen === '1') {
+                setTimeout(function() {
+                    var bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
+                    bsAlert.close();
+                }, 15000);
+            } else {
+                sessionStorage.setItem('django_message_' + key, '1');
+            }
+        });
+    });
+    </script>
+  {% endif %}
+
+  <!-- Métrica Global de Proyectos Asignados -->
+  <div class="row mb-4">
+    <div class="col-lg-4 col-xl-3">
+      <div class="card mb-3 hover-shadow">
+        <div class="card-header">
+          <i class="bi bi-eye me-2"></i>Visitante
+        </div>
+        <div class="card-body text-center">
+          <div class="metric-value" style="color: #667eea;">{{ total_proyectos|default:0 }}</div>
+          <div class="metric-label">Proyectos Asignados</div>
+          <p class="text-muted small mb-0 mt-2">Acceso de solo lectura</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if dashboard_data %}
+    <!-- Proyectos asignados -->
+    {% for data in dashboard_data %}
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card hover-shadow">
+          <!-- Header del proyecto -->
+          <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <i class="bi bi-folder2-open me-2"></i>{{ data.proyecto.nombre }}
+              </div>
+              <div>
+                <span class="badge bg-info">
+                  <i class="bi bi-eye me-1"></i>Solo Lectura
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Contenido del proyecto -->
+          <div class="card-body">
+            {% if data.proyecto.descripcion %}
+            <p class="text-muted mb-3">{{ data.proyecto.descripcion }}</p>
+            {% endif %}
+
+            <!-- Estadísticas del proyecto -->
+            <div class="row g-3 mb-4">
+              <div class="col-md-3">
+                <div class="metric-card">
+                  <div class="text-center">
+                    <i class="bi bi-file-text-fill mb-2" style="font-size: 2rem; color: #667eea;"></i>
+                    <div class="metric-value" style="color: #667eea;">{{ data.total_requerimientos }}</div>
+                    <div class="metric-label">Requerimientos</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="metric-card">
+                  <div class="text-center">
+                    <i class="bi bi-diagram-3-fill mb-2" style="font-size: 2rem; color: #764ba2;"></i>
+                    <div class="metric-value" style="color: #764ba2;">{{ data.total_casos_uso }}</div>
+                    <div class="metric-label">Casos de Uso</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="metric-card">
+                  <div class="text-center">
+                    <i class="bi bi-exclamation-triangle-fill mb-2" style="font-size: 2rem; color: #ffc107;"></i>
+                    <div class="metric-value" style="color: #ffc107;">{{ data.reqs_huerfanos_count|add:data.casos_huerfanos_count }}</div>
+                    <div class="metric-label">Elementos Huérfanos</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="metric-card">
+                  <div class="text-center">
+                    <i class="bi bi-percent mb-2" style="font-size: 2rem; color: #28a745;"></i>
+                    <div class="metric-value" style="color: #28a745;">{{ data.progreso }}%</div>
+                    <div class="metric-label">Progreso</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Barra de progreso -->
+            <div class="mb-4">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <small class="text-muted">Progreso del Proyecto</small>
+                <small class="fw-bold" style="color: #667eea;">{{ data.reqs_completados }}/{{ data.total_requerimientos }} completados</small>
+              </div>
+              <div class="progress" style="height: 8px;">
+                <div class="progress-bar" 
+                     style="width: {{ data.progreso }}%; background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);" 
+                     role="progressbar" 
+                     aria-valuenow="{{ data.progreso }}" 
+                     aria-valuemin="0" 
+                     aria-valuemax="100">
+                </div>
+              </div>
+            </div>
+
+            <!-- Acciones permitidas -->
+            <div class="row g-2">
+              <div class="col-md-6">
+                <a href="{% url 'proyectos:matriz_trazabilidad' data.proyecto.id %}" 
+                   class="btn btn-primary w-100">
+                  <i class="bi bi-diagram-3 me-2"></i>Ver Matriz de Trazabilidad
+                </a>
+              </div>
+              <div class="col-md-6">
+                <a href="{% url 'proyectos:proyecto_reportes' data.proyecto.id %}" 
+                   class="btn btn-success w-100">
+                  <i class="bi bi-file-earmark-bar-graph me-2"></i>Ver Reportes
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+
+  {% else %}
+    <!-- Sin proyectos asignados -->
+    <div class="row">
+      <div class="col-12">
+        <div class="card text-center py-5">
+          <div class="card-body">
+            <i class="bi bi-folder-x" style="font-size: 4rem; color: #6c757d; opacity: 0.3;"></i>
+            <h5 class="mt-3 text-muted">No tienes proyectos asignados</h5>
+            <p class="text-muted mb-0">
+              Contacta con un administrador para que te asigne proyectos como visitante.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- === Scripts === -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
+<script src="{% static 'dashboards/js/charts.js' %}?v=10.0"></script>
+{% endblock %}

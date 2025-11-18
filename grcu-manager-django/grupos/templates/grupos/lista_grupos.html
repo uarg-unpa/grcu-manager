@@ -7,56 +7,126 @@
 {% endblock %}
 
 {% block content %}
+{% with current_sort=sort|default:'-id' %}
 <div class="grupo-lista-container">
-    <div class="grupo-lista-acciones">
-        <a href="{% url 'grupos:crear_grupo' %}" class="btn btn-sm btn-success">Nuevo Grupo</a>
+    <div class="grupo-lista-acciones d-flex align-items-center justify-content-between">
+        <!-- Buscador a la izquierda con icono (igual que usuarios/proyectos) -->
+        <div class="grupo-lista-search d-flex align-items-center">
+            <div class="input-group input-group-sm" style="width:260px;">
+                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+                <input type="search" id="gruposSearchInput" placeholder="Buscar por nombre o integrante" class="form-control form-control-sm border-start-0" maxlength="50" />
+            </div>
+        </div>
+
+        <!-- Botón a la derecha -->
+        <div>
+            <a href="{% url 'grupos:crear_grupo' %}" class="btn btn-sm btn-success">Nuevo Grupo</a>
+        </div>
     </div>
     {% if grupos %}
     <table class="grupo-lista-tabla">
         <thead>
             <tr>
                 <th>Logo</th>
-                <th>Nombre</th>
-                <th>Integrantes</th>
-                <th>Activo</th>
+                <th>
+                    <a href="?sort={% if current_sort == 'nombre' %}-nombre{% else %}nombre{% endif %}" class="grupo-lista-sort-link">
+                        Nombre
+                        {% if current_sort == 'nombre' %}
+                            <span class="grupo-lista-sort-arrow">▼</span>
+                        {% elif current_sort == '-nombre' %}
+                            <span class="grupo-lista-sort-arrow">▲</span>
+                        {% endif %}
+                    </a>
+                </th>
+                <th>
+                    <a href="?sort={% if current_sort == 'integrantes' %}-integrantes{% else %}integrantes{% endif %}" class="grupo-lista-sort-link">
+                        Integrantes
+                        {% if current_sort == 'integrantes' %}
+                            <span class="grupo-lista-sort-arrow">▼</span>
+                        {% elif current_sort == '-integrantes' %}
+                            <span class="grupo-lista-sort-arrow">▲</span>
+                        {% endif %}
+                    </a>
+                </th>
+                <th>
+                    <a href="?sort={% if current_sort == 'activo' %}-activo{% else %}activo{% endif %}" class="grupo-lista-sort-link">
+                        Activo
+                        {% if current_sort == 'activo' %}
+                            <span class="grupo-lista-sort-arrow">▼</span>
+                        {% elif current_sort == '-activo' %}
+                            <span class="grupo-lista-sort-arrow">▲</span>
+                        {% endif %}
+                    </a>
+                </th>
                 <th>Acciones</th>
             </tr>
         </thead>
-        <tbody>
+    <tbody id="gruposTableBody">
             {% for grupo in grupos %}
             <tr>
-                <td>
+                <td class="text-start">
                     {% if grupo.logo %}
                         <img src="{{ grupo.logo.url }}" width="50" height="50" style="object-fit:cover; border-radius:6px;">
                     {% else %}
                         <span class="grupo-lista-texto-muted">Sin logo</span>
                     {% endif %}
                 </td>
-                <td>{{ grupo.nombre }}</td>
-                <td>
+                <td class="text-start">{{ grupo.nombre }}</td>
+                <td class="text-start">
                     {% for integrante in grupo.integrantes.all %}
                         {{ integrante.nombre|default:integrante.email }}{% if not forloop.last %}, {% endif %}
                     {% empty %}
                         <span class="grupo-lista-texto-muted">Sin integrantes</span>
                     {% endfor %}
                 </td>
-                <td>
+                <td class="text-start">
                     {% if grupo.activo %}
-                        <span class="grupo-lista-texto-success">Sí</span>
+                        <i class="bi bi-check-circle-fill text-success"></i>
                     {% else %}
-                        <span class="grupo-lista-texto-danger">No</span>
+                        <i class="bi bi-x-circle-fill text-danger"></i>
                     {% endif %}
                 </td>
-                <td>
-                    <a href="{% url 'grupos:editar_grupo' grupo.id %}" class="btn btn-sm btn-outline-warning grupo-btn-edit" title="Editar grupo" data-bs-toggle="tooltip"><i class="bi bi-people-fill"></i></a>
-                    <a href="{% url 'grupos:eliminar_grupo' grupo.id %}" class="btn btn-sm btn-outline-danger grupo-btn-delete" title="Eliminar grupo" data-bs-toggle="tooltip"><i class="bi bi-x-circle-fill"></i></a>
+                <td class="text-center">
+                    <a href="{% url 'grupos:editar_grupo' grupo.id %}" class="btn btn-sm btn-outline-warning grupo-btn-edit" title="Editar grupo" data-bs-toggle="tooltip">
+                        <i class="bi bi-pencil-square"></i>
+                    </a>
+                    <a href="{% url 'grupos:eliminar_grupo' grupo.id %}" class="btn btn-sm btn-outline-danger grupo-btn-delete" title="Eliminar grupo" data-bs-toggle="tooltip">
+                        <i class="bi bi-trash"></i>
+                    </a>
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+
+    <!-- Paginación -->
+    <nav aria-label="Page navigation">
+        <ul class="grupo-lista-paginacion">
+            {% if grupos.has_previous %}
+            <li><a href="?page={{ grupos.previous_page_number }}{% if sort %}&sort={{ sort }}{% endif %}">&laquo;</a></li>
+            {% endif %}
+
+            {% for num in grupos.paginator.page_range %}
+                {% if grupos.number == num %}
+                    <li class="activo"><span>{{ num }}</span></li>
+                {% else %}
+                    <li><a href="?page={{ num }}{% if sort %}&sort={{ sort }}{% endif %}">{{ num }}</a></li>
+                {% endif %}
+            {% endfor %}
+
+            {% if grupos.has_next %}
+            <li><a href="?page={{ grupos.next_page_number }}{% if sort %}&sort={{ sort }}{% endif %}">&raquo;</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+
     {% else %}
     <p class="grupo-lista-vacio">No hay grupos creados.</p>
     {% endif %}
 </div>
+{% endwith %}
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'grupos/js/lista_grupos.js' %}"></script>
 {% endblock %}

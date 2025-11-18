@@ -14,6 +14,25 @@
     <form method="post" enctype="multipart/form-data" class="proyecto-form" id="proyectoForm">
         {% csrf_token %}
 
+        <!-- Mostrar errores generales del formulario -->
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+
+        <!-- Mostrar todos los errores del formulario para debug -->
+        {% if form.errors %}
+            <div class="alert alert-warning">
+                <strong>Errores en el formulario:</strong>
+                <ul>
+                {% for field, errors in form.errors.items %}
+                    <li><strong>{{ field }}:</strong> {{ errors|join:", " }}</li>
+                {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
         <div class="proyecto-form-group">
             {{ form.nombre.label_tag }}
             {{ form.nombre }}
@@ -41,8 +60,13 @@
         <div class="proyecto-form-group">
             {{ form.lider.label_tag }}
             {{ form.lider }}
+            <small class="form-text text-muted">
+                <i class="bi bi-info-circle"></i> Primero selecciona un grupo. Los integrantes del grupo se cargarán automáticamente aquí.
+            </small>
             {% if form.lider.errors %}
-                <div class="text-danger">{{ form.lider.errors.as_text }}</div>
+                <div class="alert alert-danger mt-2">
+                    <i class="bi bi-exclamation-triangle"></i> {{ form.lider.errors.as_text }}
+                </div>
             {% endif %}
         </div>
 
@@ -54,6 +78,17 @@
             {% endif %}
             {% if form.clientes.errors %}
                 <div class="text-danger">{{ form.clientes.errors.as_text }}</div>
+            {% endif %}
+        </div>
+
+        <div class="proyecto-form-group">
+            {{ form.visitantes.label_tag }}
+            {{ form.visitantes }}
+            {% if form.visitantes.help_text %}
+                <small class="form-text text-muted">{{ form.visitantes.help_text }}</small>
+            {% endif %}
+            {% if form.visitantes.errors %}
+                <div class="text-danger">{{ form.visitantes.errors.as_text }}</div>
             {% endif %}
         </div>
 

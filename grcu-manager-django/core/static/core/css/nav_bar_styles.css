@@ -33,7 +33,7 @@
     margin: 0;
     position: sticky;
     top: 48px;
-    z-index: 101;
+    z-index: 999; /* Reducido para estar por debajo del header */
 }
 
 .custom-navbar-menu {

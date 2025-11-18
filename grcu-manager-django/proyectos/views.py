@@ -8,6 +8,10 @@ from accounts.models import Usuario
 from grupos.models import Grupo
 from django.core.paginator import Paginator
 from django.db.models import Q
+from django.http import JsonResponse
+
+# Importar vista de exportación PDF del dashboard
+from proyectos.views_dashboard_pdf import exportar_dashboard_pdf
 
 
 # Helpers
@@ -79,11 +83,61 @@ def usuario_tiene_proyecto_activo(usuario, proyecto_actual=None):
 @login_required
 @user_passes_test(is_admin)
 def lista_proyectos(request):
-    proyectos = Proyecto.objects.select_related('lider', 'grupo', 'creado_por').prefetch_related('clientes').all()
+    proyectos_qs = Proyecto.objects.select_related('lider', 'grupo', 'creado_por').prefetch_related('clientes')
+    sort = request.GET.get('sort', '')
+    
+    # Orden por defecto: último creado primero (por ID descendente)
+    if not sort:
+        proyectos_qs = proyectos_qs.order_by('-id')
+    elif sort == 'nombre':
+        proyectos_qs = proyectos_qs.order_by('nombre')
+    elif sort == 'lider':
+        proyectos_qs = proyectos_qs.order_by('lider__nombre')
+    elif sort == 'creado_por':
+        proyectos_qs = proyectos_qs.order_by('creado_por__nombre')
+    elif sort == 'fecha_creacion':
+        proyectos_qs = proyectos_qs.order_by('-fecha_creacion')
+    
+    # Paginación
+    paginator = Paginator(proyectos_qs, 10)
+    page_number = request.GET.get('page')
+    proyectos = paginator.get_page(page_number)
+    
     return render(request, "proyectos/lista_proyectos.html", {
         "proyectos": proyectos,
+        "sort": sort,
         "page_title": "Lista de Proyectos"
     })
+
+
+@login_required
+@user_passes_test(is_admin)
+def buscar_proyectos_ajax(request):
+    """Endpoint AJAX para búsqueda de proyectos"""
+    q = request.GET.get('q', '').strip()
+    if not q:
+        return JsonResponse({'proyectos': [], 'count': 0})
+
+    # Buscar por nombre, líder o clientes
+    proyectos = Proyecto.objects.filter(
+        Q(nombre__icontains=q) |
+        Q(lider__nombre__icontains=q) |
+        Q(clientes__nombre__icontains=q)
+    ).select_related('lider', 'creado_por').prefetch_related('clientes').distinct()[:50]
+
+    proyectos_data = []
+    for p in proyectos:
+        proyectos_data.append({
+            'id': p.id,
+            'nombre': p.nombre,
+            'logo': p.logo.url if p.logo else None,
+            'lider': p.lider.nombre if p.lider else None,
+            'clientes': [c.nombre for c in p.clientes.all()],
+            'creado_por': p.creado_por.nombre if p.creado_por else None,
+            'fecha_creacion': p.fecha_creacion.strftime('%d/%m/%Y %H:%M') if hasattr(p, 'fecha_creacion') and p.fecha_creacion else ''
+        })
+
+    return JsonResponse({'proyectos': proyectos_data, 'count': len(proyectos_data)})
 
 
 @login_required
@@ -91,17 +145,37 @@ def lista_proyectos(request):
 def crear_proyecto(request):
     if request.method == "POST":
         form = ProyectoCrearForm(request.POST, request.FILES)
+        
+        # Debug: Imprimir errores del formulario
+        if not form.is_valid():
+            print("❌ FORMULARIO NO VÁLIDO")
+            print("Errores del formulario:", form.errors)
+            print("Errores no de campo:", form.non_field_errors())
+        
         if form.is_valid():
-            # Crear el proyecto
+            # Obtener el grupo seleccionado ANTES de crear el proyecto
+            grupo = form.cleaned_data.get('grupo')  # Ya es un objeto Grupo, no un ID
+
+            # ⚡ VALIDAR: Un grupo solo puede tener UN proyecto activo (ANTES de crear)
+            if grupo:
+                proyecto_existente = Proyecto.objects.filter(grupo=grupo, activo=True).first()
+                if proyecto_existente:
+                    messages.error(
+                        request,
+                        f"El grupo '{grupo.nombre}' ya tiene asignado el proyecto activo '{proyecto_existente.nombre}'. "
+                        f"Un grupo solo puede tener un proyecto activo a la vez."
+                    )
+                    return render(request, "proyectos/crear_proyecto.html", {
+                        "form": form,
+                        "page_title": "Crear Proyecto"
+                    })
+
+            # Crear el proyecto DESPUÉS de validar
             proyecto = form.save(commit=False)
             proyecto.creado_por = request.user
             proyecto.save()
 
-            # Obtener el grupo seleccionado (puede ser None)
-            grupo = proyecto.grupo
-
             if grupo:
-                # Solo procesar líder y participantes si hay grupo
                 lider_id = form.cleaned_data.get('lider')
                 if lider_id:
                     lider = Usuario.objects.get(id=lider_id)
@@ -193,11 +267,28 @@ def crear_proyecto(request):
                     defaults={"color": "#17a2b8"}
                 )
                 for cliente in clientes:
+                    # IMPORTANTE: Si el cliente ya era participante, removerlo de participantes
+                    # Los stakeholders NO deben ser participantes del equipo de desarrollo
+                    ParticipacionProyecto.objects.filter(
+                        usuario=cliente,
+                        proyecto=proyecto
+                    ).delete()
+                    
+                    # Crear nueva participación como Stakeholder
                     ParticipacionProyecto.objects.get_or_create(
                         usuario=cliente,
                         proyecto=proyecto,
                         defaults={'rol': rol_stakeholder}
                     )
+
+            # Asignar visitantes al proyecto (independientemente de si hay grupo o no)
+            visitantes_ids = form.cleaned_data.get('visitantes')
+            if visitantes_ids:
+                # Convertir IDs (strings) a enteros y obtener objetos Usuario
+                visitantes_ids_int = [int(id) for id in visitantes_ids]
+                visitantes = Usuario.objects.filter(id__in=visitantes_ids_int)
+                proyecto.visitantes.set(visitantes)
+                messages.success(request, f"{len(visitantes)} visitante(s) asignado(s) al proyecto.")
 
             return redirect("proyectos:lista_proyectos")
     else:
@@ -216,13 +307,41 @@ def editar_proyecto(request, proyecto_id):
 
     if request.method == "POST":
         form = ProyectoCrearForm(request.POST, request.FILES, instance=proyecto)
+        # DEBUG: logear llegada del POST para depuración
+        try:
+            print('\n--- Received POST to editar_proyecto ---')
+            print('PATH:', request.path)
+            print('POST keys:', list(request.POST.keys()))
+            print("Clientes en POST (getlist):", request.POST.getlist('clientes'))
+            print('Líder en POST:', request.POST.get('lider'))
+            print('Grupo en POST:', request.POST.get('grupo'))
+        except Exception as _err:
+            print('Error al imprimir debug POST:', _err)
+
         if form.is_valid():
-            proyecto = form.save()
+            
+            # No guardar ManyToMany todavía
+            proyecto = form.save(commit=False)
+            proyecto.save()
 
             # Obtener el grupo seleccionado (puede ser None)
             grupo = proyecto.grupo
 
             if grupo:
+                # ⚡ VALIDAR: Un grupo solo puede tener UN proyecto activo (excepto el proyecto actual)
+                proyecto_existente = Proyecto.objects.filter(grupo=grupo, activo=True).exclude(id=proyecto.id).first()
+                if proyecto_existente:
+                    messages.error(
+                        request,
+                        f"El grupo '{grupo.nombre}' ya tiene asignado el proyecto activo '{proyecto_existente.nombre}'. "
+                        f"Un grupo solo puede tener un proyecto activo a la vez."
+                    )
+                    return render(request, "proyectos/editar_proyecto.html", {
+                        "form": form,
+                        "proyecto": proyecto,
+                        "page_title": "Editar Proyecto"
+                    })
+                
                 # Solo procesar líder y participantes si hay grupo
                 lider_id = form.cleaned_data.get('lider')
                 if lider_id:
@@ -351,6 +470,12 @@ def editar_proyecto(request, proyecto_id):
                     defaults={"color": "#17a2b8"}
                 )
                 for cliente in clientes:
+                    # Eliminar cualquier participación existente antes de crear la nueva como Stakeholder
+                    ParticipacionProyecto.objects.filter(
+                        usuario=cliente,
+                        proyecto=proyecto
+                    ).delete()
+                    
                     ParticipacionProyecto.objects.get_or_create(
                         usuario=cliente,
                         proyecto=proyecto,
@@ -366,6 +491,16 @@ def editar_proyecto(request, proyecto_id):
                         rol__nombre='Stakeholder'
                     ).delete()
                 proyecto.clientes.clear()
+
+            # Gestionar visitantes
+            visitantes_ids = form.cleaned_data.get('visitantes')
+            if visitantes_ids:
+                visitantes_ids_int = [int(id) for id in visitantes_ids]
+                visitantes = Usuario.objects.filter(id__in=visitantes_ids_int)
+                proyecto.visitantes.set(visitantes)
+                messages.success(request, f"{len(visitantes)} visitante(s) asignado(s) al proyecto.")
+            else:
+                proyecto.visitantes.clear()
 
             return redirect("proyectos:lista_proyectos")
     else:
@@ -458,7 +593,7 @@ def matriz_trazabilidad(request, proyecto_id):
     """
     Vista de Matriz de Trazabilidad con Live Traceability.
     Muestra relaciones dinámicas entre requerimientos y casos de uso.
-    Accesible por líder y participantes del proyecto.
+    Accesible por líder, participantes, stakeholders y visitantes del proyecto.
     """
     from requerimientos.models import Requerimiento, RequerimientoCaso
     from casos_de_uso.models import CasoDeUso
@@ -466,13 +601,15 @@ def matriz_trazabilidad(request, proyecto_id):
     
     proyecto = get_object_or_404(Proyecto, id=proyecto_id)
     
-    # Verificar permisos: líder o participante del proyecto
+    # Verificar permisos: líder, participante, stakeholder o visitante del proyecto
     es_lider = proyecto.lider == request.user
     es_participante = proyecto.participantes.filter(id=request.user.id).exists()
+    es_stakeholder = proyecto.clientes.filter(id=request.user.id).exists()
+    es_visitante = proyecto.visitantes.filter(id=request.user.id).exists()
     
-    if not (es_lider or es_participante):
+    if not (es_lider or es_participante or es_stakeholder or es_visitante):
         messages.error(request, "No tienes permiso para ver la matriz de trazabilidad de este proyecto.")
-        return redirect("dashboards:lider_dashboard")
+        return redirect("dashboards:visitor_dashboard" if request.user.es_visitante() else "dashboards:lider_dashboard")
     
     # Filtros
     tipo_req = request.GET.get('tipo_req')
@@ -1187,7 +1324,7 @@ def proyecto_reportes(request, proyecto_id):
     """
     Vista de reportes y estadísticas del proyecto.
     Muestra métricas, gráficos y análisis del estado del proyecto.
-    Accesible por líder y participantes del proyecto.
+    Accesible por líder, participantes, stakeholders (clientes) y visitantes del proyecto.
     """
     from requerimientos.models import Requerimiento
     from casos_de_uso.models import CasoDeUso
@@ -1196,13 +1333,17 @@ def proyecto_reportes(request, proyecto_id):
     
     proyecto = get_object_or_404(Proyecto, id=proyecto_id)
     
-    # Verificar permisos: líder o participante del proyecto
+    # Verificar permisos: líder, participante, stakeholder (cliente) o visitante
     es_lider = proyecto.lider == request.user
     es_participante = proyecto.participantes.filter(id=request.user.id).exists()
+    es_stakeholder = proyecto.clientes.filter(id=request.user.id).exists()
+    es_visitante = proyecto.visitantes.filter(id=request.user.id).exists()
     
-    if not (es_lider or es_participante):
+    if not (es_lider or es_participante or es_stakeholder or es_visitante):
         messages.error(request, "No tienes permiso para ver los reportes de este proyecto.")
-        return redirect("dashboards:lider_dashboard")
+        if request.user.es_visitante():
+            return redirect("dashboards:visitor_dashboard")
+        return redirect("dashboards:developer_dashboard")
     
     # === MÉTRICAS GENERALES ===
     total_requerimientos = Requerimiento.objects.filter(proyecto=proyecto).count()
@@ -1253,6 +1394,7 @@ def proyecto_reportes(request, proyecto_id):
     context = {
         'proyecto': proyecto,
         'es_lider': es_lider,
+        'es_stakeholder': es_stakeholder,
         'page_title': f'{proyecto.nombre} - Reportes',
         
         # Métricas
@@ -1385,6 +1527,7 @@ def proyecto_detail_admin(request, proyecto_id):
     from casos_de_uso.models import CasoDeUso
     from auditoria.models import RegistroActividad
     from django.db.models import Count
+    import json
     
     proyecto = get_object_or_404(Proyecto, id=proyecto_id)
     
@@ -1392,7 +1535,7 @@ def proyecto_detail_admin(request, proyecto_id):
     lider = proyecto.lider
     requerimientos = Requerimiento.objects.filter(proyecto=proyecto)
     casos = CasoDeUso.objects.filter(proyecto=proyecto)
-    acciones = RegistroActividad.objects.filter(usuario__in=integrantes).order_by('-fecha')[:20]
+    acciones = RegistroActividad.objects.filter(usuario__in=integrantes).order_by('-fecha')[:5]  # Solo 5 acciones más recientes
     
     # Huérfanos definidos como aquellos sin relación persistida en la tabla intermedia RequerimientoCaso
     reqs_huerfanos = requerimientos.annotate(rel_count=Count('relaciones_casos')).filter(rel_count=0)
@@ -1407,26 +1550,36 @@ def proyecto_detail_admin(request, proyecto_id):
         matriz.append({'req': req, 'casos': relacionados})
     
     # Agregaciones para gráficos
-    # Requerimientos por estado
+    # Requerimientos por estado - Usar los estados correctos del modelo
     req_estado_qs = requerimientos.values('estado').annotate(count=Count('id'))
     req_estado_map = {item['estado']: item['count'] for item in req_estado_qs}
-    req_estado_labels = ["PENDIENTE", "EN_DESARROLLO", "APROBADO"]
-    req_estado_values = [req_estado_map.get(k, 0) for k in req_estado_labels]
+    req_estado_labels = ["Borrador", "Validado", "Priorizado", "En Proceso", "Terminado"]
+    req_estado_values = [
+        req_estado_map.get('BORRADOR', 0),
+        req_estado_map.get('VALIDADO', 0),
+        req_estado_map.get('PRIORIZADO', 0),
+        req_estado_map.get('EN_PROCESO', 0),
+        req_estado_map.get('TERMINADO', 0)
+    ]
     
-    # Requerimientos por tipo
+    # Requerimientos por tipo - Usar los tipos correctos del modelo
     req_tipo_qs = requerimientos.values('tipo').annotate(count=Count('id'))
     req_tipo_map = {item['tipo']: item['count'] for item in req_tipo_qs}
-    req_tipo_labels = ["FUNCIONAL", "NO_FUNCIONAL"]
-    req_tipo_values = [req_tipo_map.get(k, 0) for k in req_tipo_labels]
+    req_tipo_labels = ["Funcional", "No Funcional", "Sistema"]
+    req_tipo_values = [
+        req_tipo_map.get('FUNCIONAL', 0),
+        req_tipo_map.get('NO_FUNCIONAL', 0),
+        req_tipo_map.get('SISTEMA', 0)
+    ]
     
     # Casos de uso: conteo por disponibilidad de detalle (Tradicional / Ágil / Sin detalle)
-    casos_trad = casos.filter(detalle_tradicional__isnull=False).count()
-    casos_agil = casos.filter(detalle_agil__isnull=False).count()
-    casos_sin = casos.filter(detalle_agil__isnull=True, detalle_tradicional__isnull=True).count()
+    casos_trad = casos.filter(detalle_tradicional_reverse__isnull=False).count()
+    casos_agil = casos.filter(detalle_agil_reverse__isnull=False).count()
+    casos_sin = casos.filter(detalle_agil_reverse__isnull=True, detalle_tradicional_reverse__isnull=True).count()
     casos_tipo_labels = ["Tradicional", "Ágil", "Sin detalle"]
     casos_tipo_values = [casos_trad, casos_agil, casos_sin]
     
-    # Acciones por usuario (top 5)
+    # Acciones por usuario (top 5) - Limitar a 5 acciones en el timeline también
     acciones_por_usuario_qs = RegistroActividad.objects.filter(usuario__in=integrantes).values('usuario__nombre').annotate(count=Count('id')).order_by('-count')[:5]
     acciones_labels = [a['usuario__nombre'] for a in acciones_por_usuario_qs]
     acciones_values = [a['count'] for a in acciones_por_usuario_qs]
@@ -1444,15 +1597,15 @@ def proyecto_detail_admin(request, proyecto_id):
         'casos_huerfanos': casos_huerfanos,
         'casos_huerfanos_ids': casos_huerfanos_ids,
         'matriz': matriz,
-        # Datos para gráficos
-        'req_estado_labels': req_estado_labels,
-        'req_estado_values': req_estado_values,
-        'req_tipo_labels': req_tipo_labels,
-        'req_tipo_values': req_tipo_values,
-        'casos_tipo_labels': casos_tipo_labels,
-        'casos_tipo_values': casos_tipo_values,
-        'acciones_labels': acciones_labels,
-        'acciones_values': acciones_values,
+        # Datos para gráficos (convertidos a JSON para Chart.js)
+        'req_estado_labels': json.dumps(req_estado_labels),
+        'req_estado_values': json.dumps(req_estado_values),
+        'req_tipo_labels': json.dumps(req_tipo_labels),
+        'req_tipo_values': json.dumps(req_tipo_values),
+        'casos_tipo_labels': json.dumps(casos_tipo_labels),
+        'casos_tipo_values': json.dumps(casos_tipo_values),
+        'acciones_labels': json.dumps(acciones_labels),
+        'acciones_values': json.dumps(acciones_values),
     }
     
     return render(request, 'proyectos/proyecto_detail_admin.html', context)
@@ -1474,6 +1627,7 @@ def crear_header_footer(canvas, doc, proyecto, logo_proyecto_path, logo_grupo_pa
     from reportlab.lib import colors
     from datetime import datetime
     import os
+    from django.conf import settings
     
     canvas.saveState()
     width, height = doc.pagesize
@@ -1489,15 +1643,26 @@ def crear_header_footer(canvas, doc, proyecto, logo_proyecto_path, logo_grupo_pa
         canvas.restoreState()
     
     # === ENCABEZADO ===
+    # Logo de GRCU Manager (izquierda)
+    try:
+        logo_grcu_path = os.path.join(settings.BASE_DIR, 'accounts', 'static', 'accounts', 'img', 'logo_grcu_manager.png')
+        if os.path.exists(logo_grcu_path):
+            canvas.drawImage(logo_grcu_path, 2*cm, height - 2.5*cm, 
+                           width=2*cm, height=0.6*cm, 
+                           preserveAspectRatio=True, mask='auto')
+    except:
+        pass
+    
     # Línea superior
     canvas.setStrokeColor(colors.HexColor('#2c3e50'))
     canvas.setLineWidth(2)
     canvas.line(2*cm, height - 2*cm, width - 2*cm, height - 2*cm)
     
-    # Nombre del proyecto (izquierda, línea 1)
+    # Nombre del proyecto (izquierda, línea 1) - Truncado a 40 caracteres
     canvas.setFont('Helvetica-Bold', 9)
     canvas.setFillColor(colors.HexColor('#2c3e50'))
-    canvas.drawString(2*cm, height - 1.7*cm, f"Proyecto: {proyecto.nombre[:35]}")
+    proyecto_nombre = proyecto.nombre[:40] + '...' if len(proyecto.nombre) > 40 else proyecto.nombre
+    canvas.drawString(2*cm, height - 1.7*cm, f"Proyecto: {proyecto_nombre}")
     
     # Fecha de generación (centro, línea 1) - Más pequeña
     canvas.setFont('Helvetica', 7)
@@ -1603,21 +1768,23 @@ def crear_header_footer(canvas, doc, proyecto, logo_proyecto_path, logo_grupo_pa
     # Información del sistema (centro) - 3 líneas
     canvas.setFont('Helvetica', 6)
     canvas.setFillColor(colors.grey)
-    sistema_texto = "GRCU Manager - Sistema de Gestión de Requerimientos y Casos de Uso"
+    sistema_texto = "GRCU Manager - Sistema de Gestión de Requerimientos"
     sistema_width = canvas.stringWidth(sistema_texto, 'Helvetica', 6)
     canvas.drawString((width - sistema_width) / 2, 1.5*cm, sistema_texto)
     
     # Grupo y versión (centro, segunda línea)
     if proyecto.grupo:
-        grupo_texto = f"Grupo: {proyecto.grupo.nombre} | Versión: 1.0"
+        # Truncar nombre del grupo si es muy largo
+        grupo_nombre = proyecto.grupo.nombre[:30] + '...' if len(proyecto.grupo.nombre) > 30 else proyecto.grupo.nombre
+        grupo_texto = f"Grupo: {grupo_nombre}"
     else:
-        grupo_texto = "Versión: 1.0"
+        grupo_texto = "Sin grupo asignado"
     grupo_width = canvas.stringWidth(grupo_texto, 'Helvetica', 6)
     canvas.drawString((width - grupo_width) / 2, 1.1*cm, grupo_texto)
     
     # Universidad (centro, tercera línea)
     canvas.setFont('Helvetica-Oblique', 5)
-    univ_texto = "Universidad Nacional de la Patagonia Austral"
+    univ_texto = "Universidad Nacional de la Patagonia Austral - UNPA"
     univ_width = canvas.stringWidth(univ_texto, 'Helvetica-Oblique', 5)
     canvas.drawString((width - univ_width) / 2, 0.7*cm, univ_texto)
     
@@ -2505,6 +2672,40 @@ def reportes_lider(request):
     if not proyectos.exists():
         messages.warning(request, "No tienes proyectos asignados como líder.")
         return redirect('dashboards:lider_dashboard')
+    
+    # Redirigir al reporte del primer proyecto
+    proyecto = proyectos.first()
+    return redirect('proyectos:proyecto_reportes', proyecto_id=proyecto.id)
+
+
+@login_required
+def reportes_stakeholder(request):
+    """
+    Redirige al stakeholder a la página de reportes de su proyecto.
+    Si tiene múltiples proyectos como cliente, redirige al primero.
+    """
+    proyectos = Proyecto.objects.filter(clientes=request.user)
+    
+    if not proyectos.exists():
+        messages.warning(request, "No tienes proyectos asignados como cliente.")
+        return redirect('dashboards:stakeholder_dashboard')
+    
+    # Redirigir al reporte del primer proyecto
+    proyecto = proyectos.first()
+    return redirect('proyectos:proyecto_reportes', proyecto_id=proyecto.id)
+
+
+@login_required
+def reportes_visitante(request):
+    """
+    Redirige al visitante a la página de reportes de su proyecto.
+    Si tiene múltiples proyectos asignados, redirige al primero.
+    """
+    proyectos = Proyecto.objects.filter(visitantes=request.user)
+    
+    if not proyectos.exists():
+        messages.warning(request, "No tienes proyectos asignados como visitante.")
+        return redirect('dashboards:visitor_dashboard')
     
     # Redirigir al reporte del primer proyecto
     proyecto = proyectos.first()

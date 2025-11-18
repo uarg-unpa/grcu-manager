@@ -338,6 +338,7 @@
   {# Barra de búsqueda y filtros #}
   <div class="filtros-container">
     <div class="d-flex gap-2 align-items-center flex-wrap justify-content-between w-100">
+      {% if not is_stakeholder %}
       <div class="d-flex gap-2 align-items-center flex-wrap flex-grow-1">
       <div class="input-group" style="max-width: 400px;">
         <span class="input-group-text bg-white">
@@ -367,9 +368,16 @@
         <option value="SISTEMA">Sistema</option>
       </select>
       </div>
+      {% else %}
+      {# Stakeholders solo ven un mensaje informativo #}
+      <div class="alert alert-info mb-0 py-2" role="alert">
+        <i class="bi bi-info-circle me-2"></i>
+        Mostrando requerimientos en estado <strong>Borrador</strong> para revisión y comentarios
+      </div>
+      {% endif %}
       
-      {# Botón crear requerimiento #}
-      {% if proyecto %}
+      {# Botón crear requerimiento - Solo para líder y desarrolladores, NO para stakeholders #}
+      {% if proyecto and not is_stakeholder %}
         <a href="{% url 'requerimientos:requerimiento_create_proyecto' proyecto.pk %}" 
            class="btn btn-crear-requerimiento">
           <i class="bi bi-plus-circle-fill me-2"></i>
@@ -388,12 +396,16 @@
             <th><i class="bi bi-file-earmark-text me-1"></i> Nombre</th>
             <th><i class="bi bi-tag me-1"></i> Tipo</th>
             <th><i class="bi bi-flag me-1"></i> Estado</th>
+            {% if not is_stakeholder %}
             <th><i class="bi bi-arrow-up me-1"></i> Prioridad</th>
+            {% endif %}
             <th><i class="bi bi-diagram-2 me-1"></i> Dependencias</th>
             <th><i class="bi bi-chat-dots me-1"></i> Comentarios</th>
             <th><i class="bi bi-card-text me-1"></i> Descripción</th>
             <th><i class="bi bi-calendar me-1"></i> Fecha</th>
+            {% if not is_stakeholder %}
             <th><i class="bi bi-link-45deg me-1"></i> Huérfano / Caso de Uso</th>
+            {% endif %}
             <th><i class="bi bi-gear me-1"></i> Acciones</th>
           </tr>
         </thead>
@@ -439,6 +451,7 @@
                   <span class="badge bg-light text-dark">{{ req.get_estado_display }}</span>
                 {% endif %}
               </td>
+              {% if not is_stakeholder %}
               <td>
                 {% if req.detalle_tradicional.prioridad %}
                   {% with prioridad=req.detalle_tradicional.prioridad %}
@@ -481,9 +494,12 @@
                     {% endif %}
                   {% endwith %}
                 {% else %}
-                  <span class="text-muted">-</span>
+                  <span class="text-muted small">
+                    <i class="bi bi-dash-circle"></i> Sin prioridad
+                  </span>
                 {% endif %}
               </td>
+              {% endif %}
               <td>
                 {% with deps=req.dependencias.all %}
                   {% if deps|length == 0 %}
@@ -518,13 +534,14 @@
                     </span>
                   </a>
                 {% else %}
-                  <span class="text-muted">
-                    <i class="bi bi-chat"></i>
+                  <span class="text-muted small">
+                    <i class="bi bi-chat"></i> Sin comentarios
                   </span>
                 {% endif %}
               </td>
               <td class="small text-muted">{{ req.descripcion|default:'-'|truncatechars:40 }}</td>
               <td>{{ req.fecha_creacion|date:"d/m/Y" }}</td>
+              {% if not is_stakeholder %}
               <td>
                 {% with casos=req.casos_relacionados.all %}
                   {% if casos|length == 0 %}
@@ -540,6 +557,7 @@
                   {% endif %}
                 {% endwith %}
               </td>
+              {% endif %}
               <td>
                 <div class="d-flex gap-1 flex-wrap">
                   <a href="{% url 'requerimientos:requerimiento_detail' req.pk %}" 
@@ -547,38 +565,30 @@
                      title="Ver Detalle">
                     <i class="bi bi-eye"></i>
                   </a>
-                  {% if user == req.proyecto.lider or user == req.creado_por %}
-                  <a href="{% url 'requerimientos:requerimiento_update' req.pk %}" 
-                     class="btn btn-outline-warning btn-sm btn-action-req" 
-                     title="Editar">
-                    <i class="bi bi-pencil"></i>
-                  </a>
-                  {% endif %}
-                  {% if user == req.proyecto.lider %}
-                  <a href="{% url 'requerimientos:requerimiento_delete' req.pk %}" 
-                     class="btn btn-outline-danger btn-sm btn-action-req" 
-                     title="Eliminar">
-                    <i class="bi bi-trash"></i>
-                  </a>
+                  {% if not is_stakeholder %}
+                    {% if user == req.proyecto.lider or user == req.creado_por %}
+                    <a href="{% url 'requerimientos:requerimiento_update' req.pk %}" 
+                       class="btn btn-outline-warning btn-sm btn-action-req" 
+                       title="Editar">
+                      <i class="bi bi-pencil"></i>
+                    </a>
+                    {% endif %}
+                    {% if user == req.proyecto.lider %}
+                    <a href="{% url 'requerimientos:requerimiento_delete' req.pk %}" 
+                       class="btn btn-outline-danger btn-sm btn-action-req" 
+                       title="Eliminar">
+                      <i class="bi bi-trash"></i>
+                    </a>
+                    {% endif %}
                   {% endif %}
                   
-                  {# Botones de validación para requerimientos BORRADOR #}
-                  {% if req.estado == 'BORRADOR' %}
+                  {# Botones de validación para requerimientos BORRADOR - SOLO LÍDER #}
+                  {% if req.estado == 'BORRADOR' and not is_stakeholder %}
                     {% if user == req.proyecto.lider %}
                       <a href="{% url 'requerimientos:requerimiento_validar_lider_individual' req.pk %}" 
                          class="btn btn-validar-lider btn-sm btn-action-req" 
                          title="Validar como líder">
                         <i class="bi bi-check-circle-fill"></i> Validar
-                      </a>
-                    {% endif %}
-                    
-                    {# Verificar si el usuario es stakeholder del proyecto #}
-                    {% load roles_tags %}
-                    {% if user|es_stakeholder:req.proyecto %}
-                      <a href="{% url 'requerimientos:requerimiento_validar_cliente_individual' req.pk %}" 
-                         class="btn btn-validar-stakeholder btn-sm btn-action-req" 
-                         title="Validar como stakeholder">
-                        <i class="bi bi-person-check-fill"></i> Validar
                       </a>
                     {% endif %}
                   {% endif %}
@@ -595,40 +605,42 @@
                     {% endif %}
                   {% endif %}
                   
-                  {# Solo mostrar botones de casos de uso para requerimientos FUNCIONALES que NO estén en BORRADOR #}
-                  {% if req.tipo == 'FUNCIONAL' and req.estado != 'BORRADOR' %}
-                  {% with casos=req.casos_relacionados.all %}
-                    {% if casos|length == 0 %}
-                      <a href="{% url 'casos_de_uso:caso_de_uso_create_con_requerimiento' req.proyecto.id req.id %}" 
-                         class="btn btn-outline-primary btn-sm btn-action-req" 
-                         title="Crear Caso de Uso">
-                        <i class="bi bi-diagram-3-fill"></i>
-                      </a>
-                      <a href="{% url 'requerimientos:relacionar_casos_existentes' req.pk %}" 
+                  {% if not is_stakeholder %}
+                    {# Solo mostrar botones de casos de uso para requerimientos FUNCIONALES que NO estén en BORRADOR #}
+                    {% if req.tipo == 'FUNCIONAL' and req.estado != 'BORRADOR' %}
+                    {% with casos=req.casos_relacionados.all %}
+                      {% if casos|length == 0 %}
+                        <a href="{% url 'casos_de_uso:caso_de_uso_create_con_requerimiento' req.proyecto.id req.id %}" 
+                           class="btn btn-outline-primary btn-sm btn-action-req" 
+                           title="Crear Caso de Uso">
+                          <i class="bi bi-diagram-3-fill"></i>
+                        </a>
+                        <a href="{% url 'requerimientos:relacionar_casos_existentes' req.pk %}" 
+                           class="btn btn-outline-secondary btn-sm btn-action-req" 
+                           title="Relacionar Caso de Uso Existente">
+                          <i class="bi bi-link"></i>
+                        </a>
+                      {% else %}
+                        <a href="{% url 'casos_de_uso:caso_de_uso_create_con_requerimiento' req.proyecto.id req.id %}" 
+                           class="btn btn-outline-info btn-sm btn-action-req" 
+                           title="Agregar Otro Caso de Uso">
+                          <i class="bi bi-plus-circle"></i>
+                        </a>
+                        <a href="{% url 'requerimientos:relacionar_casos_existentes' req.pk %}" 
                          class="btn btn-outline-secondary btn-sm btn-action-req" 
                          title="Relacionar Caso de Uso Existente">
                         <i class="bi bi-link"></i>
                       </a>
-                    {% else %}
-                      <a href="{% url 'casos_de_uso:caso_de_uso_create_con_requerimiento' req.proyecto.id req.id %}" 
-                         class="btn btn-outline-info btn-sm btn-action-req" 
-                         title="Agregar Otro Caso de Uso">
-                        <i class="bi bi-plus-circle"></i>
-                      </a>
-                      <a href="{% url 'requerimientos:relacionar_casos_existentes' req.pk %}" 
-                         class="btn btn-outline-secondary btn-sm btn-action-req" 
-                         title="Relacionar Caso de Uso Existente">
-                        <i class="bi bi-link"></i>
-                      </a>
+                      {% endif %}
+                    {% endwith %}
                     {% endif %}
-                  {% endwith %}
                   {% endif %}
                 </div>
               </td>
             </tr>
           {% empty %}
             <tr>
-              <td colspan="9">
+              <td colspan="{% if is_stakeholder %}8{% else %}10{% endif %}">
                 <div class="empty-state-req">
                   <i class="bi bi-inbox"></i>
                   <p class="mb-0">No hay requerimientos disponibles.</p>
@@ -645,9 +657,12 @@
 {% endblock %}
 
 {% block extra_js %}
-<!-- Pasar proyecto_id al JavaScript -->
+<!-- Pasar proyecto_id y user_id al JavaScript -->
 <script>
     document.body.dataset.proyectoId = {{ proyecto.id|default:'null' }};
+    document.body.dataset.userId = {{ user.id|default:'null' }};
+    document.body.dataset.isLider = {{ is_lider|yesno:'true,false' }};
+    document.body.dataset.isStakeholder = {{ is_stakeholder|yesno:'true,false' }};
 </script>
 
 <!-- Inicializar tooltips de Bootstrap -->
@@ -665,4 +680,32 @@
 
 <!-- JavaScript para lista de requerimientos -->
 <script src="{% static 'requerimientos/js/requerimiento_list.js' %}?v=1.0"></script>
+
+{% if messages %}
+    <div class="container-fluid mt-3">
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show django-message" role="alert" data-message-key="{{ message|slugify }}">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.django-message').forEach(function(alert) {
+            var key = alert.getAttribute('data-message-key');
+            var seen = sessionStorage.getItem('django_message_' + key);
+            if (seen === '1') {
+                setTimeout(function() {
+                    var bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
+                    bsAlert.close();
+                }, 15000);
+            } else {
+                sessionStorage.setItem('django_message_' + key, '1');
+            }
+        });
+    });
+    </script>
+{% endif %}
+
 {% endblock %}

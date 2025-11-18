@@ -51,25 +51,40 @@ def caso_de_uso_list(request, proyecto_id=None):
 @login_required
 def caso_de_uso_detail(request, pk):
     caso = get_object_or_404(CasoDeUso, pk=pk)
-    return render(request, "casos_de_uso/caso_de_uso_detail.html", {"caso": caso})
+    proyecto = caso.proyecto
+    
+    # Verificar permisos del usuario
+    es_lider = request.user == proyecto.lider
+    es_participante = proyecto.participantes.filter(id=request.user.id).exists()
+    
+    context = {
+        'caso': caso,
+        'proyecto': proyecto,
+        'es_lider': es_lider,
+        'es_participante': es_participante,
+    }
+    
+    return render(request, "casos_de_uso/caso_de_uso_detail.html", context)
 
 
 @login_required
 def caso_de_uso_update(request, pk):
     """
     Vista para editar casos de uso según la metodología del proyecto.
+    Solo el creador del caso de uso o el líder del proyecto pueden editar.
     """
     caso = get_object_or_404(CasoDeUso, pk=pk)
     proyecto = caso.proyecto
 
-    # Verificar permisos: solo líderes o participantes del proyecto
+    # Verificar permisos: solo líder o creador del caso de uso
     es_lider = request.user == proyecto.lider
-    es_participante = proyecto.participantes.filter(id=request.user.id).exists()
+    es_creador = request.user == caso.creado_por
 
-    if not (es_lider or es_participante):
+    if not (es_lider or es_creador):
         messages.error(
             request,
-            'No tienes permiso para editar casos de uso en este proyecto.'
+            f'⛔ Solo el creador ({caso.creado_por.nombre if caso.creado_por else "N/A"}) o el líder del proyecto '
+            f'pueden editar este caso de uso.'
         )
         return redirect('casos_de_uso:caso_de_uso_detail', pk=pk)
 
@@ -95,6 +110,7 @@ def caso_de_uso_update(request, pk):
             if nueva_imagen:
                 caso.imagen = nueva_imagen
             caso.link_externo = form.cleaned_data.get('link_externo', '')
+            caso._history_user = request.user
             caso.save()
 
             # Actualizar o crear el detalle específico según la metodología
@@ -117,6 +133,7 @@ def caso_de_uso_update(request, pk):
                     detalle.flujo_alternativo = form.cleaned_data.get('flujo_alternativo', '')
                     detalle.postcondiciones = form.cleaned_data.get('postcondiciones', '')
                     detalle.observaciones = form.cleaned_data.get('observaciones', '')
+                    detalle._history_user = request.user
                     detalle.save()
 
             elif es_agil:
@@ -136,6 +153,7 @@ def caso_de_uso_update(request, pk):
                     detalle.responsable = form.cleaned_data.get('responsable', '')
                     detalle.estado_scrum = form.cleaned_data.get('estado_scrum', '')
                     detalle.observaciones = form.cleaned_data.get('observaciones', '')
+                    detalle._history_user = request.user
                     detalle.save()
 
             messages.success(request, f'✅ Caso de Uso "{caso.nombre}" actualizado exitosamente.')
@@ -146,6 +164,7 @@ def caso_de_uso_update(request, pk):
     else:
         # GET: Instanciar formulario con datos existentes
         initial_data = {
+            'identificador': caso.identificador,
             'nombre': caso.nombre,
             'descripcion': caso.descripcion,
             'link_externo': caso.link_externo,
@@ -153,26 +172,35 @@ def caso_de_uso_update(request, pk):
 
         if es_tradicional:
             # Agregar datos del detalle tradicional si existe
-            if hasattr(caso, 'detalle_tradicional') and caso.detalle_tradicional:
+            try:
+                detalle = caso.detalle_tradicional_reverse
                 initial_data.update({
-                    'actor_principal': caso.detalle_tradicional.actor_principal,
-                    'precondiciones': caso.detalle_tradicional.precondiciones,
-                    'flujo_principal': caso.detalle_tradicional.flujo_principal,
-                    'flujo_alternativo': caso.detalle_tradicional.flujo_alternativo,
-                    'postcondiciones': caso.detalle_tradicional.postcondiciones,
-                    'observaciones': caso.detalle_tradicional.observaciones,
+                    'actor_principal': detalle.actor_principal,
+                    'precondiciones': detalle.precondiciones,
+                    'flujo_principal': detalle.flujo_principal,
+                    'flujo_alternativo': detalle.flujo_alternativo,
+                    'postcondiciones': detalle.postcondiciones,
+                    'observaciones': detalle.observaciones,
                 })
+            except DetalleCasoDeUsoTradicional.DoesNotExist:
+                pass  # No hay detalle, se usarán campos vacíos
+            
             form = CasoDeUsoUnificadoForm(initial=initial_data)
+            
         elif es_agil:
             # Agregar datos del detalle ágil si existe
-            if hasattr(caso, 'detalle_agil') and caso.detalle_agil:
+            try:
+                detalle = caso.detalle_agil_reverse
                 initial_data.update({
-                    'historia_usuario': caso.detalle_agil.historia_usuario,
-                    'criterio_aceptacion': caso.detalle_agil.criterio_aceptacion,
-                    'responsable': caso.detalle_agil.responsable,
-                    'estado_scrum': caso.detalle_agil.estado_scrum,
-                    'observaciones': caso.detalle_agil.observaciones,
+                    'historia_usuario': detalle.historia_usuario,
+                    'criterio_aceptacion': detalle.criterio_aceptacion,
+                    'responsable': detalle.responsable,
+                    'estado_scrum': detalle.estado_scrum,
+                    'observaciones': detalle.observaciones,
                 })
+            except DetalleCasoDeUsoAgil.DoesNotExist:
+                pass  # No hay detalle, se usarán campos vacíos
+            
             form = CasoDeUsoUnificadoForm(initial=initial_data)
         else:
             messages.error(request, 'Metodología no reconocida.')
@@ -192,22 +220,27 @@ def caso_de_uso_update(request, pk):
         'imagen_existente': caso.imagen,  # Para mostrar la imagen actual
     }
 
-    return render(request, 'casos_de_uso/caso_de_uso_create.html', context)
+    return render(request, 'casos_de_uso/crear.html', context)
 
 
 @login_required
 def caso_de_uso_delete(request, pk):
     """
     Vista para eliminar casos de uso con confirmación.
+    Solo el creador del caso de uso o el líder del proyecto pueden eliminar.
     """
     caso = get_object_or_404(CasoDeUso, pk=pk)
     proyecto = caso.proyecto
 
-    # Verificar permisos: solo líderes del proyecto pueden eliminar
-    if request.user != proyecto.lider:
+    # Verificar permisos: solo líder o creador del caso de uso
+    es_lider = request.user == proyecto.lider
+    es_creador = request.user == caso.creado_por
+    
+    if not (es_lider or es_creador):
         messages.error(
             request,
-            'Solo el líder del proyecto puede eliminar casos de uso.'
+            f'⛔ Solo el creador ({caso.creado_por.nombre if caso.creado_por else "N/A"}) o el líder del proyecto '
+            f'pueden eliminar este caso de uso.'
         )
         return redirect('casos_de_uso:caso_de_uso_detail', pk=pk)
 
@@ -265,7 +298,8 @@ def caso_de_uso_create(request, proyecto_id=None, requerimiento_id=None):
         form = CasoDeUsoUnificadoForm(request.POST, request.FILES)
         if form.is_valid():
             # Crear el caso de uso base
-            caso = CasoDeUso.objects.create(
+            caso = CasoDeUso(
+                identificador=form.cleaned_data.get('identificador', ''),
                 nombre=form.cleaned_data['nombre'],
                 descripcion=form.cleaned_data.get('descripcion', ''),
                 proyecto=proyecto,
@@ -274,6 +308,9 @@ def caso_de_uso_create(request, proyecto_id=None, requerimiento_id=None):
                 link_externo=form.cleaned_data.get('link_externo', ''),
                 requerimiento=requerimiento  # Asociar con el requerimiento si existe
             )
+            # Asignar usuario al historial
+            caso._history_user = request.user
+            caso.save()
 
             # Determinar la metodología del proyecto
             es_tradicional = proyecto.metodologia == 'TRADICIONAL' if proyecto else False
@@ -281,7 +318,7 @@ def caso_de_uso_create(request, proyecto_id=None, requerimiento_id=None):
 
             # Crear el detalle específico según la metodología
             if es_tradicional:
-                DetalleCasoDeUsoTradicional.objects.create(
+                detalle = DetalleCasoDeUsoTradicional(
                     caso_de_uso_padre=caso,
                     actor_principal=form.cleaned_data.get('actor_principal', ''),
                     precondiciones=form.cleaned_data.get('precondiciones', ''),
@@ -290,8 +327,10 @@ def caso_de_uso_create(request, proyecto_id=None, requerimiento_id=None):
                     postcondiciones=form.cleaned_data.get('postcondiciones', ''),
                     observaciones=form.cleaned_data.get('observaciones', '')
                 )
+                detalle._history_user = request.user
+                detalle.save()
             elif es_agil:
-                DetalleCasoDeUsoAgil.objects.create(
+                detalle = DetalleCasoDeUsoAgil(
                     caso_de_uso_padre=caso,
                     historia_usuario=form.cleaned_data.get('historia_usuario', ''),
                     criterio_aceptacion=form.cleaned_data.get('criterio_aceptacion', ''),
@@ -299,6 +338,8 @@ def caso_de_uso_create(request, proyecto_id=None, requerimiento_id=None):
                     estado_scrum=form.cleaned_data.get('estado_scrum', ''),
                     observaciones=form.cleaned_data.get('observaciones', '')
                 )
+                detalle._history_user = request.user
+                detalle.save()
             
             # ⚡ CREAR RELACIÓN EN TABLA INTERMEDIA si se creó desde un requerimiento
             if requerimiento:
@@ -311,23 +352,32 @@ def caso_de_uso_create(request, proyecto_id=None, requerimiento_id=None):
 
             messages.success(request, f'✅ Caso de Uso "{caso.nombre}" creado exitosamente.')
             
-            # Redirigir al detalle del requerimiento si se creó desde ahí
+            # Redirigir al detalle del requerimiento si se creó desde ahí, sino al listado
             if requerimiento:
                 return redirect('requerimientos:requerimiento_detail', pk=requerimiento.pk)
             else:
-                return redirect('casos_de_uso:caso_de_uso_detail', pk=caso.pk)
+                return redirect('casos_de_uso:caso_de_uso_list', proyecto_id=proyecto.id)
         else:
             # Si el formulario no es válido, se mantendrá con los datos POST
             # Los valores ingresados se conservarán para que el usuario los corrija
             messages.error(request, 'Por favor, corrige los errores del formulario.')
     else:
-        # Generar nombre automático CU-<número>
+        # Generar identificador automático CU-<número>
         initial_data = {}
         if proyecto:
-            # Contar el número total de casos de uso en el proyecto
-            total_casos = CasoDeUso.objects.filter(proyecto=proyecto).count()
-            nuevo_num = total_casos + 1
-            initial_data['nombre'] = f'CU-{nuevo_num:02d}'
+            # Obtener el último CU del proyecto
+            ultimo_cu = CasoDeUso.objects.filter(proyecto=proyecto).order_by('-id').first()
+            if ultimo_cu and ultimo_cu.identificador:
+                # Extraer el número del identificador (ej: CU-001 -> 1)
+                try:
+                    ultimo_numero = int(ultimo_cu.identificador.split('-')[-1])
+                    nuevo_numero = ultimo_numero + 1
+                except (ValueError, IndexError):
+                    nuevo_numero = CasoDeUso.objects.filter(proyecto=proyecto).count() + 1
+            else:
+                nuevo_numero = CasoDeUso.objects.filter(proyecto=proyecto).count() + 1
+            
+            initial_data['identificador'] = f'CU-{nuevo_numero:03d}'
         form = CasoDeUsoUnificadoForm(initial=initial_data)
 
     contexto = {
@@ -412,7 +462,7 @@ def caso_de_uso_historial(request, pk):
         
         # Información del usuario que hizo el cambio
         usuario = version.history_user if version.history_user else None
-        usuario_nombre = usuario.nombre if usuario else 'Sistema'
+        usuario_nombre = usuario.nombre if usuario else 'No registrado'
         
         # Tipo de cambio
         tipo_cambio = {
@@ -563,16 +613,18 @@ def caso_de_uso_comparar_versiones(request, pk):
         if v.history_id == version2.history_id:
             numero_v2 = len(historial_completo) - idx
     
-    # Comparar todos los campos importantes
+    # Comparar todos los campos importantes del caso de uso base
     campos = [
+        ('identificador', 'Identificador'),
         ('nombre', 'Nombre'),
         ('descripcion', 'Descripción'),
+        ('link_externo', 'Enlace externo'),
     ]
     
     diferencias = []
     for campo, etiqueta in campos:
-        valor_v1 = getattr(version1, campo, '')
-        valor_v2 = getattr(version2, campo, '')
+        valor_v1 = getattr(version1, campo, '') or ''
+        valor_v2 = getattr(version2, campo, '') or ''
         
         if valor_v1 != valor_v2:
             diferencias.append({
@@ -588,6 +640,92 @@ def caso_de_uso_comparar_versiones(request, pk):
                 'version2': valor_v2,
                 'cambio': False,
             })
+    
+    # Comparar campos del detalle según la metodología
+    if proyecto.metodologia == 'TRADICIONAL':
+        # Obtener detalles tradicionales de ambas versiones
+        detalle_v1 = DetalleCasoDeUsoTradicional.history.filter(
+            caso_de_uso_padre_id=caso.pk,
+            history_date__lte=version1.history_date
+        ).order_by('-history_date').first()
+        
+        detalle_v2 = DetalleCasoDeUsoTradicional.history.filter(
+            caso_de_uso_padre_id=caso.pk,
+            history_date__lte=version2.history_date
+        ).order_by('-history_date').first()
+        
+        if detalle_v1 or detalle_v2:
+            campos_detalle = [
+                ('actor_principal', 'Actor Principal'),
+                ('precondiciones', 'Precondiciones'),
+                ('flujo_principal', 'Flujo Principal'),
+                ('flujo_alternativo', 'Flujo Alternativo'),
+                ('postcondiciones', 'Postcondiciones'),
+                ('observaciones', 'Observaciones'),
+            ]
+            
+            for campo, etiqueta in campos_detalle:
+                valor_v1 = getattr(detalle_v1, campo, '') if detalle_v1 else ''
+                valor_v2 = getattr(detalle_v2, campo, '') if detalle_v2 else ''
+                valor_v1 = valor_v1 or ''
+                valor_v2 = valor_v2 or ''
+                
+                if valor_v1 != valor_v2:
+                    diferencias.append({
+                        'campo': etiqueta,
+                        'version1': valor_v1,
+                        'version2': valor_v2,
+                        'cambio': True,
+                    })
+                else:
+                    diferencias.append({
+                        'campo': etiqueta,
+                        'version1': valor_v1,
+                        'version2': valor_v2,
+                        'cambio': False,
+                    })
+    
+    elif proyecto.metodologia == 'AGIL':
+        # Obtener detalles ágiles de ambas versiones
+        detalle_v1 = DetalleCasoDeUsoAgil.history.filter(
+            caso_de_uso_padre_id=caso.pk,
+            history_date__lte=version1.history_date
+        ).order_by('-history_date').first()
+        
+        detalle_v2 = DetalleCasoDeUsoAgil.history.filter(
+            caso_de_uso_padre_id=caso.pk,
+            history_date__lte=version2.history_date
+        ).order_by('-history_date').first()
+        
+        if detalle_v1 or detalle_v2:
+            campos_detalle = [
+                ('historia_usuario', 'Historia de Usuario'),
+                ('criterio_aceptacion', 'Criterio de Aceptación'),
+                ('responsable', 'Responsable'),
+                ('estado_scrum', 'Estado Scrum'),
+                ('observaciones', 'Observaciones'),
+            ]
+            
+            for campo, etiqueta in campos_detalle:
+                valor_v1 = getattr(detalle_v1, campo, '') if detalle_v1 else ''
+                valor_v2 = getattr(detalle_v2, campo, '') if detalle_v2 else ''
+                valor_v1 = valor_v1 or ''
+                valor_v2 = valor_v2 or ''
+                
+                if valor_v1 != valor_v2:
+                    diferencias.append({
+                        'campo': etiqueta,
+                        'version1': valor_v1,
+                        'version2': valor_v2,
+                        'cambio': True,
+                    })
+                else:
+                    diferencias.append({
+                        'campo': etiqueta,
+                        'version1': valor_v1,
+                        'version2': valor_v2,
+                        'cambio': False,
+                    })
     
     context = {
         'caso': caso,

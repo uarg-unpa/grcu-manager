@@ -44,7 +44,26 @@ def crear_usuarios():
         "Zoe Navarro", "Andrés Silva", "Beatriz Campos", "Carlos Ramos", "Diana Núñez"
     ]
     
+    # Obtener roles
+    rol_stakeholder = Rol.objects.get_or_create(
+        nombre='Stakeholder',
+        defaults={'color': '#17a2b8'}
+    )[0]
+    rol_desarrollador = Rol.objects.get_or_create(
+        nombre='Desarrollador',
+        defaults={'color': '#ffc107'}
+    )[0]
+    
     usuarios_creados = []
+    
+    # Índices (1-based porque enumerate empieza en 1) de usuarios que serán stakeholders
+    # En crear_proyectos: cliente = usuarios[i * 7 + 1] donde i va de 0 a 3
+    # Esto da índices de LISTA: 1, 8, 15, 22 (0-based)
+    # Pero en enumerate(nombres, 1), el valor de 'i' es 1-based
+    # usuarios_creados[1] será el usuario número 2 (Bruno Martínez)
+    # Entonces necesitamos que los usuarios en posiciones de lista 1, 8, 15, 22 sean stakeholders
+    # Que corresponden a i=2, 9, 16, 23 en el enumerate(nombres, 1)
+    indices_stakeholders = [2, 9, 16, 23, 26, 29]  # 6 stakeholders (1-based del enumerate)
     
     for i, nombre in enumerate(nombres, 1):
         email = f"{nombre.lower().replace(' ', '.')}.{i}@unpa.edu.ar"
@@ -61,7 +80,14 @@ def crear_usuarios():
         if created:
             usuario.set_password('demo123')  # Misma contraseña para todos en demo
             usuario.save()
-            print(f"  ✓ {i:02d}. {nombre} ({email})")
+            
+            # Asignar rol según el índice
+            if i in indices_stakeholders:
+                usuario.roles.add(rol_stakeholder)
+                print(f"  ✓ {i:02d}. {nombre} ({email}) - ROL: Stakeholder")
+            else:
+                usuario.roles.add(rol_desarrollador)
+                print(f"  ✓ {i:02d}. {nombre} ({email}) - ROL: Desarrollador")
         else:
             print(f"  → {i:02d}. {nombre} (ya existe)")
         
@@ -166,6 +192,9 @@ def crear_proyectos(usuarios, grupos):
         )
         
         if created:
+            # Añadir cliente a la relación ManyToMany del proyecto
+            proyecto.clientes.add(cliente)
+            
             # Crear participación del stakeholder/cliente
             ParticipacionProyecto.objects.get_or_create(
                 usuario=cliente,

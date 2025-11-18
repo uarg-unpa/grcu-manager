@@ -1,120 +1,158 @@
 {% extends "core/base.html" %}
 {% load static %}
 
+{% block title %}{{ proyecto.nombre }} - Detalles del Proyecto{% endblock %}
+
 {% block extra_css %}
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        /* Pequeños ajustes visuales tipo 'dashboard' */
-        .card { border-radius: 10px; }
-        .chart-legend { display:flex; gap:8px; flex-wrap:wrap; }
-    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="{% static 'proyectos/css/proyecto_detail_styles.css' %}">
 {% endblock %}
 
-{% block title %}{{ page_title }}{% endblock %}
-
 {% block content %}
-<div class="container py-4">
+<div class="project-detail-container">
     {% if error %}
         <div class="alert alert-danger">{{ error }}</div>
     {% else %}
-    <div class="d-flex align-items-center mb-3">
-        {% if proyecto.logo %}
-            <img src="{{ proyecto.logo.url }}" alt="logo" style="width:150px;height:150px;object-fit:contain;border-radius:12px;background:#fff;padding:6px;" class="me-3">
-        {% endif %}
-        <div>
-            <small class="text-muted">Líder: {% if lider %}{{ lider.nombre }}{% else %}No asignado{% endif %}</small>
+
+    <!-- Cabecera del Proyecto -->
+    <header class="project-header">
+        <div class="project-header-info">
+            {% if proyecto.logo %}
+                <img src="{{ proyecto.logo.url }}" alt="Logo del Proyecto" class="project-logo">
+            {% else %}
+                <div class="project-logo-fallback">
+                    <i class="bi bi-box-seam" style="font-size: 40px; color: #adb5bd;"></i>
+                </div>
+            {% endif %}
+            <div class="project-title-section">
+                <h1 class="project-name">{{ proyecto.nombre }}</h1>
+                <p class="project-leader">
+                    Líder: 
+                    {% if lider %}
+                        <i class="bi bi-person-check-fill"></i> {{ lider.nombre }}
+                    {% else %}
+                        <i class="bi bi-person-dash-fill"></i> No asignado
+                    {% endif %}
+                </p>
+            </div>
         </div>
-        <div class="ms-auto">
-            <a href="{% url 'proyectos:editar_proyecto' proyecto.id %}" class="btn btn-sm btn-warning" title="Editar" data-bs-toggle="tooltip"><i class="bi bi-pencil-square"></i></a>
-            <a href="{% url 'proyectos:eliminar_proyecto' proyecto.id %}" class="btn btn-sm btn-danger" title="Eliminar" data-bs-toggle="tooltip"><i class="bi bi-trash"></i></a>
+        <div class="project-header-actions">
+            <a href="{% url 'proyectos:exportar_dashboard_pdf' proyecto.id %}" class="btn btn-outline-primary action-btn" title="Exportar Dashboard a PDF" target="_blank">
+                <i class="bi bi-file-earmark-pdf"></i> Exportar PDF
+            </a>
+            <a href="{% url 'proyectos:editar_proyecto' proyecto.id %}" class="btn btn-outline-warning action-btn" title="Editar Proyecto">
+                <i class="bi bi-pencil-square"></i> Editar
+            </a>
+            <a href="{% url 'proyectos:eliminar_proyecto' proyecto.id %}" class="btn btn-outline-danger action-btn" title="Eliminar Proyecto">
+                <i class="bi bi-trash"></i> Eliminar
+            </a>
+        </div>
+    </header>
+
+    <!-- Primera fila: Métricas, Integrantes y Clientes -->
+    <div class="row">
+        <!-- Métricas del Proyecto -->
+        <div class="col-lg-6">
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <i class="bi bi-bar-chart-line-fill"></i> Métricas del Proyecto
+                </div>
+                <div class="card-body">
+                    <div class="charts-grid">
+                        <div class="chart-container">
+                            <canvas id="reqEstadoChart" data-labels='{{ req_estado_labels|safe }}' data-values='{{ req_estado_values|safe }}' data-type="doughnut"></canvas>
+                            <h6>Estado de Requerimientos</h6>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="reqTipoChart" data-labels='{{ req_tipo_labels|safe }}' data-values='{{ req_tipo_values|safe }}' data-type="bar"></canvas>
+                            <h6>Tipos de Requerimientos</h6>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="casosTipoChart" data-labels='{{ casos_tipo_labels|safe }}' data-values='{{ casos_tipo_values|safe }}' data-type="pie"></canvas>
+                            <h6>Tipos de Casos de Uso</h6>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="accionesChart" data-labels='{{ acciones_labels|safe }}' data-values='{{ acciones_values|safe }}' data-type="bar" data-horizontal="true"></canvas>
+                            <h6>Actividad por Usuario</h6>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Integrantes -->
+        <div class="col-lg-3">
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <i class="bi bi-people-fill"></i> Integrantes ({{ integrantes|length }})
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush integrantes-list">
+                        {% for u in integrantes %}
+                            <li class="list-group-item">
+                                {% if u.avatar %}
+                                    <img src="{{ u.avatar }}" alt="Avatar" class="integrante-avatar">
+                                {% else %}
+                                    <i class="bi bi-person-circle integrante-avatar-fallback"></i>
+                                {% endif %}
+                                <div class="integrante-info">
+                                    <div class="nombre">{{ u.nombre }}</div>
+                                    <div class="email">{{ u.email }}</div>
+                                </div>
+                            </li>
+                        {% empty %}
+                            <li class="list-group-item text-muted">No hay integrantes asignados.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Clientes -->
+        <div class="col-lg-3">
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <i class="bi bi-person-badge-fill"></i> Clientes ({{ proyecto.clientes.count }})
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush integrantes-list">
+                        {% for cliente in proyecto.clientes.all %}
+                            <li class="list-group-item">
+                                {% if cliente.avatar %}
+                                    <img src="{{ cliente.avatar }}" alt="Avatar" class="integrante-avatar">
+                                {% else %}
+                                    <i class="bi bi-person-circle integrante-avatar-fallback"></i>
+                                {% endif %}
+                                <div class="integrante-info">
+                                    <div class="nombre">{{ cliente.nombre }}</div>
+                                    <div class="email">{{ cliente.email }}</div>
+                                </div>
+                            </li>
+                        {% empty %}
+                            <li class="list-group-item text-muted">No hay clientes asignados.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
         </div>
     </div>
 
+    <!-- Segunda fila: Matriz de Trazabilidad y Últimas Acciones -->
     <div class="row">
-        <div class="col-md-8">
-            <div class="card mb-3 shadow-sm">
-                <div class="card-body">
-                    <h5>Integrantes ({{ integrantes|length }})</h5>
-                    <ul class="list-group list-group-flush">
-                        {% for u in integrantes %}
-                            <li class="list-group-item">{{ u.nombre }} &lt;{{ u.email }}&gt;</li>
-                        {% empty %}
-                            <li class="list-group-item text-muted">No hay integrantes</li>
-                        {% endfor %}
-                    </ul>
+        <!-- Matriz de Trazabilidad -->
+        <div class="col-lg-8">
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <i class="bi bi-diagram-3-fill"></i> Matriz de Trazabilidad
                 </div>
-            </div>
-
-            <div class="card mb-3 shadow-sm">
                 <div class="card-body">
-                    <h5>Requerimientos ({{ requerimientos|length }})</h5>
-                    <ul class="list-group list-group-flush">
-                        {% for r in requerimientos %}
-                            <li class="list-group-item {% if r.pk in reqs_huerfanos_ids %}text-danger{% endif %}">{{ r.nombre }} - {{ r.get_tipo_display }}</li>
-                        {% empty %}
-                            <li class="list-group-item text-muted">No hay requerimientos</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            </div>
-
-            <div class="card mb-3 shadow-sm">
-                <div class="card-body">
-                    <h5>Casos de Uso ({{ casos|length }})</h5>
-                    <ul class="list-group list-group-flush">
-                        {% for c in casos %}
-                            <li class="list-group-item {% if c.pk in casos_huerfanos_ids %}text-danger{% endif %}">{{ c.nombre }}</li>
-                        {% empty %}
-                            <li class="list-group-item text-muted">No hay casos de uso</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            </div>
-
-            <div class="card mb-3 shadow-sm">
-                <div class="card-body">
-                    <h5>Gráficos del Proyecto</h5>
-                    <div class="row">
-                        <div class="col-6">
-                            <canvas id="reqEstadoChart" data-labels='{{ req_estado_labels|safe }}' data-values='{{ req_estado_values|safe }}' data-type="doughnut" style="height:160px;"></canvas>
-                        </div>
-                        <div class="col-6">
-                            <canvas id="reqTipoChart" data-labels='{{ req_tipo_labels|safe }}' data-values='{{ req_tipo_values|safe }}' data-type="bar" style="height:160px;"></canvas>
-                        </div>
-                    </div>
-                    <div class="row mt-3">
-                        <div class="col-6">
-                            <canvas id="casosTipoChart" data-labels='{{ casos_tipo_labels|safe }}' data-values='{{ casos_tipo_values|safe }}' data-type="pie" style="height:160px;"></canvas>
-                        </div>
-                        <div class="col-6">
-                            <canvas id="accionesChart" data-labels='{{ acciones_labels|safe }}' data-values='{{ acciones_values|safe }}' data-type="bar" data-horizontal="true" style="height:160px;"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-        <div class="col-md-4">
-            <div class="card mb-3 shadow-sm">
-                <div class="card-body">
-                    <h5>Últimas acciones ({{ acciones|length }})</h5>
-                    <ul class="list-group list-group-flush small">
-                        {% for a in acciones %}
-                            <li class="list-group-item">{{ a.fecha|date:"d/m/Y H:i" }} - {{ a.usuario.nombre }}: {{ a.accion }}</li>
-                        {% empty %}
-                            <li class="list-group-item text-muted">No hay acciones</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            </div>
-
-            <div class="card mb-3 shadow-sm">
-                <div class="card-body">
-                    <h5>Matriz de Trazabilidad</h5>
-                    <div style="max-height:300px; overflow:auto;">
-                        <table class="table table-sm">
+                    <div class="trazabilidad-table-container">
+                        <table class="table table-hover table-sm trazabilidad-table">
                             <thead>
-                                <tr><th>Requerimiento</th><th>Casos relacionados</th></tr>
+                                <tr>
+                                    <th>Requerimiento</th>
+                                    <th>Casos de Uso Relacionados</th>
+                                </tr>
                             </thead>
                             <tbody>
                                 {% for row in matriz %}
@@ -122,9 +160,9 @@
                                         <td>{{ row.req.nombre }}</td>
                                         <td>
                                             {% for cu in row.casos %}
-                                                <div class="badge bg-light text-dark">{{ cu.nombre }}</div>
+                                                <span class="badge bg-primary bg-opacity-10 text-primary-emphasis">{{ cu.nombre }}</span>
                                             {% empty %}
-                                                -
+                                                <span class="text-muted small">-</span>
                                             {% endfor %}
                                         </td>
                                     </tr>
@@ -135,6 +173,30 @@
                 </div>
             </div>
         </div>
+
+        <!-- Últimas Acciones -->
+        <div class="col-lg-4">
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <i class="bi bi-clock-history"></i> Últimas Acciones
+                </div>
+                <div class="card-body">
+                    <ul class="timeline">
+                        {% for a in acciones %}
+                            <li class="timeline-item">
+                                <div class="timeline-icon"><i class="bi bi-check"></i></div>
+                                <div class="timeline-content">
+                                    <span class="timestamp">{{ a.fecha|date:"d/m/Y H:i" }}</span>
+                                    <p class="action-text"><strong>{{ a.usuario.nombre }}</strong>: {{ a.accion }}</p>
+                                </div>
+                            </li>
+                        {% empty %}
+                            <li class="text-muted">No hay acciones registradas.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
     </div>
     {% endif %}
 </div>
@@ -142,5 +204,5 @@
 
 {% block extra_js %}
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
-    <script src="{% static 'dashboards/js/charts.js' %}?v=3.0"></script>
+    <script src="{% static 'dashboards/js/charts.js' %}?v=3.1"></script>
 {% endblock %}

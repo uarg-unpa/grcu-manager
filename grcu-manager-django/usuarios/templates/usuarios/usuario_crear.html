@@ -1,4 +1,3 @@
-
 {% extends 'core/base.html' %}
 {% load static %}
 
@@ -10,13 +9,30 @@
 <div class="usuario-form-container">
 
     {% if messages %}
-        <div class="usuario-form-messages">
+        <div class="container-fluid mt-3">
             {% for message in messages %}
-                <div class="usuario-form-message {{ message.tags }}" role="alert">
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show django-message" role="alert" data-message-key="{{ message|slugify }}">
                     {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             {% endfor %}
         </div>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.django-message').forEach(function(alert) {
+                var key = alert.getAttribute('data-message-key');
+                var seen = sessionStorage.getItem('django_message_' + key);
+                if (seen === '1') {
+                    setTimeout(function() {
+                        var bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
+                        bsAlert.close();
+                    }, 15000);
+                } else {
+                    sessionStorage.setItem('django_message_' + key, '1');
+                }
+            });
+        });
+        </script>
     {% endif %}
 
     <form method="post">
@@ -33,10 +49,19 @@
         <div class="mb-3">
             <label>Roles:</label>
             <div class="roles-container">
+                <!-- Opción para sin rol asignado -->
+                <label class="roles-badge sin-rol" data-rol-color="">
+                    <input type="radio" name="roles" value="" {% if not form.roles.value %}checked{% endif %} hidden>
+                    <span class="rol-check-icon">✓</span>
+                    <span class="rol-icon">🚫</span>
+                    <span class="rol-nombre">Sin rol asignado</span>
+                </label>
+
                 {% for item in roles %}
                     {% with rol=item.0 icon=item.1 rol_id=item.2 %}
-                        <label class="roles-badge" style="background-color: {{ item.3 }};">
-                            <input type="checkbox" name="roles" value="{{ rol_id }}" {% if rol_id in form.roles.value %}checked{% endif %} hidden>
+                        <label class="roles-badge" data-rol-color="{{ item.3 }}">
+                            <input type="radio" name="roles" value="{{ rol_id }}" {% if form.roles.value and rol_id == form.roles.value %}checked{% endif %} hidden>
+                            <span class="rol-check-icon">✓</span>
                             {% if item.4 %}
                                 <img src="{{ item.4 }}" class="rol-icon" alt="{{ rol }}" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';">
                                 <span class="rol-icon-fallback" style="display: none;">
@@ -47,7 +72,7 @@
                                     {% if rol == "Admin" %}👑{% elif rol == "Desarrollador" %}💻{% else %}👤{% endif %}
                                 </span>
                             {% endif %}
-                            {{ rol }}
+                            <span class="rol-nombre">{{ rol }}</span>
                         </label>
                     {% endwith %}
                 {% endfor %}
@@ -57,13 +82,13 @@
         <div class="mb-3">
             <label class="form-label">¿El usuario está activo?</label>
             <div class="active-status-container">
-                <label class="active-status-toggle">
+                <div class="active-status-toggle">
                     <input type="checkbox" name="is_active" {% if form.is_active.value %}checked{% endif %} hidden>
                     <span class="active-status-text">
                         {% if form.is_active.value %}Sí, activo{% else %}No, inactivo{% endif %}
                     </span>
                     <span class="active-status-slider"></span>
-                </label>
+                </div>
             </div>
         </div>
 
@@ -75,5 +100,14 @@
 
 {% block extra_js %}
 <script src="{% static 'core/js/bootstrap.bundle.min.js' %}"></script>
-<script src="{% static 'usuarios/js/usuario_form.js' %}?v=1.0"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Enforce front-end maxlength for email input (defence-in-depth, no model changes)
+    var emailInput = document.getElementById('id_email') || document.querySelector('input[name="email"]');
+    if (emailInput) {
+        try { emailInput.setAttribute('maxlength', '80'); } catch(e) { /* noop */ }
+    }
+});
+</script>
+    <script src="{% static 'usuarios/js/usuario_form.js' %}?v=9.0"></script>
 {% endblock %}

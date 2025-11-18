@@ -1,47 +1,24 @@
 /**
- * lider_dashboard.js
+ * lider_dashboard.js v9.0
  * 
- * Funcionalidad de gráficos y tooltips para el Dashboard del Líder.
- * Incluye gráficos de tipo doughnut (Chart.js) para mostrar distribución
- * de requerimientos y casos de uso (huérfanos vs relacionados).
+ * Funcionalidad adicional para el Dashboard del Líder.
+ * Los gráficos se manejan automáticamente en charts.js
  */
 
 document.addEventListener('DOMContentLoaded', function () {
+    console.log('Dashboard del Líder inicializado v9.0');
+    
     // Inicializar tooltips de Bootstrap
     initializeDashboardTooltips();
     
-    // Verificar que Chart.js esté disponible
-    if (typeof Chart === 'undefined') {
-        console.error('Chart.js no está cargado');
-        return;
-    }
-    
-    // Obtener datos de los proyectos desde el data attribute
-    const dashboardDataElement = document.getElementById('dashboard-data');
-    if (!dashboardDataElement) {
-        console.warn('No se encontraron datos del dashboard');
-        return;
-    }
-    
-    let dashboardData;
-    try {
-        dashboardData = JSON.parse(dashboardDataElement.textContent);
-    } catch (error) {
-        console.error('Error al parsear datos del dashboard:', error);
-        return;
-    }
-    
-    // Renderizar gráficos para cada proyecto
-    dashboardData.forEach((proyecto, index) => {
-        renderGraficoRequerimientos(proyecto, index);
-        renderGraficoCasosUso(proyecto, index);
-    });
+    // Animar números en las tarjetas
+    setTimeout(() => {
+        animateNumbers();
+    }, 200);
 });
 
 /**
  * Inicializa los tooltips de Bootstrap para el dashboard.
- * 
- * @function initializeDashboardTooltips
  */
 function initializeDashboardTooltips() {
     const tooltipTriggerList = [].slice.call(
@@ -54,225 +31,30 @@ function initializeDashboardTooltips() {
 }
 
 /**
- * Renderiza el gráfico de distribución de requerimientos.
- * Muestra la proporción de requerimientos huérfanos vs relacionados.
- * 
- * @param {Object} proyecto - Datos del proyecto
- * @param {number} index - Índice del proyecto en el dashboard
+ * Anima los números de las tarjetas principales
  */
-function renderGraficoRequerimientos(proyecto, index) {
-    const canvasId = `grafico-req-${index}`;
-    const ctx = document.getElementById(canvasId);
+function animateNumbers() {
+    const numbers = document.querySelectorAll('.metric-value');
     
-    if (!ctx) {
-        console.warn(`Canvas ${canvasId} no encontrado`);
-        return;
-    }
-    
-    const total = proyecto.reqs_huerfanos_count + proyecto.reqs_relacionados_count;
-    
-    new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Huérfanos', 'Relacionados'],
-            datasets: [{
-                data: [
-                    proyecto.reqs_huerfanos_count,
-                    proyecto.reqs_relacionados_count
-                ],
-                backgroundColor: [
-                    '#DC2626',  // Rojo más vibrante para huérfanos
-                    '#2563EB'   // Azul más vibrante para relacionados
-                ],
-                borderColor: [
-                    '#FFFFFF',
-                    '#FFFFFF'
-                ],
-                borderWidth: 3
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                legend: { 
-                    display: true, 
-                    position: 'bottom',
-                    labels: {
-                        boxWidth: 15,
-                        padding: 12,
-                        font: {
-                            size: 13,
-                            weight: 'bold'
-                        },
-                        generateLabels: function(chart) {
-                            const data = chart.data;
-                            if (data.labels.length && data.datasets.length) {
-                                return data.labels.map((label, i) => {
-                                    const value = data.datasets[0].data[i];
-                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                                    const meta = chart.getDatasetMeta(0);
-                                    const style = meta.controller.getStyle(i);
-                                    return {
-                                        text: `${label}: ${value} (${percentage}%)`,
-                                        fillStyle: style.backgroundColor,
-                                        strokeStyle: style.borderColor,
-                                        lineWidth: style.borderWidth,
-                                        hidden: false,
-                                        index: i
-                                    };
-                                });
-                            }
-                            return [];
-                        }
-                    }
-                },
-                tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    titleFont: {
-                        size: 14,
-                        weight: 'bold'
-                    },
-                    bodyFont: {
-                        size: 13
-                    },
-                    padding: 12,
-                    callbacks: {
-                        label: function(context) {
-                            const label = context.label || '';
-                            const value = context.parsed || 0;
-                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                            return `${label}: ${value} (${percentage}%)`;
-                        }
-                    }
-                },
-                datalabels: {
-                    color: '#FFFFFF',
-                    font: {
-                        size: 16,
-                        weight: 'bold'
-                    },
-                    formatter: function(value, context) {
-                        if (total === 0) return '';
-                        const percentage = ((value / total) * 100).toFixed(1);
-                        return percentage > 5 ? `${percentage}%` : ''; // Solo mostrar si es > 5%
-                    }
-                }
-            },
-            cutout: '60%'
-        },
-        plugins: [ChartDataLabels]
-    });
-}
-
-/**
- * Renderiza el gráfico de distribución de casos de uso.
- * Muestra la proporción de casos de uso huérfanos vs relacionados.
- * 
- * @param {Object} proyecto - Datos del proyecto
- * @param {number} index - Índice del proyecto en el dashboard
- */
-function renderGraficoCasosUso(proyecto, index) {
-    const canvasId = `grafico-cu-${index}`;
-    const ctx = document.getElementById(canvasId);
-    
-    if (!ctx) {
-        console.warn(`Canvas ${canvasId} no encontrado`);
-        return;
-    }
-    
-    const total = proyecto.casos_huerfanos_count + proyecto.casos_relacionados_count;
-    
-    new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Huérfanos', 'Relacionados'],
-            datasets: [{
-                data: [
-                    proyecto.casos_huerfanos_count,
-                    proyecto.casos_relacionados_count
-                ],
-                backgroundColor: [
-                    '#DC2626',  // Rojo más vibrante para huérfanos
-                    '#059669'   // Verde más vibrante para relacionados
-                ],
-                borderColor: [
-                    '#FFFFFF',
-                    '#FFFFFF'
-                ],
-                borderWidth: 3
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                legend: { 
-                    display: true, 
-                    position: 'bottom',
-                    labels: {
-                        boxWidth: 15,
-                        padding: 12,
-                        font: {
-                            size: 13,
-                            weight: 'bold'
-                        },
-                        generateLabels: function(chart) {
-                            const data = chart.data;
-                            if (data.labels.length && data.datasets.length) {
-                                return data.labels.map((label, i) => {
-                                    const value = data.datasets[0].data[i];
-                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                                    const meta = chart.getDatasetMeta(0);
-                                    const style = meta.controller.getStyle(i);
-                                    return {
-                                        text: `${label}: ${value} (${percentage}%)`,
-                                        fillStyle: style.backgroundColor,
-                                        strokeStyle: style.borderColor,
-                                        lineWidth: style.borderWidth,
-                                        hidden: false,
-                                        index: i
-                                    };
-                                });
-                            }
-                            return [];
-                        }
-                    }
-                },
-                tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    titleFont: {
-                        size: 14,
-                        weight: 'bold'
-                    },
-                    bodyFont: {
-                        size: 13
-                    },
-                    padding: 12,
-                    callbacks: {
-                        label: function(context) {
-                            const label = context.label || '';
-                            const value = context.parsed || 0;
-                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                            return `${label}: ${value} (${percentage}%)`;
-                        }
-                    }
-                },
-                datalabels: {
-                    color: '#FFFFFF',
-                    font: {
-                        size: 16,
-                        weight: 'bold'
-                    },
-                    formatter: function(value, context) {
-                        if (total === 0) return '';
-                        const percentage = ((value / total) * 100).toFixed(1);
-                        return percentage > 5 ? `${percentage}%` : ''; // Solo mostrar si es > 5%
-                    }
-                }
-            },
-            cutout: '60%'
-        },
-        plugins: [ChartDataLabels]
+    numbers.forEach((numberEl, index) => {
+        const text = numberEl.textContent.trim();
+        const finalValue = parseInt(text) || 0;
+        if (finalValue === 0) return;
+        
+        let currentValue = 0;
+        const duration = 1000;
+        const increment = finalValue / (duration / 16);
+        
+        const animate = () => {
+            currentValue += increment;
+            if (currentValue < finalValue) {
+                numberEl.textContent = Math.floor(currentValue);
+                requestAnimationFrame(animate);
+            } else {
+                numberEl.textContent = finalValue;
+            }
+        };
+        
+        setTimeout(() => animate(), index * 50);
     });
 }

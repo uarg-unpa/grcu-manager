@@ -17,4 +17,6 @@ urlpatterns = [
     path("developer/", views.developer_dashboard, name="developer_dashboard"),
     path("developer/matriz/", views.developer_matriz, name="developer_matriz"),
     path("stakeholder/", views.stakeholder_dashboard, name="stakeholder_dashboard"),
+    path("visitor/", views.visitor_dashboard, name="visitor_dashboard"),
+    path("visitor/matriz/", views.visitor_matriz, name="visitor_matriz"),
 ]

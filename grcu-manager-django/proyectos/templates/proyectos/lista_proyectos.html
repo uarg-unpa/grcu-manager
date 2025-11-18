@@ -8,48 +8,117 @@
 {% block content %}
 <div class="proyecto-lista-container">
 
-    <div class="proyecto-lista-acciones">
-        <a href="{% url 'proyectos:crear_proyecto' %}" class="btn btn-sm btn-success">Nuevo Proyecto</a>
+    <div class="proyecto-lista-acciones d-flex align-items-center justify-content-between">
+        <!-- Buscador a la izquierda con icono -->
+            <div class="proyecto-lista-search d-flex align-items-center">
+            <div class="input-group input-group-sm" style="width:260px;">
+                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+                <input type="search" id="proyectosSearchInput" placeholder="Buscar por nombre, líder o cliente" class="form-control form-control-sm border-start-0" maxlength="50" />
+            </div>
+        </div>
+
+        <!-- Botón a la derecha -->
+        <div>
+            <a href="{% url 'proyectos:crear_proyecto' %}" class="btn btn-sm btn-success">Nuevo Proyecto</a>
+        </div>
     </div>
 
     {% if proyectos %}
     <table class="proyecto-lista-tabla">
+        {% with sort=request.GET.sort %}
         <thead>
             <tr>
                 <th>Logo</th>
-                <th>Nombre</th>
-                <th>Líder</th>
+                <th>
+                    <a href="?sort=nombre" class="proyecto-lista-sort-link">
+                        Nombre
+                        {% if sort == 'nombre' %}<span class="proyecto-lista-sort-arrow">▲</span>{% else %}<span class="proyecto-lista-sort-arrow">▼</span>{% endif %}
+                    </a>
+                </th>
+                <th>
+                    <a href="?sort=lider" class="proyecto-lista-sort-link">
+                        Líder
+                        {% if sort == 'lider' %}<span class="proyecto-lista-sort-arrow">▲</span>{% else %}<span class="proyecto-lista-sort-arrow">▼</span>{% endif %}
+                    </a>
+                </th>
+                <th>Grupo</th>
                 <th>Clientes</th>
-                <th>Creado por</th>
-                <th>Fecha de creación</th>
+                <th>
+                    <a href="?sort=creado_por" class="proyecto-lista-sort-link">
+                        Creado por
+                        {% if sort == 'creado_por' %}<span class="proyecto-lista-sort-arrow">▲</span>{% else %}<span class="proyecto-lista-sort-arrow">▼</span>{% endif %}
+                    </a>
+                </th>
+                <th>
+                    <a href="?sort=fecha_creacion" class="proyecto-lista-sort-link">
+                        Fecha de creación
+                        {% if sort == 'fecha_creacion' %}<span class="proyecto-lista-sort-arrow">▲</span>{% else %}<span class="proyecto-lista-sort-arrow">▼</span>{% endif %}
+                    </a>
+                </th>
                 <th>Acciones</th>
             </tr>
         </thead>
-        <tbody>
+        {% endwith %}
+    <tbody id="proyectosTableBody">
             {% for proyecto in proyectos %}
             <tr>
-                <td>
+                <td class="text-start">
                     {% if proyecto.logo %}
                         <img src="{{ proyecto.logo.url }}" width="150" height="150" style="object-fit:contain; border-radius:12px; box-shadow:0 2px 8px rgba(68,76,138,0.10); border:2px solid #eee; background:#fff; padding:8px;">
                     {% else %}
                         <span class="text-muted">Sin logo</span>
                     {% endif %}
                 </td>
-                <td>{{ proyecto.nombre }}</td>
-                <td>
+                <td class="text-start">{{ proyecto.nombre }}</td>
+                <td class="text-start">
                     {% if proyecto.lider %}
-                        {{ proyecto.lider.nombre }}
+                        <div class="d-flex align-items-center gap-2">
+                            {% if proyecto.lider.avatar %}
+                                <img src="{{ proyecto.lider.avatar }}" 
+                                     alt="{{ proyecto.lider.nombre }}" 
+                                     width="24" 
+                                     height="24" 
+                                     style="object-fit: cover; border-radius: 50%; border: 1px solid #dee2e6;">
+                            {% else %}
+                                <i class="bi bi-person-circle text-primary" style="font-size: 1.5rem;"></i>
+                            {% endif %}
+                            <span>{{ proyecto.lider.nombre }}</span>
+                        </div>
                     {% else %}
                         <span class="text-muted">No asignado</span>
                     {% endif %}
                 </td>
-                <td>
+                <td class="text-start">
+                    {% if proyecto.grupo %}
+                        <div class="d-flex align-items-center gap-2">
+                            {% if proyecto.grupo.logo %}
+                                <img src="{{ proyecto.grupo.logo.url }}" 
+                                     alt="{{ proyecto.grupo.nombre }}" 
+                                     width="30" 
+                                     height="30" 
+                                     style="object-fit: cover; border-radius: 6px; border: 1px solid #dee2e6;">
+                            {% endif %}
+                            <span>{{ proyecto.grupo.nombre }}</span>
+                        </div>
+                    {% else %}
+                        <span class="text-muted">Sin grupo</span>
+                    {% endif %}
+                </td>
+                <td class="text-start">
                     {% if proyecto.clientes.exists %}
                         <ul class="list-unstyled mb-0">
                             {% for cliente in proyecto.clientes.all %}
-                                <li>
-                                    <i class="bi bi-person-badge text-info"></i>
-                                    {{ cliente.nombre }}
+                                <li class="d-flex align-items-center gap-2 mb-1">
+                                    {% if cliente.avatar %}
+                                        <img src="{{ cliente.avatar }}" 
+                                             alt="{{ cliente.nombre }}" 
+                                             width="24" 
+                                             height="24" 
+                                             style="object-fit: cover; border-radius: 50%; border: 1px solid #dee2e6;">
+                                    {% else %}
+                                        <i class="bi bi-person-circle text-info" style="font-size: 1.5rem;"></i>
+                                    {% endif %}
+                                    <span>{{ cliente.nombre }}</span>
                                 </li>
                             {% endfor %}
                         </ul>
@@ -57,29 +126,51 @@
                         <span class="text-muted">Sin clientes</span>
                     {% endif %}
                 </td>
-                <td>
+                <td class="text-start">
                     {% if proyecto.creado_por %}
                         {{ proyecto.creado_por.nombre }}
                     {% else %}
                         <span class="text-muted">Desconocido</span>
                     {% endif %}
                 </td>
-                <td>{{ proyecto.fecha_creacion|date:"d/m/Y H:i" }}</td>
-                <td>
+                <td class="text-start">{{ proyecto.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                <td class="text-center">
                     <a href="{% url 'proyectos:proyecto_detail_admin' proyecto.id %}" class="btn btn-sm btn-outline-primary proyecto-btn-view" title="Ver detalles" data-bs-toggle="tooltip">
                         <i class="bi bi-eye-fill"></i>
                     </a>
                     <a href="{% url 'proyectos:editar_proyecto' proyecto.id %}" class="btn btn-sm btn-outline-warning proyecto-btn-edit" title="Editar proyecto" data-bs-toggle="tooltip">
-                        <i class="bi bi-gear-fill"></i>
+                        <i class="bi bi-pencil-square"></i>
                     </a>
                     <a href="{% url 'proyectos:eliminar_proyecto' proyecto.id %}" class="btn btn-sm btn-outline-danger proyecto-btn-delete" title="Eliminar proyecto" data-bs-toggle="tooltip">
-                        <i class="bi bi-trash3-fill"></i>
+                        <i class="bi bi-trash"></i>
                     </a>
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+
+    <!-- Paginación -->
+    <nav aria-label="Page navigation">
+        <ul class="proyecto-lista-paginacion">
+            {% if proyectos.has_previous %}
+            <li><a href="?page={{ proyectos.previous_page_number }}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">&laquo;</a></li>
+            {% endif %}
+
+            {% for num in proyectos.paginator.page_range %}
+                {% if proyectos.number == num %}
+                    <li class="activo"><span>{{ num }}</span></li>
+                {% else %}
+                    <li><a href="?page={{ num }}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">{{ num }}</a></li>
+                {% endif %}
+            {% endfor %}
+
+            {% if proyectos.has_next %}
+            <li><a href="?page={{ proyectos.next_page_number }}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">&raquo;</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+
     {% else %}
     <p class="proyecto-lista-vacio">No hay proyectos creados.</p>
     {% endif %}
@@ -87,4 +178,5 @@
 {% endblock %}
 
 {% block extra_js %}
+    <script src="{% static 'proyectos/js/lista_proyectos.js' %}"></script>
 {% endblock %}

@@ -81,3 +81,28 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 });
+
+// Safety: asegurar que el botón de guardar dispare el submit incluso si
+// algún otro script intercepta/previen el evento. Esto fuerza el envío
+// y además deja un log útil para depuración.
+document.addEventListener('DOMContentLoaded', function() {
+    try {
+        const form = document.getElementById('proyectoForm');
+        const guardarBtn = document.querySelector('.proyecto-form-btn-crear');
+        if (form && guardarBtn) {
+            guardarBtn.addEventListener('click', function(e) {
+                console.log('Forzando submit desde editar_proyecto.js');
+                // Ejecutar submit explícitamente en el siguiente tick
+                setTimeout(function() {
+                    try {
+                        form.submit();
+                    } catch (err) {
+                        console.error('Error al forzar submit:', err);
+                    }
+                }, 0);
+            });
+        }
+    } catch (err) {
+        console.error('Error al inicializar forzado de submit:', err);
+    }
+});

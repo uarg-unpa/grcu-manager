@@ -49,6 +49,14 @@ class Proyecto(models.Model):
         limit_choices_to={'roles__nombre': 'Stakeholder'}
     )
 
+    # Visitantes asignados al proyecto (tienen acceso de solo lectura)
+    visitantes = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        related_name="proyectos_como_visitante",
+        blank=True,
+        limit_choices_to={'roles__nombre': 'Visitante'}
+    )
+
     # Relación muchos a muchos con usuarios vía una tabla intermedia
     participantes = models.ManyToManyField(
         settings.AUTH_USER_MODEL,

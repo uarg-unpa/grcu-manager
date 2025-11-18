@@ -32,9 +32,9 @@
                                     <p class="mb-0">
                                         <strong>Usuario:</strong> 
                                         {% if version1.history_user %}
-                                            {{ version1.history_user.get_full_name|default:version1.history_user.username }}
+                                            {{ version1.history_user.nombre|default:version1.history_user.username }}
                                         {% else %}
-                                            <span class="text-muted">Sistema</span>
+                                            <span class="text-muted">No registrado</span>
                                         {% endif %}
                                     </p>
                                 </div>
@@ -55,9 +55,9 @@
                                     <p class="mb-0">
                                         <strong>Usuario:</strong> 
                                         {% if version2.history_user %}
-                                            {{ version2.history_user.get_full_name|default:version2.history_user.username }}
+                                            {{ version2.history_user.nombre|default:version2.history_user.username }}
                                         {% else %}
-                                            <span class="text-muted">Sistema</span>
+                                            <span class="text-muted">No registrado</span>
                                         {% endif %}
                                     </p>
                                 </div>
@@ -66,101 +66,118 @@
                     </div>
 
                     <!-- Resumen de cambios -->
-                    <div class="alert alert-info mb-4">
+                    {% if cambios_count == 0 %}
+                    <div class="alert alert-warning mb-4">
                         <h5 class="alert-heading">
-                            <i class="bi bi-info-circle"></i> Resumen de Comparación
+                            <i class="bi bi-exclamation-triangle"></i> Sin cambios detectados
                         </h5>
                         <p class="mb-0">
-                            Se encontraron <strong>{{ diferencias|length }}</strong> campo{{ diferencias|length|pluralize:"s" }} analizados,
-                            de los cuales <strong>{{ cambios_count }}</strong> tiene{{ cambios_count|pluralize:"n,n" }} cambios.
+                            Las versiones seleccionadas son idénticas.
+                        </p>
+                        <hr>
+                        <p class="mb-0 small">
+                            <strong>Sugerencia:</strong> Selecciona versiones más distantes en el tiempo para ver cambios significativos.
+                        </p>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-success mb-4">
+                        <h5 class="alert-heading mb-2">
+                            <i class="bi bi-check-circle"></i> {{ cambios_count }} campo{{ cambios_count|pluralize:"s" }} modificado{{ cambios_count|pluralize:"s" }}
+                        </h5>
+                        <p class="mb-0 small">
+                            Mostrando solo los campos que cambiaron entre las versiones.
                         </p>
                     </div>
 
-                    <!-- Tabla de comparación detallada -->
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <h5 class="mb-0">Comparación Detallada</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-bordered table-hover">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th style="width: 15%;">Campo</th>
-                                            <th style="width: 40%;" class="text-danger">
-                                                <i class="bi bi-arrow-left"></i> Versión #{{ numero_v1 }} (Anterior)
-                                            </th>
-                                            <th style="width: 40%;" class="text-success">
-                                                <i class="bi bi-arrow-right"></i> Versión #{{ numero_v2 }} (Posterior)
-                                            </th>
-                                            <th style="width: 5%;" class="text-center">Estado</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for diff in diferencias %}
-                                        <tr class="{% if diff.cambio %}table-warning{% endif %}">
-                                            <td class="fw-bold align-middle">
-                                                {{ diff.campo }}
-                                            </td>
-                                            <td class="{% if diff.cambio %}bg-danger bg-opacity-10{% endif %}">
-                                                {% if diff.cambio %}
-                                                    <del class="text-danger">{{ diff.version1|default:"—" }}</del>
-                                                {% else %}
-                                                    <span class="text-muted">{{ diff.version1|default:"—" }}</span>
-                                                {% endif %}
-                                            </td>
-                                            <td class="{% if diff.cambio %}bg-success bg-opacity-10{% endif %}">
-                                                {% if diff.cambio %}
-                                                    <strong class="text-success">{{ diff.version2|default:"—" }}</strong>
-                                                {% else %}
-                                                    <span class="text-muted">{{ diff.version2|default:"—" }}</span>
-                                                {% endif %}
-                                            </td>
-                                            <td class="text-center align-middle">
-                                                {% if diff.cambio %}
-                                                    <i class="bi bi-exclamation-circle text-warning" title="Cambio detectado"></i>
-                                                {% else %}
-                                                    <i class="bi bi-check-circle text-success" title="Sin cambios"></i>
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
+                    <!-- Lista de cambios -->
+                    <div class="mb-4">
+                        {% for diff in diferencias %}
+                        {% if diff.cambio %}
+                        <div class="card mb-3 border-warning">
+                            <div class="card-header bg-warning bg-opacity-10">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-pencil-square text-warning"></i>
+                                    <strong>{{ diff.campo }}</strong>
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-2">
+                                            <span class="badge bg-danger mb-2">
+                                                <i class="bi bi-arrow-left"></i> Versión #{{ numero_v1 }}
+                                            </span>
+                                        </div>
+                                        <div class="p-3 bg-light border rounded" style="white-space: pre-wrap; max-height: 200px; overflow-y: auto;">
+                                            {% if diff.version1 %}
+                                                {{ diff.version1 }}
+                                            {% else %}
+                                                <em class="text-muted">(vacío)</em>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-2">
+                                            <span class="badge bg-success mb-2">
+                                                <i class="bi bi-arrow-right"></i> Versión #{{ numero_v2 }}
+                                            </span>
+                                        </div>
+                                        <div class="p-3 bg-light border border-success rounded" style="white-space: pre-wrap; max-height: 200px; overflow-y: auto;">
+                                            {% if diff.version2 %}
+                                                <strong>{{ diff.version2 }}</strong>
+                                            {% else %}
+                                                <em class="text-muted">(vacío)</em>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
+                        {% endif %}
+                        {% endfor %}
                     </div>
 
-                    <!-- Vista lado a lado (descripción completa) -->
+                    <!-- Mostrar campos sin cambios (colapsado) -->
                     <div class="card mb-4">
-                        <div class="card-header">
-                            <h5 class="mb-0">Vista Lado a Lado - Descripción</h5>
+                        <div class="card-header bg-light">
+                            <button class="btn btn-sm btn-outline-secondary w-100 text-start" type="button" data-bs-toggle="collapse" data-bs-target="#camposSinCambios">
+                                <i class="bi bi-eye-slash"></i> 
+                                Ver campos sin cambios ({{ diferencias|length|add:"-"|add:cambios_count }} campos)
+                                <i class="bi bi-chevron-down float-end"></i>
+                            </button>
                         </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="border rounded p-3 {% if version1.descripcion != version2.descripcion %}bg-danger bg-opacity-10{% endif %}">
-                                        <h6 class="text-danger mb-3">
-                                            <i class="bi bi-arrow-left"></i> Versión #{{ numero_v1 }}
-                                        </h6>
-                                        <div style="white-space: pre-wrap; max-height: 300px; overflow-y: auto;">
-                                            {{ version1.descripcion|default:"Sin descripción" }}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="border rounded p-3 {% if version1.descripcion != version2.descripcion %}bg-success bg-opacity-10{% endif %}">
-                                        <h6 class="text-success mb-3">
-                                            <i class="bi bi-arrow-right"></i> Versión #{{ numero_v2 }}
-                                        </h6>
-                                        <div style="white-space: pre-wrap; max-height: 300px; overflow-y: auto;">
-                                            {{ version2.descripcion|default:"Sin descripción" }}
-                                        </div>
-                                    </div>
+                        <div class="collapse" id="camposSinCambios">
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 20%;">Campo</th>
+                                                <th>Valor</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for diff in diferencias %}
+                                            {% if not diff.cambio %}
+                                            <tr>
+                                                <td class="text-muted">{{ diff.campo }}</td>
+                                                <td class="text-muted" style="white-space: pre-wrap;">
+                                                    {% if diff.version1 %}
+                                                        {{ diff.version1|truncatewords:20 }}
+                                                    {% else %}
+                                                        <em>(vacío)</em>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% endif %}
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
                     </div>
+                    {% endif %}
 
                     <!-- Botones de acción -->
                     <div class="d-flex gap-2">

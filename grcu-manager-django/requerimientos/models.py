@@ -10,6 +10,66 @@ if TYPE_CHECKING:
     from typing import Optional
 
 
+# ============================================================================
+# MODELOS PARA FUENTES Y CATEGORÍAS PERSONALIZADAS
+# ============================================================================
+
+class FuenteRequerimiento(models.Model):
+    """
+    Fuentes de requerimientos personalizables por proyecto.
+    Incluye fuentes predefinidas y permite agregar nuevas específicas del proyecto.
+    """
+    proyecto = models.ForeignKey(Proyecto, on_delete=models.CASCADE, related_name='fuentes_requerimiento')
+    nombre = models.CharField(max_length=255, help_text='Nombre de la fuente del requerimiento')
+    es_predefinida = models.BooleanField(default=False, help_text='Indica si es una fuente del sistema')
+    veces_utilizada = models.PositiveIntegerField(default=0, help_text='Contador de uso para ordenar por popularidad')
+    es_favorita = models.BooleanField(default=False, help_text='Marcada como favorita por el líder')
+    creado_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, blank=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-es_favorita', '-veces_utilizada', 'nombre']
+        unique_together = ('proyecto', 'nombre')
+        verbose_name = 'Fuente de Requerimiento'
+        verbose_name_plural = 'Fuentes de Requerimientos'
+    
+    def __str__(self):
+        return self.nombre
+    
+    def incrementar_uso(self):
+        """Incrementa el contador de uso"""
+        self.veces_utilizada += 1
+        self.save(update_fields=['veces_utilizada'])
+
+
+class CategoriaRequerimiento(models.Model):
+    """
+    Categorías para requerimientos no funcionales personalizables por proyecto.
+    Incluye categorías predefinidas y permite agregar nuevas específicas del proyecto.
+    """
+    proyecto = models.ForeignKey(Proyecto, on_delete=models.CASCADE, related_name='categorias_requerimiento')
+    nombre = models.CharField(max_length=100, help_text='Nombre de la categoría')
+    es_predefinida = models.BooleanField(default=False, help_text='Indica si es una categoría del sistema')
+    veces_utilizada = models.PositiveIntegerField(default=0, help_text='Contador de uso para ordenar por popularidad')
+    es_favorita = models.BooleanField(default=False, help_text='Marcada como favorita por el líder')
+    creado_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, blank=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-es_favorita', '-veces_utilizada', 'nombre']
+        unique_together = ('proyecto', 'nombre')
+        verbose_name = 'Categoría de Requerimiento'
+        verbose_name_plural = 'Categorías de Requerimientos'
+    
+    def __str__(self):
+        return self.nombre
+    
+    def incrementar_uso(self):
+        """Incrementa el contador de uso"""
+        self.veces_utilizada += 1
+        self.save(update_fields=['veces_utilizada'])
+
+
 # Común a ambos tipos de gestión
 class Requerimiento(models.Model):
     TIPO_CHOICES = [
@@ -158,6 +218,19 @@ class ComentarioValidacion(models.Model):
         help_text='Contexto del comentario: interno del equipo, con cliente, o implementación'
     )
     fecha_creacion = models.DateTimeField(auto_now_add=True)
+    
+    # Adjuntos y recursos externos
+    imagen = models.ImageField(
+        upload_to='comentarios/imagenes/', 
+        null=True, 
+        blank=True,
+        help_text='Imagen adjunta al comentario (PNG, JPG, JPEG)'
+    )
+    link_externo = models.URLField(
+        max_length=500, 
+        blank=True,
+        help_text='Enlace externo relacionado con el comentario'
+    )
     
     # Para respuestas/hilos de conversación
     comentario_padre = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='respuestas', help_text='Comentario padre si es una respuesta')

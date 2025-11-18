@@ -12,29 +12,54 @@
 
 <div class="usuario-lista-container">
 
-    <div class="usuario-lista-acciones">
-        <input type="search" id="usuariosSearchInput" placeholder="Buscar por nombre o email" class="form-control form-control-sm d-inline-block me-2" style="width:220px;" />
-        <a href="{% url 'usuarios:crear' %}" class="btn btn-sm btn-success">Nuevo Usuario</a>
+    <div class="usuario-lista-acciones d-flex align-items-center justify-content-between">
+        <!-- Buscador a la izquierda con icono -->
+        <div class="usuario-lista-search d-flex align-items-center">
+            <div class="input-group input-group-sm" style="width:260px;">
+                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+                <input type="search" id="usuariosSearchInput" placeholder="Buscar por nombre o email" class="form-control form-control-sm border-start-0" maxlength="50" />
+            </div>
+        </div>
+
+        <!-- Botón a la derecha -->
+        <div>
+            <a href="{% url 'usuarios:crear' %}" class="btn btn-sm btn-success">Nuevo Usuario</a>
+        </div>
     </div>
 
     <table class="usuario-lista-tabla">
+        {% with sort=request.GET.sort %}
         <thead>
             <tr>
-                <th style="width:40px"><input type="checkbox" id="selectAllUsers"></th>
-                <th></th>  {# avatar sin título #}
+                <th>Avatar</th>
                 <th>Activo</th>
-                <th>Nombre</th>
-                <th>Email</th>
-                <th>Roles</th>
+                <th>
+                    <a href="?sort=nombre" class="usuario-lista-sort-link">
+                        Nombre
+                        {% if sort == 'nombre' %}<span class="usuario-lista-sort-arrow">▲</span>{% else %}<span class="usuario-lista-sort-arrow">▼</span>{% endif %}
+                    </a>
+                </th>
+                <th>
+                    <a href="?sort=email" class="usuario-lista-sort-link">
+                        Email
+                        {% if sort == 'email' %}<span class="usuario-lista-sort-arrow">▲</span>{% else %}<span class="usuario-lista-sort-arrow">▼</span>{% endif %}
+                    </a>
+                </th>
+                <th>
+                    <a href="?sort=roles" class="usuario-lista-sort-link">
+                        Roles
+                        {% if sort == 'roles' %}<span class="usuario-lista-sort-arrow">▲</span>{% else %}<span class="usuario-lista-sort-arrow">▼</span>{% endif %}
+                    </a>
+                </th>
                 <th>Acciones</th>
             </tr>
         </thead>
+        {% endwith %}
         <tbody id="usuariosTableBody">
             {% for usuario in usuarios %}
             <tr data-user-id="{{ usuario.id }}">
-                <td><input type="checkbox" class="row-checkbox" value="{{ usuario.id }}"></td>
-                <!-- Avatar -->
-                <td class="usuario-lista-avatar-cell">
+                 <!-- Avatar -->
+                 <td class="usuario-lista-avatar-cell text-start">
                     {% if usuario.avatar %}
                         <img src="{{ usuario.avatar }}" alt="Avatar" class="usuario-lista-avatar">
                     {% else %}
@@ -43,7 +68,7 @@
                 </td>
 
                    
-                <td class="text-center">
+                <td class="text-start">
                     {% if usuario.is_active %}
                         <i class="bi bi-check-circle-fill text-success"></i>
                     {% else %}
@@ -51,13 +76,13 @@
                     {% endif %}
                 </td>
                 <!-- Nombre -->
-                <td>{{ usuario.nombre }}</td>
+                <td class="text-start">{{ usuario.nombre }}</td>
 
                 <!-- Email -->
-                <td>{{ usuario.email }}</td>
+                <td class="text-start">{{ usuario.email }}</td>
 
                 <!-- Roles -->
-                <td>
+                <td class="text-center">
                     {% for rol in usuario.roles.all %}
                         <span class="usuario-lista-rol">{{ rol.nombre }}</span>
                     {% empty %}
@@ -66,12 +91,12 @@
                 </td>
 
                 <!-- Acciones -->
-                <td>
+                <td class="text-center">
                     <a href="{% url 'usuarios:editar' usuario.id %}" class="btn btn-sm btn-outline-warning usuario-btn-edit" title="Editar usuario" data-bs-toggle="tooltip">
-                        <i class="bi bi-person-gear"></i>
+                        <i class="bi bi-pencil-square"></i>
                     </a>
                     <a href="{% url 'usuarios:eliminar' usuario.id %}" class="btn btn-sm btn-outline-danger usuario-btn-delete" title="Eliminar usuario" data-bs-toggle="tooltip">
-                        <i class="bi bi-person-dash"></i>
+                        <i class="bi bi-trash"></i>
                     </a>
                 </td>
             </tr>
@@ -104,6 +129,33 @@
         </ul>
     </nav>
 </div>
+
+{% if messages %}
+    <div class="container-fluid mt-3">
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show django-message" role="alert" data-message-key="{{ message|slugify }}">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.django-message').forEach(function(alert) {
+            var key = alert.getAttribute('data-message-key');
+            var seen = sessionStorage.getItem('django_message_' + key);
+            if (seen === '1') {
+                setTimeout(function() {
+                    var bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
+                    bsAlert.close();
+                }, 15000);
+            } else {
+                sessionStorage.setItem('django_message_' + key, '1');
+            }
+        });
+    });
+    </script>
+{% endif %}
 
 {% endblock %}
 

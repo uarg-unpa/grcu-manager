@@ -18,7 +18,46 @@ class RequerimientoTradicionalForm(forms.Form):
     Formulario para crear requerimientos con metodología TRADICIONAL.
     Incluye campos comunes + campos específicos del detalle tradicional.
     """
+    def __init__(self, *args, proyecto=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Cargar fuentes dinámicamente desde la base de datos
+        if proyecto:
+            from .models import FuenteRequerimiento, CategoriaRequerimiento
+            
+            # Obtener fuentes del proyecto (predefinidas + personalizadas)
+            fuentes_proyecto = FuenteRequerimiento.objects.filter(proyecto=proyecto)
+            fuente_choices = [('', '-- Seleccionar fuente --')]
+            # Primero agregar las fuentes existentes
+            fuente_choices.extend([(f.nombre, f.nombre) for f in fuentes_proyecto])
+            # Luego agregar la opción de nueva fuente al final
+            fuente_choices.append(('NUEVA', '➕ Nueva Fuente...'))
+            
+            self.fields['fuente'].choices = fuente_choices
+            
+            # Obtener categorías del proyecto (predefinidas + personalizadas)
+            categorias_proyecto = CategoriaRequerimiento.objects.filter(proyecto=proyecto)
+            categoria_choices = [('', '-- Seleccionar categoría --')]
+            # Primero agregar las categorías existentes
+            categoria_choices.extend([(c.nombre, c.nombre) for c in categorias_proyecto])
+            # Luego agregar la opción de nueva categoría al final
+            categoria_choices.append(('NUEVA', '➕ Nueva Categoría...'))
+            
+            self.fields['categoria'].choices = categoria_choices
+    
     # Campos comunes del Requerimiento
+    identificador = forms.CharField(
+        max_length=50,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'readonly': 'readonly',
+            'placeholder': 'RF-##'
+        }),
+        label='Identificador',
+        help_text='Generado automáticamente según el tipo'
+    )
+    
     nombre = forms.CharField(
         max_length=255,
         required=True,
@@ -48,19 +87,8 @@ class RequerimientoTradicionalForm(forms.Form):
     )
     
     # Campos específicos del DetalleRequerimientoTradicional
-    FUENTE_CHOICES = [
-        ('', '-- Seleccionar fuente --'),
-        ('ENTREVISTA_STAKEHOLDER', 'Entrevista con stakeholder/Cliente'),
-        ('DOCUMENTO_REQUERIMIENTOS', 'Documento de requerimientos'),
-        ('OBSERVACION_USUARIO', 'Observación de usuario'),
-        ('ENCUESTA_CUESTIONARIO', 'Encuesta / Cuestionario'),
-        ('ANALISIS_SISTEMA', 'Análisis de sistema existente'),
-        ('SOLICITUD_CLIENTE', 'Solicitud del cliente'),
-        ('OTRO', 'Otro (especificar)'),
-    ]
-    
     fuente = forms.ChoiceField(
-        choices=FUENTE_CHOICES,
+        choices=[],  # Se cargan dinámicamente en __init__
         required=False,
         widget=forms.Select(attrs={
             'class': 'form-select',
@@ -70,32 +98,19 @@ class RequerimientoTradicionalForm(forms.Form):
         help_text='Origen del requerimiento'
     )
     
-    fuente_otro = forms.CharField(
+    nueva_fuente = forms.CharField(
         max_length=255,
         required=False,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Especifique la fuente',
-            'id': 'id_fuente_otro'
+            'placeholder': 'Ingrese el nombre de la nueva fuente',
+            'id': 'id_nueva_fuente'
         }),
-        label='Especificar fuente'
+        label='Nueva Fuente'
     )
     
-    CATEGORIA_CHOICES = [
-        ('', '-- Seleccionar categoría --'),
-        ('SEGURIDAD', 'Seguridad'),
-        ('RENDIMIENTO', 'Rendimiento'),
-        ('USABILIDAD', 'Usabilidad'),
-        ('MANTENIBILIDAD', 'Mantenibilidad'),
-        ('COMPATIBILIDAD', 'Compatibilidad'),
-        ('DISPONIBILIDAD', 'Disponibilidad'),
-        ('ESCALABILIDAD', 'Escalabilidad'),
-        ('CONFIABILIDAD', 'Confiabilidad'),
-        ('OTRO', 'Otro (especificar)'),
-    ]
-    
     categoria = forms.ChoiceField(
-        choices=CATEGORIA_CHOICES,
+        choices=[],  # Se cargan dinámicamente en __init__
         required=False,
         widget=forms.Select(attrs={
             'class': 'form-select',
@@ -104,15 +119,15 @@ class RequerimientoTradicionalForm(forms.Form):
         label='Categoría'
     )
     
-    categoria_otro = forms.CharField(
+    nueva_categoria = forms.CharField(
         max_length=100,
         required=False,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Especifique la categoría',
-            'id': 'id_categoria_otro'
+            'placeholder': 'Ingrese el nombre de la nueva categoría',
+            'id': 'id_nueva_categoria'
         }),
-        label='Especificar categoría'
+        label='Nueva Categoría'
     )
     
     fecha_compromiso = forms.DateField(
@@ -171,6 +186,18 @@ class RequerimientoAgilForm(forms.Form):
     Incluye campos comunes + campos específicos del detalle ágil (User Story).
     """
     # Campos comunes del Requerimiento
+    identificador = forms.CharField(
+        max_length=50,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'readonly': 'readonly',
+            'placeholder': 'RF-##'
+        }),
+        label='Identificador',
+        help_text='Generado automáticamente según el tipo'
+    )
+    
     nombre = forms.CharField(
         max_length=255,
         required=True,

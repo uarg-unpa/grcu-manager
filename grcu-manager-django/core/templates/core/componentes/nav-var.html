@@ -20,13 +20,13 @@
                     </a>
                 </li>
                 <li>
-                    <a href="{% url 'proyectos:lista_proyectos' %}">
-                        <i class="bi bi-folder"></i> Proyectos
+                    <a href="{% url 'grupos:lista_grupos' %}" class="custom-header-btn">
+                        <i class="bi bi-people"></i> Grupos
                     </a>
                 </li>
                 <li>
-                    <a href="{% url 'grupos:lista_grupos' %}" class="custom-header-btn">
-                        <i class="bi bi-people"></i> Grupos
+                    <a href="{% url 'proyectos:lista_proyectos' %}">
+                        <i class="bi bi-folder"></i> Proyectos
                     </a>
                 </li>
                 <li>
@@ -44,23 +44,18 @@
                     </a>
                 </li>
                 <li>
-                    <a href="{% url 'dashboards:lider_matriz' %}">
-                        <i class="bi bi-grid-3x3-gap"></i> Matriz de trazabilidad
+                    <a href="{% url 'requerimientos:requerimiento_list' %}">
+                        <i class="bi bi-card-checklist"></i> Requerimientos
                     </a>
                 </li>
                 <li>
                     <a href="{% url 'requerimientos:requerimiento_priorizar' %}">
-                        <i class="bi bi-list-task"></i> Priorización de requerimientos
+                        <i class="bi bi-list-task"></i> Priorización
                     </a>
                 </li>
                 <li>
                     <a href="{% url 'requerimientos:requerimiento_dependencias' %}">
-                        <i class="bi bi-diagram-3"></i> Dependencias de requerimientos
-                    </a>
-                </li>
-                <li>
-                    <a href="{% url 'requerimientos:requerimiento_list' %}">
-                        <i class="bi bi-card-checklist"></i> Requerimientos
+                        <i class="bi bi-diagram-3"></i> Dependencias
                     </a>
                 </li>
                 <li>
@@ -68,16 +63,11 @@
                         <i class="bi bi-kanban"></i> Casos de Uso
                     </a>
                 </li>
-                {% comment %} <li>
-                    <a href="#">
-                        <i class="bi bi-folder"></i> Proyectos
+                <li>
+                    <a href="{% url 'dashboards:lider_matriz' %}">
+                        <i class="bi bi-grid-3x3-gap"></i> Matriz de Trazabilidad
                     </a>
-                </li> {% endcomment %}
-                {% comment %} <li>
-                    <a href="#">
-                        <i class="bi bi-people"></i> Mi Equipo
-                    </a>
-                </li> {% endcomment %}
+                </li>
                 <li>
                     <a href="{% url 'proyectos:reportes_lider' %}">
                         <i class="bi bi-bar-chart-line"></i> Reportes
@@ -105,6 +95,44 @@
                 <li>
                     <a href="{% url 'dashboards:developer_matriz' %}">
                         <i class="bi bi-grid-3x3-gap"></i> Matriz de Trazabilidad
+                    </a>
+                </li>
+            {% endif %}
+
+            <!-- Enlaces para Stakeholder/Cliente -->
+            {% if user.es_stakeholder %}
+                <li>
+                    <a href="{% url 'dashboards:stakeholder_dashboard' %}">
+                        <i class="bi bi-house"></i> Inicio
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'requerimientos:requerimiento_list' %}">
+                        <i class="bi bi-card-checklist"></i> Requerimientos
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'proyectos:reportes_stakeholder' %}">
+                        <i class="bi bi-bar-chart-line"></i> Reportes
+                    </a>
+                </li>
+            {% endif %}
+
+            <!-- Enlaces para Visitante -->
+            {% if user.es_visitante %}
+                <li>
+                    <a href="{% url 'dashboards:visitor_dashboard' %}">
+                        <i class="bi bi-house"></i> Inicio
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'dashboards:visitor_matriz' %}">
+                        <i class="bi bi-grid-3x3-gap"></i> Matriz de Trazabilidad
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'proyectos:reportes_visitante' %}">
+                        <i class="bi bi-bar-chart-line"></i> Reportes
                     </a>
                 </li>
             {% endif %}

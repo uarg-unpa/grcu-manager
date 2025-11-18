@@ -1,0 +1,269 @@
+/* /proyectos/static/proyectos/css/proyecto_detail_styles.css */
+
+:root {
+    --detail-bg-color: #f8f9fa;
+    --detail-card-bg: #ffffff;
+    --detail-card-border: #e9ecef;
+    --detail-card-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    --detail-text-color: #495057;
+    --detail-title-color: #212529;
+    --detail-accent-color: #0d6efd;
+}
+
+body {
+    background-color: var(--detail-bg-color);
+}
+
+.project-detail-container {
+    padding: 2rem 1rem;
+}
+
+/* Hacer que las columnas tengan la misma altura */
+.project-detail-container .row {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.project-detail-container .row > [class*='col-'] {
+    display: flex;
+    flex-direction: column;
+}
+
+/* --- Cabecera del Proyecto --- */
+.project-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--detail-card-bg);
+    padding: 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    box-shadow: var(--detail-card-shadow);
+    border: 1px solid var(--detail-card-border);
+}
+
+.project-header-info {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.project-logo {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    border-radius: 10px;
+    background: #f8f9fa;
+    padding: 8px;
+    border: 1px solid #dee2e6;
+}
+
+.project-title-section .project-name {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--detail-title-color);
+    margin: 0;
+}
+
+.project-title-section .project-leader {
+    font-size: 1rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.project-header-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.project-header-actions .action-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+}
+
+/* --- Tarjetas del Dashboard --- */
+.dashboard-card {
+    background: var(--detail-card-bg);
+    border: 1px solid var(--detail-card-border);
+    border-radius: 12px;
+    box-shadow: var(--detail-card-shadow);
+    margin-bottom: 2rem;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 500px; /* Altura mínima ajustada */
+    transition: all 0.3s ease;
+}
+
+.dashboard-card:hover {
+    box-shadow: 0 8px 20px rgba(52, 152, 219, 0.2) !important;
+    transform: translateY(-5px);
+}
+
+.dashboard-card .card-header {
+    background-color: transparent;
+    border-bottom: 1px solid var(--detail-card-border);
+    padding: 1rem 1.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--detail-title-color);
+    flex-shrink: 0; /* No se comprime */
+}
+
+.dashboard-card .card-body {
+    padding: 1.5rem;
+    flex: 1;
+    overflow-y: auto; /* Agregar scroll si el contenido es demasiado */
+    overflow-x: hidden;
+}
+
+/* --- Listas con estilo --- */
+.integrantes-list .list-group-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    border: none;
+    padding: 0.75rem 0;
+}
+
+.integrante-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.integrante-avatar-fallback {
+    font-size: 40px;
+    color: #adb5bd;
+}
+
+.integrante-info .nombre {
+    font-weight: 600;
+    color: var(--detail-text-color);
+}
+
+.integrante-info .email {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+/* --- Requerimientos y Casos de Uso --- */
+.item-list .list-group-item {
+    padding: 0.75rem 0;
+    border: none;
+    border-bottom: 1px solid var(--detail-card-border);
+}
+.item-list .list-group-item:last-child {
+    border-bottom: none;
+}
+
+.item-list .item-name {
+    font-weight: 500;
+}
+
+.item-list .item-meta {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.item-list .huerfano {
+    color: #dc3545;
+    font-weight: 700;
+}
+.item-list .huerfano::before {
+    content: "⚠️ ";
+}
+
+
+/* --- Gráficos --- */
+.charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+.chart-container {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.chart-container canvas {
+    max-height: 180px;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 auto;
+}
+
+.chart-container h6 {
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+/* --- Últimas Acciones (Timeline) --- */
+.timeline {
+    list-style: none;
+    padding: 0;
+    position: relative;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 10px;
+    height: 100%;
+    width: 2px;
+    background: var(--detail-card-border);
+}
+
+.timeline-item {
+    margin-bottom: 1.5rem;
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline-icon {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--detail-accent-color);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+}
+
+.timeline-content .timestamp {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-bottom: 0.25rem;
+    display: block;
+}
+
+.timeline-content .action-text {
+    font-size: 0.95rem;
+    color: var(--detail-text-color);
+}
+
+/* --- Matriz de Trazabilidad --- */
+.trazabilidad-table-container {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.trazabilidad-table .badge {
+    font-weight: 500;
+    margin: 2px;
+}
