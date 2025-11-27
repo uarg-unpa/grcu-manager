@@ -280,8 +280,10 @@ def caso_de_uso_create(request, proyecto_id=None, requerimiento_id=None):
             messages.error(request, 'El requerimiento no pertenece a este proyecto.')
             return redirect('requerimientos:requerimiento_detail', pk=requerimiento_id)
         
-        # Aplicar la regla de oro: el requerimiento debe estar VALIDADO
-        if requerimiento.estado != 'VALIDADO':
+        # Aplicar la regla de oro: el requerimiento debe estar VALIDADO (o en estado posterior)
+        # Estados válidos: VALIDADO, PRIORIZADO, EN_PROCESO, TERMINADO
+        # Solo se rechaza BORRADOR
+        if requerimiento.estado == 'BORRADOR':
             estado_display = dict(Requerimiento.ESTADO_CHOICES).get(requerimiento.estado, requerimiento.estado)
             messages.error(
                 request,

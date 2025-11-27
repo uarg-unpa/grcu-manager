@@ -425,11 +425,12 @@ def requerimiento_priorizar(request, proyecto_id=None):
 
     # Obtener requerimientos del proyecto que estén VALIDADOS (listos para priorizar)
     # Los requerimientos en estado BORRADOR no pueden priorizarse
+    # Ordenados por nombre (que incluye el identificador: RF-01, RF-02, etc.)
     requerimientos = Requerimiento.objects.filter(
         proyecto=proyecto
     ).exclude(
         estado='BORRADOR'
-    ).select_related('detalle_tradicional', 'detalle_agil').prefetch_related('comentarios_validacion')
+    ).select_related('detalle_tradicional', 'detalle_agil').prefetch_related('comentarios_validacion').order_by('nombre')
     
     # Agregar comentarios de validación a cada requerimiento
     from requerimientos.models import ComentarioValidacion
