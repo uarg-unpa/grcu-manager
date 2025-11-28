@@ -935,8 +935,8 @@ def relacionar_casos_existentes(request, pk):
         )
         return redirect('requerimientos:requerimiento_detail', pk=pk)
 
-    # REGLA DE ORO: Solo requerimientos VALIDADOS pueden tener casos de uso
-    if requerimiento.estado != 'VALIDADO':
+    # REGLA DE ORO: Solo requerimientos en estado BORRADOR deben bloquear la relación
+    if requerimiento.estado == 'BORRADOR':
         messages.error(
             request,
             f'No se pueden asignar casos de uso a un requerimiento en estado "{requerimiento.get_estado_display()}". '
