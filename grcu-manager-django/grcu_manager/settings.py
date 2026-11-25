@@ -218,3 +218,11 @@ MESSAGE_TAGS = {
     messages.WARNING: 'warning',
     messages.ERROR: 'danger',
 }
+
+
+# --- Producción detrás de un proxy (nginx) con HTTPS ---
+# Agregado el 2026-11-06. Con DEBUG=False, Django toma el esquema (http/https) del
+# encabezado X-Forwarded-Proto que envía nginx. Sin esto, el callback de Google se
+# arma con "http://" y falla (redirect_uri_mismatch). No afecta al desarrollo local.
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')

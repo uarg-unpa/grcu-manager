@@ -329,6 +329,17 @@
                 {% endif %}
               </p>
             </div>
+            <div class="ms-auto ps-3">
+              {% if is_lider %}
+                <a href="{% url 'requerimientos:requerimiento_validar_lider_proyecto' proyecto.pk %}" class="btn btn-light fw-semibold text-nowrap">
+                  <i class="bi bi-ui-checks me-1"></i> Validar en lote
+                </a>
+              {% else %}
+                <a href="{% url 'requerimientos:requerimiento_validar_cliente_proyecto' proyecto.pk %}" class="btn btn-light fw-semibold text-nowrap">
+                  <i class="bi bi-ui-checks me-1"></i> Validar en lote
+                </a>
+              {% endif %}
+            </div>
           </div>
         </div>
       {% endif %}

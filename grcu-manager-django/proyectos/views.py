@@ -254,6 +254,9 @@ def crear_proyecto(request):
                 # Proyecto sin grupo
                 messages.success(request, f"Proyecto '{proyecto.nombre}' creado exitosamente sin grupo asignado.")
 
+            from auditoria.utils import registrar_creacion_proyecto
+            registrar_creacion_proyecto(request, proyecto)
+
             # Asignar clientes al proyecto (independientemente de si hay grupo o no)
             clientes_ids = form.cleaned_data.get('clientes')
             if clientes_ids:
@@ -521,7 +524,10 @@ def eliminar_proyecto(request, proyecto_id):
     if request.method == "POST":
         # Guardar el líder antes de eliminar el proyecto
         lider_anterior = proyecto.lider
-        
+
+        from auditoria.utils import registrar_eliminacion_proyecto
+        registrar_eliminacion_proyecto(request, proyecto)
+
         proyecto.delete()
         
         # ⚡ ACTUALIZAR ROL DEL LÍDER (Líder → Developer si ya no lidera proyectos)
@@ -919,7 +925,7 @@ def exportar_matriz(request, proyecto_id, formato):
             cobertura_casos = round((casos_con_reqs / total_casos * 100), 1) if total_casos > 0 else 0
             
             buffer = BytesIO()
-            doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=1*cm, bottomMargin=1*cm, leftMargin=1*cm, rightMargin=1*cm)
+            doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=1*cm, bottomMargin=1.6*cm, leftMargin=1*cm, rightMargin=1*cm)
             elements = []
             styles = getSampleStyleSheet()
             
@@ -1007,6 +1013,7 @@ def exportar_matriz(request, proyecto_id, formato):
             
             if participaciones.exists():
                 team_data = []
+                filas_sin_avatar = []  # filas donde se muestran iniciales en lugar de foto
                 for participacion in participaciones:
                     usuario = participacion.usuario
                     rol_nombre = participacion.rol.nombre if participacion.rol else "Sin rol"
@@ -1028,9 +1035,17 @@ def exportar_matriz(request, proyecto_id, formato):
                             # Si falla la descarga, continuar sin avatar
                             pass
                     
-                    # Si no hay avatar o falló la descarga, usar placeholder
+                    # Si no hay avatar o falló la descarga, mostrar las iniciales
+                    # (el emoji que se usaba no existe en la fuente del PDF y salía un cuadrado negro)
                     if not avatar_cell:
-                        avatar_cell = Paragraph("👤", ParagraphStyle('AvatarPlaceholder', fontSize=20, alignment=TA_CENTER))
+                        palabras = (usuario.nombre or '').split()
+                        iniciales = ''.join(p[0] for p in palabras[:2]).upper() or '?'
+                        avatar_cell = Paragraph(
+                            f"<b>{iniciales}</b>",
+                            ParagraphStyle('AvatarPlaceholder', fontSize=12, leading=14,
+                                           alignment=TA_CENTER, textColor=colors.white)
+                        )
+                        filas_sin_avatar.append(len(team_data))
                     
                     # Nombre y rol
                     nombre_texto = Paragraph(f"<b>{usuario.nombre}</b><br/><i>{rol_nombre}</i>", 
@@ -1049,6 +1064,10 @@ def exportar_matriz(request, proyecto_id, formato):
                     ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
                     ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
                 ]))
+                for fila in filas_sin_avatar:
+                    team_table.setStyle(TableStyle([
+                        ('BACKGROUND', (0, fila), (0, fila), colors.HexColor('#4472C4')),
+                    ]))
                 elements.append(team_table)
             else:
                 elements.append(Paragraph("<i>No hay participantes asignados a este proyecto.</i>", normal_style))
@@ -1126,15 +1145,20 @@ def exportar_matriz(request, proyecto_id, formato):
                     if caso.pk in casos_relacionados_ids:
                         fila.append('✓')
                     elif es_req_huerfano or es_caso_huerfano:
-                        fila.append('⚠')  # Indicador de huérfano
+                        # Indicador de huérfano (el símbolo «⚠» no existe en la fuente del PDF)
+                        fila.append('!')
                     else:
                         fila.append('')
                 
                 data.append(fila)
             
             # Crear tabla con mejor formato
-            col_widths = [3*cm, 2*cm] + [1.2*cm] * len(casos)
-            table = Table(data, colWidths=col_widths)
+            # el ancho de cada columna se ajusta para que la matriz entre en la hoja
+            n_casos = casos.count()
+            ancho_cu = min(1.2*cm, (doc.width - 5*cm) / max(n_casos, 1))
+            letra_cu = 9 if ancho_cu >= 1.1*cm else (7 if ancho_cu >= 0.8*cm else 5)
+            col_widths = [3*cm, 2*cm] + [ancho_cu] * n_casos
+            table = Table(data, colWidths=col_widths, repeatRows=1)
             table.setStyle(TableStyle([
                 # Header styling
                 ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#4472C4')),
@@ -1143,6 +1167,9 @@ def exportar_matriz(request, proyecto_id, formato):
                 ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
                 ('FONTSIZE', (0, 0), (-1, 0), 9),
                 ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
+                ('FONTSIZE', (2, 0), (-1, 0), letra_cu),
+                ('LEFTPADDING', (2, 0), (-1, -1), 1),
+                ('RIGHTPADDING', (2, 0), (-1, -1), 1),
                 
                 # Data rows
                 ('BACKGROUND', (0, 1), (-1, -1), colors.white),
@@ -1190,10 +1217,22 @@ def exportar_matriz(request, proyecto_id, formato):
                         ]))
             
             elements.append(table)
+            elements.append(Spacer(1, 0.3*cm))
+
+            # Leyenda de la matriz
+            leyenda_style = ParagraphStyle('LeyendaMatriz', parent=styles['Normal'], fontSize=8, leading=11)
+            elements.append(Paragraph(
+                '<font color="#27ae60"><b>✓</b></font> El requerimiento está vinculado con el caso de uso. '
+                '<font color="#e74c3c"><b>!</b></font> Requerimiento o caso de uso huérfano: no tiene ninguna '
+                'relación, por eso se marca toda su fila o su columna. '
+                'Celda vacía: sin relación entre ese requerimiento y ese caso de uso.',
+                leyenda_style
+            ))
             elements.append(Spacer(1, 1*cm))
-            
+
             # === RECOMENDACIONES ===
-            elements.append(Paragraph("<b>RECOMENDACIONES</b>", subtitle_style))
+            # título y recomendaciones juntos, para que no se corten entre páginas
+            bloque_recomendaciones = [Paragraph("<b>RECOMENDACIONES</b>", subtitle_style)]
             
             recomendaciones = []
             
@@ -1212,9 +1251,9 @@ def exportar_matriz(request, proyecto_id, formato):
                 recomendaciones.append("• El proyecto muestra una buena trazabilidad general")
             
             for rec in recomendaciones:
-                elements.append(Paragraph(rec, normal_style))
-            
-            elements.append(Spacer(1, 1*cm))
+                bloque_recomendaciones.append(Paragraph(rec, normal_style))
+            from reportlab.platypus import KeepTogether  # type: ignore[import-untyped]
+            elements.append(KeepTogether(bloque_recomendaciones))
             
             # === PIE DE PÁGINA CON LOGOS ===
             try:
@@ -1284,6 +1323,8 @@ def exportar_matriz(request, proyecto_id, formato):
                     left_cell = left_content if left_content else ""
                     right_cell = right_content if right_content else ""
                     
+                    # el espacio va solo si hay logos (al final del documento generaba una hoja vacía)
+                    elements.append(Spacer(1, 1*cm))
                     logos_footer_table = Table([[left_cell, right_cell]], colWidths=[9*cm, 9*cm])
                     logos_footer_table.setStyle(TableStyle([
                         ('ALIGN', (0, 0), (0, 0), 'LEFT'),
@@ -1295,13 +1336,21 @@ def exportar_matriz(request, proyecto_id, formato):
             except Exception as e:
                 pass
 
-            footer_text = Paragraph("""
-            <b>GRCU Manager</b> - Universidad Nacional de la Patagonia Austral<br/>
-            <i>Reporte generado automáticamente • Sistema de Gestión de Requerimientos y Casos de Uso</i>
-            """, ParagraphStyle('Footer', parent=styles['Normal'], fontSize=8, alignment=TA_CENTER, textColor=colors.grey))
-            elements.append(footer_text)
-            
-            doc.build(elements)
+            # Pie de página: se dibuja al pie de cada hoja en lugar de agregarse al final
+            # del contenido (como párrafo suelto podía caer solo en una página nueva vacía)
+            def dibujar_pie(canvas, doc_):
+                canvas.saveState()
+                ancho = doc_.pagesize[0]
+                canvas.setFillColor(colors.grey)
+                canvas.setFont('Helvetica-Bold', 8)
+                canvas.drawCentredString(ancho / 2, 1.0 * cm,
+                                         'GRCU Manager - Universidad Nacional de la Patagonia Austral')
+                canvas.setFont('Helvetica-Oblique', 7)
+                canvas.drawCentredString(ancho / 2, 0.65 * cm,
+                                         f'Reporte generado automáticamente • Sistema de Gestión de Requerimientos y Casos de Uso • Página {doc_.page}')
+                canvas.restoreState()
+
+            doc.build(elements, onFirstPage=dibujar_pie, onLaterPages=dibujar_pie)
             
             # Retornar PDF
             buffer.seek(0)
@@ -1354,9 +1403,11 @@ def proyecto_reportes(request, proyecto_id):
     reqs_no_funcionales = Requerimiento.objects.filter(proyecto=proyecto, tipo='NO_FUNCIONAL').count()
     
     # === REQUERIMIENTOS POR ESTADO ===
-    reqs_pendientes = Requerimiento.objects.filter(proyecto=proyecto, estado='PENDIENTE').count()
-    reqs_en_desarrollo = Requerimiento.objects.filter(proyecto=proyecto, estado='EN_DESARROLLO').count()
-    reqs_aprobados = Requerimiento.objects.filter(proyecto=proyecto, estado='APROBADO').count()
+    reqs_borrador = Requerimiento.objects.filter(proyecto=proyecto, estado='BORRADOR').count()
+    reqs_validado = Requerimiento.objects.filter(proyecto=proyecto, estado='VALIDADO').count()
+    reqs_priorizado = Requerimiento.objects.filter(proyecto=proyecto, estado='PRIORIZADO').count()
+    reqs_en_proceso = Requerimiento.objects.filter(proyecto=proyecto, estado='EN_PROCESO').count()
+    reqs_terminado = Requerimiento.objects.filter(proyecto=proyecto, estado='TERMINADO').count()
     
     # === TRAZABILIDAD ===
     reqs_con_casos = Requerimiento.objects.filter(proyecto=proyecto).annotate(
@@ -1382,9 +1433,9 @@ def proyecto_reportes(request, proyecto_id):
     tipo_colors = ['#3498db', '#e74c3c']
     
     # Gráfico de Requerimientos por Estado
-    estado_labels = ['Pendiente', 'En Desarrollo', 'Aprobado']
-    estado_values = [reqs_pendientes, reqs_en_desarrollo, reqs_aprobados]
-    estado_colors = ['#f39c12', '#3498db', '#27ae60']
+    estado_labels = ['Borrador', 'Validado', 'Priorizado', 'En proceso', 'Terminado']
+    estado_values = [reqs_borrador, reqs_validado, reqs_priorizado, reqs_en_proceso, reqs_terminado]
+    estado_colors = ['#f39c12', '#3498db', '#8e44ad', '#17a2b8', '#27ae60']
     
     # Gráfico de Trazabilidad
     trazabilidad_labels = ['Con Casos de Uso', 'Huérfanos']
@@ -1402,9 +1453,11 @@ def proyecto_reportes(request, proyecto_id):
         'total_casos_uso': total_casos_uso,
         'reqs_funcionales': reqs_funcionales,
         'reqs_no_funcionales': reqs_no_funcionales,
-        'reqs_pendientes': reqs_pendientes,
-        'reqs_en_desarrollo': reqs_en_desarrollo,
-        'reqs_aprobados': reqs_aprobados,
+        'reqs_borrador': reqs_borrador,
+        'reqs_validado': reqs_validado,
+        'reqs_priorizado': reqs_priorizado,
+        'reqs_en_proceso': reqs_en_proceso,
+        'reqs_terminado': reqs_terminado,
         'reqs_con_casos': reqs_con_casos,
         'reqs_huerfanos': reqs_huerfanos,
         'casos_con_reqs': casos_con_reqs,
@@ -1852,19 +1905,19 @@ def generar_reporte_personalizado(request, proyecto_id):
     Accesible por líder, participantes y clientes del proyecto.
     """
     proyecto = get_object_or_404(Proyecto, pk=proyecto_id)
-    
+
     # Verificar permisos (líder, participante o cliente)
     es_lider = proyecto.lider == request.user
     es_participante = proyecto.participantes.filter(id=request.user.id).exists()
     es_cliente = proyecto.clientes.filter(id=request.user.id).exists()
-    
+
     if not (es_lider or es_participante or es_cliente):
         messages.error(request, "No tienes permisos para generar reportes de este proyecto.")
         return redirect('proyectos:lista_proyectos')
-    
+
     if request.method != 'POST':
         return redirect('proyectos:proyecto_reportes', proyecto_id=proyecto_id)
-    
+
     # Obtener secciones seleccionadas
     incluir_equipo = request.POST.get('incluir_equipo') == 'on'
     incluir_resumen = request.POST.get('incluir_resumen') == 'on'
@@ -1873,7 +1926,7 @@ def generar_reporte_personalizado(request, proyecto_id):
     incluir_casos_uso = request.POST.get('incluir_casos_uso') == 'on'
     incluir_recomendaciones = request.POST.get('incluir_recomendaciones') == 'on'
     incluir_info_grupo = request.POST.get('incluir_info_grupo') == 'on'
-    
+
     try:
         from reportlab.lib.pagesizes import A4
         from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
@@ -1887,31 +1940,31 @@ def generar_reporte_personalizado(request, proyecto_id):
         from django.db.models import Count, Q
         import os
         from django.conf import settings
-        
+
         # Crear buffer para el PDF
         buffer = BytesIO()
-        
+
         # Configurar márgenes aumentados para header y footer
         doc = SimpleDocTemplate(
-            buffer, 
-            pagesize=A4, 
+            buffer,
+            pagesize=A4,
             topMargin=3*cm,      # Aumentado para el header con badge y progreso
             bottomMargin=2.8*cm, # Aumentado para el footer con QR
             leftMargin=2*cm,
             rightMargin=2*cm
         )
         elements = []
-        
+
         # Obtener rutas de logos para el header/footer
         logo_proyecto_path = None
         logo_grupo_path = None
-        
+
         if proyecto.logo:
             logo_proyecto_path = os.path.join(settings.MEDIA_ROOT, str(proyecto.logo))
-        
+
         if proyecto.grupo and proyecto.grupo.logo:
             logo_grupo_path = os.path.join(settings.MEDIA_ROOT, str(proyecto.grupo.logo))
-        
+
         # Estilos
         styles = getSampleStyleSheet()
         title_style = ParagraphStyle(
@@ -1935,7 +1988,7 @@ def generar_reporte_personalizado(request, proyecto_id):
             fontSize=10,
             spaceAfter=8
         )
-        
+
         # === ENCABEZADO - LOGO DEL SISTEMA ===
         try:
             from reportlab.platypus import Image
@@ -1947,12 +2000,12 @@ def generar_reporte_personalizado(request, proyecto_id):
                 elements.append(Spacer(1, 0.5*cm))
         except Exception:
             pass
-        
+
         # Título principal
         main_title = Paragraph("<b>GRCU Manager</b><br/>Reporte Personalizado del Proyecto", title_style)
         elements.append(main_title)
         elements.append(Spacer(1, 0.5*cm))
-        
+
         # === INFORMACIÓN DEL PROYECTO (siempre incluida) ===
         project_info = Paragraph(f"""
         <b>Proyecto:</b> {proyecto.nombre}<br/>
@@ -1962,10 +2015,10 @@ def generar_reporte_personalizado(request, proyecto_id):
         """, normal_style)
         elements.append(project_info)
         elements.append(Spacer(1, 1*cm))
-        
+
         # === TABLA DE CONTENIDOS ===
         elements.append(Paragraph("<b>ÍNDICE DE CONTENIDOS</b>", subtitle_style))
-        
+
         toc_style = ParagraphStyle(
             'TOC',
             parent=styles['Normal'],
@@ -1974,66 +2027,67 @@ def generar_reporte_personalizado(request, proyecto_id):
             spaceAfter=6,
             textColor=colors.HexColor('#2c3e50')
         )
-        
+
         toc_items = [
             ("1.", "Descripción y Propósito", True),
         ]
-        
+
         section_num = 2
         if incluir_equipo:
             toc_items.append((f"{section_num}.", "Equipo del Proyecto", True))
             section_num += 1
-        
+
         if incluir_resumen:
             toc_items.append((f"{section_num}.", "Resumen Ejecutivo", True))
             section_num += 1
-        
+
         if incluir_matriz:
             toc_items.append((f"{section_num}.", "Matriz de Trazabilidad", True))
             section_num += 1
-        
+
         if incluir_requerimientos:
             toc_items.append((f"{section_num}.", "Listado Detallado de Requerimientos", True))
             section_num += 1
-        
+
         if incluir_casos_uso:
             toc_items.append((f"{section_num}.", "Listado Detallado de Casos de Uso", True))
             section_num += 1
-        
+
         if incluir_info_grupo:
             toc_items.append((f"{section_num}.", "Información del Grupo", True))
             section_num += 1
-        
+
         if incluir_recomendaciones:
             toc_items.append((f"{section_num}.", "Recomendaciones y Análisis", True))
             section_num += 1
-        
+
         # Renderizar tabla de contenidos
         for num, titulo, incluido in toc_items:
             if incluido:
                 toc_line = f"<b>{num}</b> {titulo} {'.' * 80}"
                 elements.append(Paragraph(toc_line, toc_style))
-        
+
         elements.append(Spacer(1, 1*cm))
         elements.append(PageBreak())
-        
+
         # === DESCRIPCIÓN Y PROPÓSITO (siempre incluida) ===
         elements.append(Paragraph("<b>DESCRIPCIÓN Y PROPÓSITO</b>", subtitle_style))
         descripcion_texto = proyecto.descripcion if proyecto.descripcion and proyecto.descripcion.strip() else "Este proyecto no tiene una descripción definida."
         elements.append(Paragraph(descripcion_texto, normal_style))
         elements.append(Spacer(1, 0.5*cm))
-        
+
         # === EQUIPO DEL PROYECTO (opcional) ===
         if incluir_equipo:
             elements.append(Paragraph("<b>EQUIPO DEL PROYECTO</b>", subtitle_style))
             participaciones = ParticipacionProyecto.objects.filter(proyecto=proyecto).select_related('usuario', 'rol').order_by('rol__nombre', 'usuario__nombre')
-            
+
             if participaciones.exists():
                 team_data = []
+                filas_sin_avatar = []  # filas donde se muestran iniciales en lugar de foto
                 for participacion in participaciones:
                     usuario = participacion.usuario
                     rol_nombre = participacion.rol.nombre if participacion.rol else "Sin rol"
-                    
+
                     # Intentar cargar avatar desde URL
                     avatar_cell = None
                     if usuario.avatar:
@@ -2046,14 +2100,22 @@ def generar_reporte_personalizado(request, proyecto_id):
                                 avatar_cell = Image(img_data, width=1.5*cm, height=1.5*cm)
                         except Exception:
                             pass
-                    
+
                     if not avatar_cell:
-                        avatar_cell = Paragraph("👤", ParagraphStyle('AvatarPlaceholder', fontSize=20, alignment=TA_CENTER))
-                    
-                    nombre_texto = Paragraph(f"<b>{usuario.nombre}</b><br/><i>{rol_nombre}</i>", 
+                        # iniciales (el emoji que se usaba no existe en la fuente del PDF y salía un cuadrado negro)
+                        palabras = (usuario.nombre or '').split()
+                        iniciales = ''.join(p[0] for p in palabras[:2]).upper() or '?'
+                        avatar_cell = Paragraph(
+                            f"<b>{iniciales}</b>",
+                            ParagraphStyle('AvatarPlaceholder', fontSize=12, leading=14,
+                                           alignment=TA_CENTER, textColor=colors.white)
+                        )
+                        filas_sin_avatar.append(len(team_data))
+
+                    nombre_texto = Paragraph(f"<b>{usuario.nombre}</b><br/><i>{rol_nombre}</i>",
                                             ParagraphStyle('TeamMember', parent=styles['Normal'], fontSize=9, alignment=TA_LEFT))
                     team_data.append([avatar_cell, nombre_texto])
-                
+
                 team_table = Table(team_data, colWidths=[2*cm, 14*cm])
                 team_table.setStyle(TableStyle([
                     ('ALIGN', (0, 0), (0, -1), 'CENTER'),
@@ -2064,41 +2126,45 @@ def generar_reporte_personalizado(request, proyecto_id):
                     ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
                     ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
                 ]))
+                for fila in filas_sin_avatar:
+                    team_table.setStyle(TableStyle([
+                        ('BACKGROUND', (0, fila), (0, fila), colors.HexColor('#4472C4')),
+                    ]))
                 elements.append(team_table)
             else:
                 elements.append(Paragraph("<i>No hay participantes asignados a este proyecto.</i>", normal_style))
-            
+
             elements.append(Spacer(1, 1*cm))
-        
+
         # === RESUMEN EJECUTIVO (opcional) ===
         if incluir_resumen:
             from requerimientos.models import Requerimiento
             from casos_de_uso.models import CasoDeUso
             from django.db.models import Count
-            
+
             requerimientos = Requerimiento.objects.filter(proyecto=proyecto)
             casos = CasoDeUso.objects.filter(proyecto=proyecto)
-            
+
             total_reqs = requerimientos.count()
             total_casos = casos.count()
-            
+
             # Estadísticas por estado
             estado_counts = {}
             for req in requerimientos:
                 estado = req.estado if hasattr(req, 'estado') else 'SIN_ESTADO'
                 estado_counts[estado] = estado_counts.get(estado, 0) + 1
-            
+
             # Trazabilidad
             reqs_con_casos = sum(1 for req in requerimientos if req.casos_relacionados.exists())
             casos_con_reqs = sum(1 for caso in casos if caso.requerimientos_relacionados.exists())
             reqs_huerfanos = total_reqs - reqs_con_casos
             casos_huerfanos = total_casos - casos_con_reqs
-            
+
             cobertura_reqs = round((reqs_con_casos / total_reqs * 100) if total_reqs > 0 else 0, 1)
             cobertura_casos = round((casos_con_reqs / total_casos * 100) if total_casos > 0 else 0, 1)
-            
+
             elements.append(Paragraph("<b>RESUMEN EJECUTIVO</b>", subtitle_style))
-            
+
             summary_data = [
                 ['Métrica', 'Valor', 'Descripción'],
                 ['Total de Requerimientos', str(total_reqs), 'Requerimientos registrados en el proyecto'],
@@ -2112,7 +2178,7 @@ def generar_reporte_personalizado(request, proyecto_id):
                 ['Requerimientos Huérfanos', str(reqs_huerfanos), 'Sin casos de uso asociados'],
                 ['Casos de Uso Huérfanos', str(casos_huerfanos), 'Sin requerimientos asociados']
             ]
-            
+
             summary_table = Table(summary_data, colWidths=[5.5*cm, 2*cm, 9*cm])
             summary_table.setStyle(TableStyle([
                 ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#34495e')),
@@ -2126,58 +2192,62 @@ def generar_reporte_personalizado(request, proyecto_id):
                 ('FONTSIZE', (0, 1), (-1, -1), 9),
                 ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
             ]))
-            
+
             elements.append(summary_table)
             elements.append(Spacer(1, 1*cm))
-        
+
         # === MATRIZ DE TRAZABILIDAD (opcional) ===
         if incluir_matriz:
             from requerimientos.models import Requerimiento
             from casos_de_uso.models import CasoDeUso
-            
+
             requerimientos = list(Requerimiento.objects.filter(proyecto=proyecto))
             casos = list(CasoDeUso.objects.filter(proyecto=proyecto))
-            
+
             if requerimientos and casos:
                 elements.append(Paragraph("<b>MATRIZ DE TRAZABILIDAD</b>", subtitle_style))
                 elements.append(Paragraph("Relación entre Requerimientos y Casos de Uso", normal_style))
                 elements.append(Spacer(1, 0.5*cm))
-                
+
                 # Construir tabla de matriz
                 data = []
-                
+
                 # Encabezado
                 encabezado = ['Requerimiento', 'Estado']
                 for caso in casos:
                     encabezado.append(f'CU-{caso.pk}')
                 data.append(encabezado)
-                
+
                 # Datos
                 for req in requerimientos:
                     casos_relacionados_ids = set(req.relaciones_casos.values_list('caso_de_uso_id', flat=True))
                     es_req_huerfano = len(casos_relacionados_ids) == 0
-                    
+
                     fila = [
                         f'REQ-{req.pk}\n{req.nombre}',
                         req.get_estado_display() if hasattr(req, 'get_estado_display') else 'N/A'
                     ]
-                    
+
                     for caso in casos:
                         casos_del_caso = caso.relaciones_requerimientos.values_list('requerimiento_id', flat=True)
                         es_caso_huerfano = len(casos_del_caso) == 0
-                        
+
                         if caso.pk in casos_relacionados_ids:
                             fila.append('✓')
                         elif es_req_huerfano or es_caso_huerfano:
-                            fila.append('⚠')
+                            # indicador de huérfano (el símbolo «⚠» no existe en la fuente del PDF)
+                            fila.append('!')
                         else:
                             fila.append('')
-                    
+
                     data.append(fila)
-                
+
                 # Crear tabla con formato mejorado
-                col_widths = [3*cm, 2*cm] + [1.2*cm] * len(casos)
-                table = Table(data, colWidths=col_widths)
+                # el ancho de cada columna se ajusta para que la matriz entre en la hoja
+                ancho_cu = min(1.2*cm, (doc.width - 5*cm) / max(len(casos), 1))
+                letra_cu = 9 if ancho_cu >= 1.1*cm else (7 if ancho_cu >= 0.8*cm else 5)
+                col_widths = [3*cm, 2*cm] + [ancho_cu] * len(casos)
+                table = Table(data, colWidths=col_widths, repeatRows=1)
                 table.setStyle(TableStyle([
                     # Header styling
                     ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#4472C4')),
@@ -2186,27 +2256,30 @@ def generar_reporte_personalizado(request, proyecto_id):
                     ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
                     ('FONTSIZE', (0, 0), (-1, 0), 9),
                     ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
-                    
+                    ('FONTSIZE', (2, 0), (-1, 0), letra_cu),
+                    ('LEFTPADDING', (2, 0), (-1, -1), 1),
+                    ('RIGHTPADDING', (2, 0), (-1, -1), 1),
+
                     # Data rows
                     ('BACKGROUND', (0, 1), (-1, -1), colors.white),
                     ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
                     ('ALIGN', (0, 1), (-1, -1), 'CENTER'),
                     ('FONTSIZE', (0, 1), (-1, -1), 8),
                     ('VALIGN', (0, 1), (-1, -1), 'MIDDLE'),
-                    
+
                     # Grid
                     ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
                 ]))
-                
+
                 # Aplicar estilos específicos para celdas con colores
                 for row_idx, req in enumerate(requerimientos, 1):
                     casos_relacionados_ids = set(req.relaciones_casos.values_list('caso_de_uso_id', flat=True))
                     es_req_huerfano = len(casos_relacionados_ids) == 0
-                    
+
                     for col_idx, caso in enumerate(casos, 2):
                         casos_del_caso = caso.relaciones_requerimientos.values_list('requerimiento_id', flat=True)
                         es_caso_huerfano = len(casos_del_caso) == 0
-                        
+
                         if caso.pk in casos_relacionados_ids:
                             # Verde para relaciones existentes
                             table.setStyle(TableStyle([
@@ -2219,271 +2292,276 @@ def generar_reporte_personalizado(request, proyecto_id):
                                 ('BACKGROUND', (col_idx, row_idx), (col_idx, row_idx), colors.HexColor('#ffebee')),
                                 ('TEXTCOLOR', (col_idx, row_idx), (col_idx, row_idx), colors.HexColor('#e74c3c')),
                             ]))
-                
+
                 elements.append(table)
+                elements.append(Spacer(1, 0.3*cm))
+                elements.append(Paragraph(
+                    '<font color="#27ae60"><b>✓</b></font> El requerimiento está vinculado con el caso de uso. '
+                    '<font color="#e74c3c"><b>!</b></font> Requerimiento o caso de uso huérfano: no tiene ninguna '
+                    'relación, por eso se marca toda su fila o su columna. '
+                    'Celda vacía: sin relación entre ese requerimiento y ese caso de uso.',
+                    ParagraphStyle('LeyendaMatriz', parent=styles['Normal'], fontSize=8, leading=11)
+                ))
                 elements.append(Spacer(1, 1*cm))
-        
+
         # === LISTADO DE REQUERIMIENTOS (opcional) ===
         if incluir_requerimientos:
             from requerimientos.models import Requerimiento
-            
+
             requerimientos = Requerimiento.objects.filter(proyecto=proyecto).order_by('id')
-            
+
             if requerimientos.exists():
                 elements.append(Paragraph("<b>LISTADO DETALLADO DE REQUERIMIENTOS</b>", subtitle_style))
-                
+
                 for req in requerimientos:
-                    req_title = Paragraph(f"<b>REQ-{req.pk}: {req.nombre}</b>", 
+                    req_title = Paragraph(f"<b>REQ-{req.pk}: {req.nombre}</b>",
                                          ParagraphStyle('ReqTitle', parent=styles['Normal'], fontSize=11, textColor=colors.HexColor('#2c3e50'), spaceAfter=4))
                     elements.append(req_title)
-                    
+
                     req_info = f"<b>Tipo:</b> {req.get_tipo_display() if hasattr(req, 'get_tipo_display') else 'N/A'} | "
                     req_info += f"<b>Estado:</b> {req.get_estado_display() if hasattr(req, 'get_estado_display') else 'N/A'} | "
                     req_info += f"<b>Prioridad:</b> {req.get_prioridad_display() if hasattr(req, 'get_prioridad_display') else 'N/A'}"
-                    
+
                     elements.append(Paragraph(req_info, ParagraphStyle('ReqInfo', parent=styles['Normal'], fontSize=9, textColor=colors.grey)))
-                    
+
                     if req.descripcion:
                         elements.append(Paragraph(f"<b>Descripción:</b> {req.descripcion}", normal_style))
-                    
+
                     elements.append(Spacer(1, 0.5*cm))
-                
+
                 elements.append(Spacer(1, 0.5*cm))
-        
+
         # === LISTADO DE CASOS DE USO (opcional) ===
         if incluir_casos_uso:
             from casos_de_uso.models import CasoDeUso
-            
+
             casos = CasoDeUso.objects.filter(proyecto=proyecto).order_by('id')
-            
+
             if casos.exists():
                 elements.append(PageBreak())
                 elements.append(Paragraph("<b>LISTADO DETALLADO DE CASOS DE USO</b>", subtitle_style))
                 elements.append(Spacer(1, 0.3*cm))
-                
+
                 for caso in casos:
                     # Título del caso de uso
                     caso_title = Paragraph(
-                        f"<b>CU-{caso.pk}: {caso.nombre}</b>", 
-                        ParagraphStyle('CasoTitle', parent=styles['Normal'], fontSize=11, 
+                        f"<b>CU-{caso.pk}: {caso.nombre}</b>",
+                        ParagraphStyle('CasoTitle', parent=styles['Normal'], fontSize=11,
                                      textColor=colors.HexColor('#2980b9'), spaceAfter=6)
                     )
                     elements.append(caso_title)
-                    
+
                     # Información básica
                     if caso.descripcion:
                         elements.append(Paragraph(f"<b>Descripción:</b> {caso.descripcion}", normal_style))
                         elements.append(Spacer(1, 0.2*cm))
-                    
+
                     # Requerimientos relacionados
                     reqs_relacionados = caso.requerimientos_relacionados.all()
                     if reqs_relacionados.exists():
                         reqs_texto = ", ".join([f"REQ-{req.pk}" for req in reqs_relacionados])
                         elements.append(Paragraph(
-                            f"<b>Requerimientos Relacionados:</b> {reqs_texto}", 
+                            f"<b>Requerimientos Relacionados:</b> {reqs_texto}",
                             normal_style
                         ))
                         elements.append(Spacer(1, 0.2*cm))
-                    
+
                     # Usuario creador y fechas
                     info_metadata = f"<b>Creado por:</b> {caso.creado_por.nombre if caso.creado_por else 'N/A'} | "
                     info_metadata += f"<b>Fecha creación:</b> {caso.fecha_creacion.strftime('%d/%m/%Y')}"
                     elements.append(Paragraph(
-                        info_metadata, 
-                        ParagraphStyle('Metadata', parent=styles['Normal'], fontSize=8, 
+                        info_metadata,
+                        ParagraphStyle('Metadata', parent=styles['Normal'], fontSize=8,
                                      textColor=colors.grey, spaceAfter=6)
                     ))
-                    
+
                     # DETALLE TRADICIONAL
                     if hasattr(caso, 'detalle_tradicional') and caso.detalle_tradicional:
                         detalle = caso.detalle_tradicional
-                        
+
                         elements.append(Paragraph(
-                            "<b><i>Detalle Metodología Tradicional:</i></b>", 
-                            ParagraphStyle('SubHeader', parent=styles['Normal'], fontSize=10, 
+                            "<b><i>Detalle Metodología Tradicional:</i></b>",
+                            ParagraphStyle('SubHeader', parent=styles['Normal'], fontSize=10,
                                          textColor=colors.HexColor('#34495e'), spaceAfter=4)
                         ))
-                        
+
                         if detalle.actor_principal:
                             elements.append(Paragraph(
-                                f"<b>Actor Principal:</b> {detalle.actor_principal}", 
+                                f"<b>Actor Principal:</b> {detalle.actor_principal}",
                                 normal_style
                             ))
                             elements.append(Spacer(1, 0.1*cm))
-                        
+
                         if detalle.precondiciones:
                             elements.append(Paragraph(
-                                f"<b>Precondiciones:</b>", 
+                                f"<b>Precondiciones:</b>",
                                 normal_style
                             ))
                             elements.append(Paragraph(
-                                detalle.precondiciones, 
-                                ParagraphStyle('Detail', parent=styles['Normal'], fontSize=9, 
+                                detalle.precondiciones,
+                                ParagraphStyle('Detail', parent=styles['Normal'], fontSize=9,
                                              leftIndent=20, spaceAfter=4)
                             ))
-                        
+
                         if detalle.flujo_principal:
                             elements.append(Paragraph(
-                                f"<b>Flujo Principal:</b>", 
+                                f"<b>Flujo Principal:</b>",
                                 normal_style
                             ))
                             elements.append(Paragraph(
-                                detalle.flujo_principal, 
-                                ParagraphStyle('Detail', parent=styles['Normal'], fontSize=9, 
+                                detalle.flujo_principal,
+                                ParagraphStyle('Detail', parent=styles['Normal'], fontSize=9,
                                              leftIndent=20, spaceAfter=4)
                             ))
-                        
+
                         if detalle.flujo_alternativo:
                             elements.append(Paragraph(
-                                f"<b>Flujo Alternativo:</b>", 
+                                f"<b>Flujo Alternativo:</b>",
                                 normal_style
                             ))
                             elements.append(Paragraph(
-                                detalle.flujo_alternativo, 
-                                ParagraphStyle('Detail', parent=styles['Normal'], fontSize=9, 
+                                detalle.flujo_alternativo,
+                                ParagraphStyle('Detail', parent=styles['Normal'], fontSize=9,
                                              leftIndent=20, spaceAfter=4)
                             ))
-                        
+
                         if detalle.postcondiciones:
                             elements.append(Paragraph(
-                                f"<b>Postcondiciones:</b>", 
+                                f"<b>Postcondiciones:</b>",
                                 normal_style
                             ))
                             elements.append(Paragraph(
-                                detalle.postcondiciones, 
-                                ParagraphStyle('Detail', parent=styles['Normal'], fontSize=9, 
+                                detalle.postcondiciones,
+                                ParagraphStyle('Detail', parent=styles['Normal'], fontSize=9,
                                              leftIndent=20, spaceAfter=4)
                             ))
-                        
+
                         if detalle.observaciones:
                             elements.append(Paragraph(
-                                f"<b>Observaciones:</b>", 
+                                f"<b>Observaciones:</b>",
                                 normal_style
                             ))
                             elements.append(Paragraph(
-                                detalle.observaciones, 
-                                ParagraphStyle('Detail', parent=styles['Normal'], fontSize=9, 
+                                detalle.observaciones,
+                                ParagraphStyle('Detail', parent=styles['Normal'], fontSize=9,
                                              leftIndent=20, spaceAfter=4)
                             ))
-                    
+
                     # DETALLE ÁGIL
                     elif hasattr(caso, 'detalle_agil') and caso.detalle_agil:
                         detalle = caso.detalle_agil
-                        
+
                         elements.append(Paragraph(
-                            "<b><i>Detalle Metodología Ágil:</i></b>", 
-                            ParagraphStyle('SubHeader', parent=styles['Normal'], fontSize=10, 
+                            "<b><i>Detalle Metodología Ágil:</i></b>",
+                            ParagraphStyle('SubHeader', parent=styles['Normal'], fontSize=10,
                                          textColor=colors.HexColor('#27ae60'), spaceAfter=4)
                         ))
-                        
+
                         if detalle.historia_usuario:
                             elements.append(Paragraph(
-                                f"<b>Historia de Usuario:</b>", 
+                                f"<b>Historia de Usuario:</b>",
                                 normal_style
                             ))
                             elements.append(Paragraph(
-                                detalle.historia_usuario, 
-                                ParagraphStyle('Detail', parent=styles['Normal'], fontSize=9, 
+                                detalle.historia_usuario,
+                                ParagraphStyle('Detail', parent=styles['Normal'], fontSize=9,
                                              leftIndent=20, spaceAfter=4)
                             ))
-                        
+
                         if detalle.criterio_aceptacion:
                             elements.append(Paragraph(
-                                f"<b>Criterios de Aceptación:</b>", 
+                                f"<b>Criterios de Aceptación:</b>",
                                 normal_style
                             ))
                             elements.append(Paragraph(
-                                detalle.criterio_aceptacion, 
-                                ParagraphStyle('Detail', parent=styles['Normal'], fontSize=9, 
+                                detalle.criterio_aceptacion,
+                                ParagraphStyle('Detail', parent=styles['Normal'], fontSize=9,
                                              leftIndent=20, spaceAfter=4)
                             ))
-                        
+
                         if detalle.responsable:
                             elements.append(Paragraph(
-                                f"<b>Responsable:</b> {detalle.responsable}", 
+                                f"<b>Responsable:</b> {detalle.responsable}",
                                 normal_style
                             ))
                             elements.append(Spacer(1, 0.1*cm))
-                        
+
                         if detalle.estado_scrum:
                             elements.append(Paragraph(
-                                f"<b>Estado Scrum:</b> {detalle.estado_scrum}", 
+                                f"<b>Estado Scrum:</b> {detalle.estado_scrum}",
                                 normal_style
                             ))
                             elements.append(Spacer(1, 0.1*cm))
-                        
+
                         if detalle.observaciones:
                             elements.append(Paragraph(
-                                f"<b>Observaciones:</b>", 
+                                f"<b>Observaciones:</b>",
                                 normal_style
                             ))
                             elements.append(Paragraph(
-                                detalle.observaciones, 
-                                ParagraphStyle('Detail', parent=styles['Normal'], fontSize=9, 
+                                detalle.observaciones,
+                                ParagraphStyle('Detail', parent=styles['Normal'], fontSize=9,
                                              leftIndent=20, spaceAfter=4)
                             ))
-                    
+
                     else:
                         elements.append(Paragraph(
-                            "<i>Este caso de uso no tiene detalle metodológico asignado.</i>", 
-                            ParagraphStyle('Note', parent=styles['Normal'], fontSize=9, 
+                            "<i>Este caso de uso no tiene detalle metodológico asignado.</i>",
+                            ParagraphStyle('Note', parent=styles['Normal'], fontSize=9,
                                          textColor=colors.grey, italic=True, spaceAfter=4)
                         ))
-                    
+
                     # Link externo si existe
                     if caso.link_externo:
                         elements.append(Paragraph(
-                            f"<b>Recurso Externo:</b> <link href='{caso.link_externo}'>{caso.link_externo}</link>", 
+                            f"<b>Recurso Externo:</b> <link href='{caso.link_externo}'>{caso.link_externo}</link>",
                             normal_style
                         ))
                         elements.append(Spacer(1, 0.1*cm))
-                    
+
                     # Separador entre casos de uso
                     elements.append(Spacer(1, 0.5*cm))
-                    elements.append(Paragraph(
-                        "─" * 100, 
-                        ParagraphStyle('Separator', parent=styles['Normal'], fontSize=8, 
-                                     textColor=colors.lightgrey)
-                    ))
+                    from reportlab.platypus import HRFlowable
+                    elements.append(HRFlowable(width='100%', thickness=0.5, color=colors.lightgrey))
                     elements.append(Spacer(1, 0.5*cm))
-                
+
                 elements.append(Spacer(1, 0.3*cm))
-        
+
         # === INFORMACIÓN DEL GRUPO (opcional) ===
         if incluir_info_grupo and proyecto.grupo:
             elements.append(Paragraph("<b>INFORMACIÓN DEL GRUPO</b>", subtitle_style))
-            
+
             grupo_info = f"<b>Nombre:</b> {proyecto.grupo.nombre}<br/>"
-            
+
             # Líder del grupo
             if proyecto.grupo.lider:
                 grupo_info += f"<b>Líder del Grupo:</b> {proyecto.grupo.lider.nombre}<br/>"
-            
+
             # Integrantes
             integrantes = proyecto.grupo.integrantes.all()
             grupo_info += f"<b>Cantidad de Integrantes:</b> {integrantes.count()}<br/>"
-            
+
             # Estado
             grupo_info += f"<b>Estado:</b> {'Activo' if proyecto.grupo.activo else 'Inactivo'}"
-            
+
             elements.append(Paragraph(grupo_info, normal_style))
             elements.append(Spacer(1, 1*cm))
-        
+
         # === RECOMENDACIONES (opcional) ===
         if incluir_recomendaciones:
             from requerimientos.models import Requerimiento
             from casos_de_uso.models import CasoDeUso
-            
+
             requerimientos = Requerimiento.objects.filter(proyecto=proyecto)
             casos = CasoDeUso.objects.filter(proyecto=proyecto)
-            
+
             total_reqs = requerimientos.count()
             total_casos = casos.count()
             reqs_con_casos = sum(1 for req in requerimientos if req.casos_relacionados.exists())
             casos_con_reqs = sum(1 for caso in casos if caso.requerimientos_relacionados.exists())
-            
+
             recomendaciones = []
-            
+
             # === ANÁLISIS DE TRAZABILIDAD ===
             if total_reqs - reqs_con_casos > 0:
                 recomendaciones.append(
@@ -2491,41 +2569,41 @@ def generar_reporte_personalizado(request, proyecto_id):
                     f"requerimiento(s) sin casos de uso asociados. Se recomienda "
                     f"vincularlos para mejorar la trazabilidad."
                 )
-            
+
             if total_casos - casos_con_reqs > 0:
                 recomendaciones.append(
                     f"• <b>Trazabilidad:</b> Hay {total_casos - casos_con_reqs} "
                     f"caso(s) de uso sin requerimientos asociados. Verificar si son "
                     f"necesarios o vincularlos."
                 )
-            
+
             if reqs_con_casos == total_reqs and total_reqs > 0:
                 recomendaciones.append(
                     "• ✓ <b>Excelente:</b> Todos los requerimientos tienen casos "
                     "de uso asociados."
                 )
-            
+
             if casos_con_reqs == total_casos and total_casos > 0:
                 recomendaciones.append(
                     "• ✓ <b>Excelente:</b> Todos los casos de uso están vinculados "
                     "a requerimientos."
                 )
-            
+
             # === ANÁLISIS DE ESTADOS ===
             borrador_count = requerimientos.filter(estado='BORRADOR').count()
             validado_count = requerimientos.filter(estado='VALIDADO').count()
             en_proceso_count = requerimientos.filter(estado='EN_PROCESO').count()
             terminado_count = requerimientos.filter(estado='TERMINADO').count()
-            
+
             # Detectar muchos requerimientos en BORRADOR
             if total_reqs > 0 and borrador_count > total_reqs * 0.5:
                 porcentaje_borrador = round((borrador_count / total_reqs) * 100, 1)
                 recomendaciones.append(
-                    f"⚠ <b>Advertencia:</b> {borrador_count} requerimientos "
+                    f"<b>Advertencia:</b> {borrador_count} requerimientos "
                     f"({porcentaje_borrador}%) están en estado BORRADOR. "
                     f"Considere validarlos para avanzar en el proyecto."
                 )
-            
+
             # Detectar pocos requerimientos terminados
             if total_reqs > 0 and terminado_count < total_reqs * 0.2 and en_proceso_count > 0:
                 porcentaje_terminado = round((terminado_count / total_reqs) * 100, 1)
@@ -2534,7 +2612,7 @@ def generar_reporte_personalizado(request, proyecto_id):
                     f"({porcentaje_terminado}%) están terminados. Considere revisar "
                     f"los {en_proceso_count} en proceso para completarlos."
                 )
-            
+
             # Felicitar por buen progreso
             if total_reqs > 0 and terminado_count >= total_reqs * 0.8:
                 porcentaje_terminado = round((terminado_count / total_reqs) * 100, 1)
@@ -2542,19 +2620,19 @@ def generar_reporte_personalizado(request, proyecto_id):
                     f"• ✓ <b>Excelente progreso:</b> {terminado_count} requerimientos "
                     f"({porcentaje_terminado}%) completados. ¡El proyecto avanza bien!"
                 )
-            
+
             # === ANÁLISIS DE BALANCE RF vs RNF ===
             rf_count = requerimientos.filter(tipo='FUNCIONAL').count()
             rnf_count = requerimientos.filter(tipo='NO_FUNCIONAL').count()
             rs_count = requerimientos.filter(tipo='SISTEMA').count()
-            
+
             if rnf_count == 0 and rf_count > 5:
                 recomendaciones.append(
-                    "⚠ <b>Requerimientos No Funcionales:</b> No se han definido "
+                    "<b>Requerimientos No Funcionales:</b> No se han definido "
                     "RNF. Considere agregar requisitos de rendimiento, seguridad, "
                     "usabilidad, etc."
                 )
-            
+
             if rnf_count > 0 and rf_count > 0:
                 ratio = rf_count / rnf_count if rnf_count > 0 else 0
                 if ratio > 10:  # Más de 10 RF por cada RNF
@@ -2563,7 +2641,7 @@ def generar_reporte_personalizado(request, proyecto_id):
                         f"(ratio {ratio:.1f}:1). Considere revisar si faltan requisitos "
                         f"no funcionales importantes."
                     )
-            
+
             # === ANÁLISIS DE PRIORIZACIÓN ===
             sin_prioridad_count = 0
             for req in requerimientos:
@@ -2573,7 +2651,7 @@ def generar_reporte_personalizado(request, proyecto_id):
                 elif hasattr(req, 'detalle_agil') and req.detalle_agil:
                     if not req.detalle_agil.prioridad:
                         sin_prioridad_count += 1
-            
+
             if sin_prioridad_count > 0:
                 porcentaje_sin_prioridad = round((sin_prioridad_count / total_reqs) * 100, 1) if total_reqs > 0 else 0
                 recomendaciones.append(
@@ -2581,19 +2659,19 @@ def generar_reporte_personalizado(request, proyecto_id):
                     f"({porcentaje_sin_prioridad}%) no tienen prioridad asignada. "
                     f"Se recomienda priorizarlos usando MoSCoW (Must/Should/Could/Won't)."
                 )
-            
+
             # === ANÁLISIS DE FECHAS DE COMPROMISO ===
             from django.utils import timezone
             sin_fecha_count = 0
             fechas_vencidas = 0
-            
+
             for req in requerimientos:
                 if hasattr(req, 'detalle_tradicional') and req.detalle_tradicional:
                     if not req.detalle_tradicional.fecha_compromiso:
                         sin_fecha_count += 1
                     elif req.detalle_tradicional.fecha_compromiso < timezone.now().date() and req.estado != 'TERMINADO':
                         fechas_vencidas += 1
-            
+
             if sin_fecha_count > total_reqs * 0.3 and total_reqs > 0:
                 porcentaje_sin_fecha = round((sin_fecha_count / total_reqs) * 100, 1)
                 recomendaciones.append(
@@ -2601,14 +2679,14 @@ def generar_reporte_personalizado(request, proyecto_id):
                     f"({porcentaje_sin_fecha}%) no tienen fecha de compromiso. "
                     f"Asignar fechas ayuda a gestionar expectativas."
                 )
-            
+
             if fechas_vencidas > 0:
                 recomendaciones.append(
-                    f"⚠ <b>Atención:</b> {fechas_vencidas} requerimiento(s) tienen "
+                    f"<b>Atención:</b> {fechas_vencidas} requerimiento(s) tienen "
                     f"fecha de compromiso vencida y no están terminados. "
                     f"Considere revisar el cronograma."
                 )
-            
+
             # === ANÁLISIS DE DEPENDENCIAS ===
             reqs_con_dependencias = sum(1 for req in requerimientos if req.dependencias.exists())
             if reqs_con_dependencias > 0:
@@ -2616,40 +2694,40 @@ def generar_reporte_personalizado(request, proyecto_id):
                     f"• <b>Dependencias:</b> {reqs_con_dependencias} requerimientos "
                     f"tienen dependencias. Asegúrese de implementarlos en el orden correcto."
                 )
-            
+
             # === RECOMENDACIÓN GENERAL SI NO HAY DATOS ===
             if total_reqs == 0:
                 recomendaciones.append(
                     "• <b>Inicio del proyecto:</b> No hay requerimientos registrados. "
                     "Comience definiendo los requerimientos funcionales y no funcionales."
                 )
-            
+
             if total_casos == 0 and total_reqs > 0:
                 recomendaciones.append(
                     "• <b>Casos de Uso:</b> No hay casos de uso definidos. Considere "
                     "crear casos de uso para detallar cómo los usuarios interactuarán "
                     "con el sistema."
                 )
-            
+
             if recomendaciones:
                 elements.append(Paragraph("<b>RECOMENDACIONES Y ANÁLISIS</b>", subtitle_style))
                 for rec in recomendaciones:
                     elements.append(Paragraph(rec, normal_style))
                 elements.append(Spacer(1, 1*cm))
-        
+
         # === CONSTRUIR PDF CON HEADER Y FOOTER ===
         # Usar onPage callback para agregar header/footer en cada página
         def add_page_decorations(canvas, doc):
             crear_header_footer(canvas, doc, proyecto, logo_proyecto_path, logo_grupo_path)
-        
+
         doc.build(elements, onFirstPage=add_page_decorations, onLaterPages=add_page_decorations)
         buffer.seek(0)
-        
+
         response = HttpResponse(buffer.read(), content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="reporte_{proyecto.nombre}_{datetime.now().strftime("%Y%m%d_%H%M")}.pdf"'
-        
+
         return response
-        
+
     except ImportError as e:
         messages.error(request, f"Error de importación al generar el reporte: {str(e)}")
         return redirect('proyectos:proyecto_reportes', proyecto_id=proyecto_id)

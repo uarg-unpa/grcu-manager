@@ -171,6 +171,18 @@ class Usuario(AbstractUser):
         """
         return f"{self.nombre} ({self.email})"
 
+    def get_full_name(self) -> str:
+        """
+        Nombre para mostrar del usuario.
+
+        El modelo guarda el nombre en el campo ``nombre``; si está vacío se usa
+        nombre + apellido y, como último recurso, el email.
+        """
+        if self.nombre:
+            return self.nombre
+        completo = f"{self.first_name} {self.last_name}".strip()
+        return completo or self.email
+
     def es_admin(self) -> bool:
         """
         Verifica si el usuario tiene el rol de Administrador.

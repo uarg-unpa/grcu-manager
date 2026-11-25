@@ -186,7 +186,7 @@
         </thead>
         <tbody>
           {% for cu in casos %}
-          <tr class="caso-row {% if not cu.requerimiento %}huerfano{% else %}con-requerimiento{% endif %}">
+          <tr class="caso-row {% if not cu.reqs_relacionados %}huerfano{% else %}con-requerimiento{% endif %}">
             <td>
               <a href="{% url 'casos_de_uso:caso_de_uso_detail' cu.pk %}"
                  class="text-decoration-none fw-semibold caso-tooltip"
@@ -196,32 +196,35 @@
                  title="<strong>{% if cu.identificador %}{{ cu.identificador }} - {% endif %}{{ cu.nombre }}</strong><br>
                         <small><strong>ID:</strong> {{ cu.pk }}</small><br>
                         <small><strong>Proyecto:</strong> {{ cu.proyecto.nombre }}</small><br>
-                        {% if cu.requerimiento %}<small><strong>Requerimiento:</strong> {{ cu.requerimiento.nombre }}</small><br>{% endif %}
+                        {% if cu.reqs_relacionados %}<small><strong>Requerimientos:</strong> {% for r in cu.reqs_relacionados %}{{ r.nombre }}{% if not forloop.last %}, {% endif %}{% endfor %}</small><br>{% endif %}
                         {% if cu.creado_por %}<small><strong>Creado por:</strong> {{ cu.creado_por.nombre }}</small><br>{% endif %}
                         <small><strong>Creado:</strong> {{ cu.fecha_creacion|date:'d/m/Y H:i' }}</small><br>
                         {% if cu.descripcion %}<small><strong>Descripción:</strong> {{ cu.descripcion|truncatechars:120 }}</small>{% endif %}">
                 <i class="bi bi-diagram-3-fill me-1"></i>{% if cu.identificador %}<span class="text-muted">{{ cu.identificador }}</span> - {% endif %}{{ cu.nombre }}
               </a>
-              {% if not cu.requerimiento %}
+              {% if not cu.reqs_relacionados %}
               <span class="badge badge-huerfano ms-2">Huérfano</span>
               {% endif %}
             </td>
             <td>
-              {% if cu.requerimiento %}
-                <a href="{% url 'requerimientos:requerimiento_detail' cu.requerimiento.pk %}" 
+              {% if cu.reqs_relacionados %}
+                {% for req in cu.reqs_relacionados %}
+                <div class="{% if not forloop.last %}mb-1{% endif %}">
+                <a href="{% url 'requerimientos:requerimiento_detail' req.pk %}"
                    class="text-decoration-none req-tooltip"
                    data-bs-toggle="tooltip"
                    data-bs-placement="top"
                    data-bs-html="true"
-                   title="<strong>{{ cu.requerimiento.nombre }}</strong><br>
-                          <small><strong>Tipo:</strong> {{ cu.requerimiento.get_tipo_display }}</small><br>
-                          <small><strong>Estado:</strong> {{ cu.requerimiento.get_estado_display }}</small>">
-                  <i class="bi bi-link-45deg me-1"></i>{{ cu.requerimiento.nombre|truncatechars:40 }}
+                   title="<strong>{{ req.nombre }}</strong><br>
+                          <small><strong>Tipo:</strong> {{ req.get_tipo_display }}</small><br>
+                          <small><strong>Estado:</strong> {{ req.get_estado_display }}</small>">
+                  <i class="bi bi-link-45deg me-1"></i>{{ req.nombre|truncatechars:40 }}
                 </a>
-                <br>
-                <span class="badge bg-{% if cu.requerimiento.estado == 'BORRADOR' %}warning text-dark{% elif cu.requerimiento.estado == 'VALIDADO' %}info{% elif cu.requerimiento.estado == 'PRIORIZADO' %}primary{% elif cu.requerimiento.estado == 'EN_PROCESO' %}secondary{% else %}success{% endif %} mt-1">
-                  {{ cu.requerimiento.get_estado_display }}
+                <span class="badge bg-{% if req.estado == 'BORRADOR' %}warning text-dark{% elif req.estado == 'VALIDADO' %}info{% elif req.estado == 'PRIORIZADO' %}primary{% elif req.estado == 'EN_PROCESO' %}secondary{% else %}success{% endif %} ms-1">
+                  {{ req.get_estado_display }}
                 </span>
+                </div>
+                {% endfor %}
               {% else %}
                 <span class="text-danger fst-italic">
                   <i class="bi bi-exclamation-triangle-fill me-1"></i>Sin requerimiento

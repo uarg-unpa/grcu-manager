@@ -111,15 +111,23 @@
                 <div class="chart-legend">
                     <span class="legend-item">
                         <span class="legend-color" style="background-color: #f39c12;"></span>
-                        Pendiente: {{ reqs_pendientes }}
+                        Borrador: {{ reqs_borrador }}
                     </span>
                     <span class="legend-item">
                         <span class="legend-color" style="background-color: #3498db;"></span>
-                        En Desarrollo: {{ reqs_en_desarrollo }}
+                        Validado: {{ reqs_validado }}
+                    </span>
+                    <span class="legend-item">
+                        <span class="legend-color" style="background-color: #8e44ad;"></span>
+                        Priorizado: {{ reqs_priorizado }}
+                    </span>
+                    <span class="legend-item">
+                        <span class="legend-color" style="background-color: #17a2b8;"></span>
+                        En proceso: {{ reqs_en_proceso }}
                     </span>
                     <span class="legend-item">
                         <span class="legend-color" style="background-color: #27ae60;"></span>
-                        Aprobado: {{ reqs_aprobados }}
+                        Terminado: {{ reqs_terminado }}
                     </span>
                 </div>
             </div>
@@ -189,16 +197,24 @@
                 <h6 class="text-muted mt-3">Estado de Requerimientos</h6>
                 <ul class="summary-list">
                     <li>
-                        <span class="summary-label">Pendientes:</span>
-                        <span class="summary-value text-warning">{{ reqs_pendientes }}</span>
+                        <span class="summary-label">Borrador:</span>
+                        <span class="summary-value text-warning">{{ reqs_borrador }}</span>
                     </li>
                     <li>
-                        <span class="summary-label">En Desarrollo:</span>
-                        <span class="summary-value text-primary">{{ reqs_en_desarrollo }}</span>
+                        <span class="summary-label">Validado:</span>
+                        <span class="summary-value text-primary">{{ reqs_validado }}</span>
                     </li>
                     <li>
-                        <span class="summary-label">Aprobados:</span>
-                        <span class="summary-value text-success">{{ reqs_aprobados }}</span>
+                        <span class="summary-label">Priorizado:</span>
+                        <span class="summary-value text-secondary">{{ reqs_priorizado }}</span>
+                    </li>
+                    <li>
+                        <span class="summary-label">En proceso:</span>
+                        <span class="summary-value text-info">{{ reqs_en_proceso }}</span>
+                    </li>
+                    <li>
+                        <span class="summary-label">Terminado:</span>
+                        <span class="summary-value text-success">{{ reqs_terminado }}</span>
                     </li>
                 </ul>
             </div>

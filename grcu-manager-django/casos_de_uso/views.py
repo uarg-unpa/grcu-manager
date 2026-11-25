@@ -46,6 +46,12 @@ def caso_de_uso_list(request, proyecto_id=None):
         page_title = f"{proyecto.nombre} - Casos de Uso"
     else:
         page_title = "Casos de Uso"
+    # Requerimientos relacionados según la tabla RequerimientoCaso (la misma que usan
+    # la matriz y los dashboards); el campo legacy cu.requerimiento no incluye las
+    # relaciones creadas desde "Relacionar casos de uso".
+    casos = list(casos.prefetch_related('relaciones_requerimientos__requerimiento'))
+    for cu in casos:
+        cu.reqs_relacionados = [rel.requerimiento for rel in cu.relaciones_requerimientos.all()]
     return render(request, "casos_de_uso/caso_de_uso_list.html", {"casos": casos, "proyecto": proyecto, "page_title": page_title})
 
 @login_required

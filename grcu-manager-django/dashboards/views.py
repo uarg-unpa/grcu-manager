@@ -149,7 +149,7 @@ def admin_dashboard(request):
     grupos_activos_data = grupos_mas_activos
 
     # Roles esperados
-    roles_labels = ["Admin", "Líder", "Desarrollador", "Visitante"]
+    roles_labels = ["Admin", "Líder", "Desarrollador", "Stakeholder", "Visitante"]
 
     # Conteo de usuarios por rol
     usuarios_roles_qs = (
@@ -270,9 +270,16 @@ def admin_herramientas(request):
         return redirect('dashboards:admin_dashboard')
     
     from django.conf import settings
+    motor = settings.DATABASES["default"]["ENGINE"]
+    nombres_motor = {
+        "django.db.backends.sqlite3": "SQLite",
+        "django.db.backends.postgresql": "PostgreSQL",
+        "django.db.backends.mysql": "MySQL",
+    }
     return render(request, "dashboards/admin_herramientas.html", {
         "page_title": "Herramientas Administrativas",
         "debug": settings.DEBUG,
+        "db_engine": nombres_motor.get(motor, motor),
     })
 
 
@@ -472,7 +479,8 @@ def developer_dashboard(request):
         
         reqs_relacionados = requerimientos.count() - reqs_huerfanos.count()
         casos_relacionados = casos_de_uso.count() - casos_huerfanos.count()
-        
+        total_huerfanos = reqs_huerfanos.count() + casos_huerfanos.count()
+
         # Obtener el rol del usuario en este proyecto
         try:
             participacion = ParticipacionProyecto.objects.get(usuario=request.user, proyecto=proyecto)
@@ -491,6 +499,7 @@ def developer_dashboard(request):
             "casos_huerfanos": casos_huerfanos,
             "reqs_relacionados": reqs_relacionados,
             "casos_relacionados": casos_relacionados,
+            "total_huerfanos": total_huerfanos,
             "necesita_metodologia": proyecto.necesita_metodologia(),
             "rol_usuario": rol_usuario,
             "es_lider": es_lider,
@@ -549,7 +558,12 @@ def stakeholder_dashboard(request):
         proyecto__in=proyectos, 
         estado='BORRADOR'
     ).count()
-    validaciones_pendientes = requerimientos_pendientes  # Para stakeholders, es lo mismo
+    # Validados por el líder que esperan la aprobación del cliente
+    validaciones_pendientes = Requerimiento.objects.filter(
+        proyecto__in=proyectos,
+        estado='VALIDADO',
+        tipo_validador='LIDER'
+    ).count()
     participaciones = proyectos_activos  # Número de proyectos donde participa
     
     for proyecto in proyectos:

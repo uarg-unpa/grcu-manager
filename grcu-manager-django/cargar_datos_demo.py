@@ -226,7 +226,12 @@ def crear_proyectos(usuarios, grupos):
             print(f"    - Participantes: {len(participantes)}")
         else:
             print(f"  → {data['nombre']} (ya existe)")
-        
+
+        # El líder del proyecto necesita el rol general "Líder" (define su panel y su menú),
+        # igual que cuando el proyecto se crea desde la pantalla del Administrador.
+        from proyectos.views import actualizar_rol_lider
+        actualizar_rol_lider(proyecto.lider)
+
         data['proyecto'] = proyecto
         data['lider'] = lider
         data['cliente'] = cliente
@@ -405,7 +410,14 @@ def crear_requerimientos_y_casos(proyectos_data):
         
         print(f"\n📁 {proyecto.nombre}")
         print(f"   Temática: {tema.upper()} | Metodología: {metodologia}")
-        
+
+        # Si el proyecto ya tiene requerimientos o casos de uso, no volver a cargarlos
+        # (así el script se puede ejecutar más de una vez sin duplicar datos).
+        if (Requerimiento.objects.filter(proyecto=proyecto).exists()
+                or CasoDeUso.objects.filter(proyecto=proyecto).exists()):
+            print("   → ya tiene requerimientos y casos de uso, no se cargan de nuevo")
+            continue
+
         templates = reqs_templates[tema]
         
         # Crear requerimientos funcionales

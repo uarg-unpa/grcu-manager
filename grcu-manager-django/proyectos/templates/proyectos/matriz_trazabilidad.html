@@ -15,6 +15,12 @@
             <a href="{% url 'proyectos:exportar_matriz' proyecto.id 'pdf' %}" class="btn btn-success">
                 <i class="bi bi-file-earmark-pdf"></i> Exportar a PDF
             </a>
+            <a href="{% url 'proyectos:exportar_matriz' proyecto.id 'excel' %}" class="btn btn-success">
+                <i class="bi bi-file-earmark-excel"></i> Exportar a Excel
+            </a>
+            <a href="{% url 'proyectos:exportar_matriz' proyecto.id 'csv' %}" class="btn btn-success">
+                <i class="bi bi-filetype-csv"></i> Exportar a CSV
+            </a>
             {% if es_lider %}
             <a href="{% url 'requerimientos:requerimiento_list' %}" class="btn btn-primary">
                 <i class="bi bi-list-ul"></i> Gestionar Requerimientos

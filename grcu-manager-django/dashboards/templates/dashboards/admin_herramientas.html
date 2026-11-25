@@ -185,10 +185,10 @@
                   <span class="badge bg-danger">Desactivado</span>
                 {% endif %}
               </p>
-              <p class="mb-0"><strong>Base de Datos:</strong> PostgreSQL</p>
+              <p class="mb-0"><strong>Base de Datos:</strong> {{ db_engine }}</p>
             </div>
             <div class="col-md-6">
-              <p class="mb-1"><strong>Usuario Actual:</strong> {{ user.username }}</p>
+              <p class="mb-1"><strong>Usuario Actual:</strong> {{ user.get_full_name }} ({{ user.email }})</p>
               <p class="mb-0"><strong>Rol:</strong>
                 {% if user.es_admin %}
                   <span class="badge bg-danger">Administrador</span>

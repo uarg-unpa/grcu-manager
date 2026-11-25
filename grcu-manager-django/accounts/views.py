@@ -240,6 +240,9 @@ def google_login_callback(request):
     if not user:
         messages.error(request, "No estás registrado en el sistema.")
         return redirect("accounts:login")
+    if not user.is_active:
+        messages.error(request, "Tu usuario está desactivado. Comunicate con el administrador.")
+        return redirect("accounts:login")
 
     # Actualizar datos del usuario
     user.nombre = full_name

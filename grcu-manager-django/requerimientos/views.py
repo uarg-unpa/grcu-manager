@@ -1263,7 +1263,7 @@ def requerimiento_validar_cliente(request, proyecto_id=None):
         proyecto_id = request.GET.get('proyecto_id')
         if not proyecto_id:
             messages.error(request, 'Debe especificar un proyecto para validar requerimientos.')
-            return redirect('dashboards:cliente_dashboard')
+            return redirect('dashboards:stakeholder_dashboard')
         else:
             proyecto = get_object_or_404(Proyecto, id=proyecto_id)
 
@@ -1282,7 +1282,7 @@ def requerimiento_validar_cliente(request, proyecto_id=None):
     
     if not es_stakeholder:
         messages.error(request, 'No tienes permiso para validar requerimientos de este proyecto.')
-        return redirect('dashboards:cliente_dashboard')
+        return redirect('dashboards:stakeholder_dashboard')
 
     # Obtener requerimientos pendientes de validación (estado BORRADOR)
     requerimientos = Requerimiento.objects.filter(
@@ -1519,21 +1519,24 @@ def requerimiento_validar_cliente_individual(request, pk):
         accion = request.POST.get('accion')
         comentario = request.POST.get('comentario', '').strip()
         
-        if accion == 'validar':
-            # Aprobar el requerimiento
-            requerimiento.estado = 'APROBADO'
-            requerimiento.validado_cliente = True
-            requerimiento.fecha_validacion_cliente = timezone.now()
+        if accion in ('validar', 'aprobar'):
+            # Aprobar el requerimiento: sigue en estado VALIDADO (listo para priorizar)
+            # y queda registrada la aprobación del cliente.
+            requerimiento.validado_por = request.user
+            requerimiento.fecha_validacion = timezone.now()
+            requerimiento.tipo_validador = 'CLIENTE'
+            requerimiento.requiere_discusion = False
             requerimiento._history_user = request.user
             requerimiento.save()
-            
+
             # Crear comentario si se proporcionó
             if comentario:
                 ComentarioValidacion.objects.create(
                     requerimiento=requerimiento,
                     autor=request.user,
                     comentario=comentario,
-                    tipo_accion='VALIDAR'
+                    tipo_accion='VALIDAR',
+                    tipo_comentario='VALIDACION_CLIENTE'
                 )
             
             messages.success(request, f'✅ Requerimiento "{requerimiento.nombre}" aprobado exitosamente.')
@@ -1546,20 +1549,21 @@ def requerimiento_validar_cliente_individual(request, pk):
                 # Rechazar el requerimiento (vuelve a BORRADOR)
                 requerimiento.estado = 'BORRADOR'
                 requerimiento.requiere_discusion = True
-                requerimiento.motivo_rechazo_cliente = comentario
-                requerimiento.ultimo_rechazado_por_cliente = request.user
-                requerimiento.fecha_ultimo_rechazo_cliente = timezone.now()
+                requerimiento.motivo_rechazo = comentario
+                requerimiento.ultimo_rechazado_por = request.user
+                requerimiento.fecha_ultimo_rechazo = timezone.now()
                 requerimiento._history_user = request.user
                 requerimiento.save()
-                
+
                 # Crear comentario de rechazo
                 ComentarioValidacion.objects.create(
                     requerimiento=requerimiento,
                     autor=request.user,
                     comentario=comentario,
-                    tipo_accion='RECHAZAR'
+                    tipo_accion='RECHAZAR',
+                    tipo_comentario='VALIDACION_CLIENTE'
                 )
-                
+
                 messages.info(request, f'ℹ️ Requerimiento "{requerimiento.nombre}" rechazado para revisión.')
                 return redirect('requerimientos:requerimiento_detail', pk=pk)
     

@@ -195,7 +195,7 @@
                     <hr>
                     <p class="mb-0 small text-muted">
                         <i class="bi bi-exclamation-triangle me-1"></i>
-                        Al aprobar, el requerimiento cambiará a estado <strong>VALIDADO</strong> y podrá ser priorizado.
+                        Al aprobar, quedará registrada la aprobación del cliente y el requerimiento podrá ser priorizado.
                     </p>
                 </div>
             </div>
@@ -277,31 +277,5 @@ function submitValidacion(accion) {
     // Enviar el formulario
     form.submit();
 }
-</script>
-{% endblock %}
-        </div>
-    </form>
-</div>
-
-<script>
-document.getElementById('validationForm').addEventListener('submit', function(e) {
-    const accion = e.submitter.value;
-    const comentario = document.getElementById('comentario').value.trim();
-    
-    if (accion === 'rechazar' && !comentario) {
-        e.preventDefault();
-        alert('Debes proporcionar un comentario al rechazar el requerimiento.');
-        return false;
-    }
-    
-    const mensaje = accion === 'validar' 
-        ? '¿Estás seguro de aprobar este requerimiento?' 
-        : '¿Estás seguro de rechazar este requerimiento?';
-    
-    if (!confirm(mensaje)) {
-        e.preventDefault();
-        return false;
-    }
-});
 </script>
 {% endblock %}

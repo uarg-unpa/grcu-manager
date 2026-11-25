@@ -74,7 +74,10 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <canvas id="actividadesPorDiaChart" width="400" height="100"></canvas>
+                    {# Altura fija: el gráfico usa maintainAspectRatio=false y necesita espacio para el título del eje Y #}
+                    <div style="position: relative; height: 260px;">
+                        <canvas id="actividadesPorDiaChart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>

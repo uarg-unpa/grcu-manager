@@ -1,4 +1,9 @@
 from django.shortcuts import render, get_object_or_404, redirect
+from auditoria.utils import (
+    registrar_creacion_usuario,
+    registrar_eliminacion_usuario,
+    registrar_cambio_rol,
+)
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.core.paginator import Paginator
@@ -90,6 +95,7 @@ def crear_usuario(request):
         form = UsuarioCrearForm(request.POST)
         if form.is_valid():
             user = form.save()  # El formulario ya maneja la asignación de roles
+            registrar_creacion_usuario(request, user)
             messages.success(request, "Usuario creado correctamente.")
             return redirect("usuarios:lista")
         else:
@@ -115,9 +121,13 @@ def editar_usuario(request, pk):
     usuario = get_object_or_404(Usuario, pk=pk)
 
     if request.method == "POST":
+        roles_antes = sorted(usuario.roles.values_list("nombre", flat=True))
         form = UsuarioEditarForm(request.POST, instance=usuario)
         if form.is_valid():
             user = form.save()  # El formulario ya maneja la asignación de roles
+            roles_despues = sorted(user.roles.values_list("nombre", flat=True))
+            if roles_antes != roles_despues:
+                registrar_cambio_rol(request, user, roles_antes, roles_despues)
             messages.success(request, "Usuario actualizado correctamente.")
             return redirect("usuarios:lista")  # Redirigir a la lista después de guardar
         else:
@@ -145,6 +155,7 @@ def eliminar_usuario(request, pk):
     user = get_object_or_404(Usuario, pk=pk)
 
     if request.method == "POST":
+        registrar_eliminacion_usuario(request, user)
         user.delete()
         return redirect("usuarios:lista")  # volver a la lista de usuarios
 
@@ -158,7 +169,8 @@ def eliminar_usuario(request, pk):
     grupos_como_integrante = user.grupos.all()
 
     return render(request, "usuarios/confirmacion_eliminar_usuario.html", {
-        "user": user,
+        # No usar la clave "user": pisaría al usuario logueado en el encabezado
+        "usuario_a_eliminar": user,
         "proyectos_como_lider": proyectos_como_lider,
         "proyectos_como_participante": proyectos_como_participante,
         "grupos_como_lider": grupos_como_lider,

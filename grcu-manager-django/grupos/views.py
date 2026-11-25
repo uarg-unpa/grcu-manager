@@ -5,6 +5,7 @@ from django.http import JsonResponse
 from .models import Grupo
 from accounts.models import Usuario
 from .forms import GrupoForm
+from auditoria.utils import registrar_creacion_grupo, registrar_eliminacion_grupo
 from django.core.paginator import Paginator
 from django.db.models import Q
 import json
@@ -143,9 +144,11 @@ def crear_grupo(request):
 				else:
 					integrantes = Usuario.objects.filter(id__in=integrantes_ids)
 					grupo.integrantes.set(integrantes)
+					registrar_creacion_grupo(request, grupo)
 					messages.success(request, "Grupo creado correctamente.")
 					return redirect("grupos:lista_grupos")
 			else:
+				registrar_creacion_grupo(request, grupo)
 				messages.success(request, "Grupo creado correctamente.")
 				return redirect("grupos:lista_grupos")
 		else:
@@ -267,6 +270,7 @@ def eliminar_grupo(request, grupo_id):
 				).delete()
 
 		# Ahora sí eliminar el grupo
+		registrar_eliminacion_grupo(request, grupo)
 		grupo.delete()
 		messages.success(request, f"Grupo '{grupo.nombre}' eliminado correctamente. Se han limpiado todas las relaciones con proyectos.")
 		return redirect("grupos:lista_grupos")
