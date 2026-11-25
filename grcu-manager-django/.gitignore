@@ -1,5 +1,6 @@
 # Entorno y secretos
 venv/
+.venv/
 .env
 *.env
 
@@ -7,9 +8,9 @@ venv/
 db.sqlite3
 *.pyc
 __pycache__/
+.pytest_cache/
 media/
 staticfiles/
-grcu_manager/settings.py
 
 # IDE
 .vscode/
