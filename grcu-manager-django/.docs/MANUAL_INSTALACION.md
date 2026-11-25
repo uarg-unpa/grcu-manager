@@ -40,9 +40,24 @@ Este manual se probó completo en Windows 11 con Python 3.14. En Linux y macOS l
   - openSUSE: `sudo zypper install -y git python3 python3-virtualenv python3-devel gcc make`
 - *macOS:* con Homebrew (brew.sh): `brew install git python@3.11`.
 
+Para comprobar que quedaron instalados, abrir la terminal (ver la sección 2) y ejecutar estos dos comandos. Cada uno debe mostrar un número de versión, como en la Figura 1.
+
+```
+python --version
+git --version
+```
+
+![Figura 1 - Comprobación de Python y Git](capturas-instalacion/i01-versiones.png)
+
+*Figura 1 - Comprobación de Python y Git*
+
 ## 2. Instalación
 
 Los comandos se escriben en una terminal: **PowerShell** en Windows; **Terminal** en Linux y macOS.
+
+En Windows, la terminal se abre con clic derecho sobre el botón Inicio y eligiendo **Terminal** (o **Windows PowerShell**). Se abre una ventana donde se escribe cada comando y se presiona Enter. Los comandos se copian tal como aparecen en este manual.
+
+En las capturas de este manual el proyecto está en `C:\UNPA\grcu-manager-django`; en cada computadora la carpeta puede estar en otro lugar.
 
 **Paso 1. Obtener el proyecto y entrar a su carpeta**
 
@@ -54,6 +69,13 @@ Los comandos se escriben en una terminal: **PowerShell** en Windows; **Terminal*
 git clone https://github.com/uarg-unpa/grcu-manager.git
 cd grcu-manager/grcu-manager-django
 ```
+
+En ambos casos, la terminal tiene que quedar dentro de la carpeta `grcu-manager-django`. Se comprueba con `dir manage.py` (en Linux y macOS, `ls manage.py`): debe aparecer el archivo, como en la Figura 2.
+
+![Figura 2 - La carpeta del proyecto contiene manage.py](capturas-instalacion/i02-carpeta.png)
+
+*Figura 2 - La carpeta del proyecto contiene manage.py*
+
 
 **Paso 2. Crear y activar un entorno virtual** (una "caja" que mantiene las librerías del proyecto separadas del resto de la computadora)
 
@@ -73,7 +95,12 @@ python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-Cuando está activo, la línea de la terminal empieza con `(.venv)`.
+Cuando está activo, la línea de la terminal empieza con `(.venv)`, como en la Figura 3.
+
+![Figura 3 - Entorno virtual activado](capturas-instalacion/i03-entorno-activado.png)
+
+*Figura 3 - Entorno virtual activado*
+
 
 **Paso 3. Instalar las librerías**
 
@@ -82,9 +109,20 @@ python -m pip install --upgrade pip wheel
 pip install -r requirements.txt
 ```
 
+La instalación puede tardar unos minutos. Termina cuando aparece el mensaje `Successfully installed` con los nombres de las librerías (Figura 4).
+
+![Figura 4 - Fin de la instalación de las librerías](capturas-instalacion/i04-pip-install.png)
+
+*Figura 4 - Fin de la instalación de las librerías*
+
 Si en Linux o macOS aparece un error de compilación (por ejemplo con Pillow), leer el mensaje e instalar la librería de desarrollo que pida (`libjpeg`, `zlib`, etc.). En macOS, además, puede hacer falta `xcode-select --install`.
 
-**Paso 4. Tener el archivo `.env`** en esta misma carpeta, al lado del archivo `manage.py`. Si el código llegó en el ZIP, el `.env` ya está incluido y no hay que hacer nada. Si se bajó del repositorio, hay que copiar el que entregaron los docentes. (Ver la sección 3.)
+**Paso 4. Tener el archivo `.env`** en esta misma carpeta, al lado del archivo `manage.py`. Si el código llegó en el ZIP, el `.env` ya está incluido y no hay que hacer nada. Si se bajó del repositorio, hay que copiar el que entregaron los docentes. (Ver la sección 3.) Se comprueba con `dir .env, manage.py` (en Linux y macOS, `ls -a`): tienen que aparecer los dos archivos (Figura 5).
+
+![Figura 5 - El archivo .env junto a manage.py](capturas-instalacion/i05-archivo-env.png)
+
+*Figura 5 - El archivo .env junto a manage.py*
+
 
 **Paso 5. Crear la base de datos**
 
@@ -92,13 +130,24 @@ Si en Linux o macOS aparece un error de compilación (por ejemplo con Pillow), l
 python manage.py migrate
 ```
 
-Esto crea el archivo `db.sqlite3` (la base de datos) y los cinco roles del sistema: Admin, Desarrollador, Líder, Stakeholder y Visitante.
+Esto crea el archivo `db.sqlite3` (la base de datos) y los cinco roles del sistema: Admin, Desarrollador, Líder, Stakeholder y Visitante. Al terminar se ven las migraciones aplicadas y los cinco roles creados (Figura 6).
+
+![Figura 6 - Base de datos creada y roles del sistema](capturas-instalacion/i06-migrate.png)
+
+*Figura 6 - Base de datos creada y roles del sistema*
+
 
 **Paso 6. Iniciar el sistema**
 
 ```
 python manage.py runserver
 ```
+
+Cuando el sistema está listo aparece la línea `Starting development server at http://127.0.0.1:8000/` (Figura 7). Los avisos que aparecen más arriba (`staticfiles.W004` y `RequestsDependencyWarning`) son normales y se pueden ignorar (ver la sección 6). Para entrar al sistema se usa la dirección `http://localhost:8000/`, no `127.0.0.1` (ver la sección 4).
+
+![Figura 7 - Servidor en funcionamiento](capturas-instalacion/i07-servidor.png)
+
+*Figura 7 - Servidor en funcionamiento*
 
 Dejar esa terminal abierta mientras se usa el sistema. Para apagarlo, presionar `Ctrl + C`. Para volver a iniciarlo otro día, activar el entorno (paso 2, segundo comando) y repetir el paso 6.
 
@@ -139,6 +188,16 @@ Copiar el ID y el secreto de cliente al `.env`.
 4. Google muestra la pantalla "Iniciar sesión en grcu-manager" con el nombre y el correo de la cuenta elegida: pulsar **"Continuar"**.
 5. El sistema responde "¡Administrador Configurado!". Pulsar **"Ir al Panel de Administración"**: se abre el panel del Administrador, con el menú Inicio, Usuarios, Grupos, Proyectos y Auditoría.
 
+La Figura 8 muestra la pantalla de configuración inicial (paso 2) y la Figura 9, la confirmación (paso 5).
+
+![Figura 8 - Configurar administrador](capturas-instalacion/i08a-configurar-administrador.png)
+
+*Figura 8 - Configurar administrador*
+
+![Figura 9 - Administrador configurado](capturas-instalacion/i08b-administrador-configurado.png)
+
+*Figura 9 - Administrador configurado*
+
 Para cerrar la sesión, pulsar **"Salir"** (arriba a la derecha); el sistema vuelve a la pantalla de login.
 
 A partir de ahí, **el resto de las personas solo puede entrar si el Administrador cargó antes su correo** en la sección "Usuarios". Si no, el sistema muestra "No estás registrado en el sistema".
@@ -165,6 +224,7 @@ Los usuarios de demostración **no pueden iniciar sesión**: sus correos son `@u
 | "Solo se permiten emails de los dominios…" | Usar una cuenta `@gmail.com` o `@uarg.unpa.edu.ar`. |
 | `Activate.ps1` bloqueado en PowerShell | Ver el paso 2 de la sección 2. |
 | Error al ejecutar `pip install` | Instalar la librería de desarrollo que indique el mensaje (sección 2, paso 3). |
+| Al ejecutar `manage.py` aparece `RequestsDependencyWarning` (versiones de `urllib3` o `chardet`) | Es solo un aviso: se puede ignorar, el sistema funciona igual. |
 | Al ejecutar `manage.py` aparece el aviso `staticfiles.W004` (no existe la carpeta `static`) | Es solo un aviso: se puede ignorar, el sistema funciona igual. |
 | `unable to open database file` | Revisar que la carpeta del proyecto permita escribir archivos. |
 | Los comandos `python` o `pip` no se reconocen | Python no quedó en el PATH: reinstalarlo marcando "Add Python to PATH". |
@@ -255,6 +315,8 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now grcu
 ```
 
+Para comprobarlo, `systemctl is-active grcu` debe responder `active`.
+
 **Paso 8. Configurar nginx.** Crear `/etc/nginx/sites-available/grcu` con este contenido:
 
 ```
@@ -285,6 +347,8 @@ sudo ln -s /etc/nginx/sites-available/grcu /etc/nginx/sites-enabled/grcu
 sudo nginx -t
 sudo systemctl reload nginx
 ```
+
+El comando `sudo nginx -t` debe mostrar `syntax is ok` y `test is successful`.
 
 **Paso 9. Activar HTTPS** con un certificado gratuito de Let's Encrypt:
 
